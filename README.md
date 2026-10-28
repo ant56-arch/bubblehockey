@@ -69,6 +69,9 @@ Playoffs take up to 2 game days, planned for just before the month's last game d
 ```
 `skipDates` are extra days with no games, `holidays: false` turns the holiday list off, `makeupDay: false` uses the last day for games, `roundsPerDay` limits a day to that many rounds (0 = the full round robin), and `playoffDates` pins a month's playoff dates.
 
+## Standings: PTS%
+PTS% (points earned out of points possible) was used to seed October's playoffs, so the column shows for October and earlier and is dropped from November on (once every team plays the same number of games). It is controlled by `"standings": { "ptsPercentThrough": "2026-10" }` in `data/config.json`: change the month to show it longer, or remove the setting to hide it everywhere.
+
 ## Members and logos
 Each member gets a profile on the Members tab (titles, career record, playoff record, month by month, head to head), all calculated from the games. Members are in `data/members.csv` (`name, short_name, team_name, established, logo, alt_logo`). To add a player, add a row and upload a logo into `images/teams/`. The league logo is `images/league-logo.webp`. The Home and Rules text are in `data/home.txt` and `data/rules.txt`.
 
