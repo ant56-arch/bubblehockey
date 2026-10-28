@@ -1,0 +1,16 @@
+# UWM Bubble Hockey League Rules
+## General Gameplay
+• Objective: Score more goals than your opponent by navigating the puck into their net using the mechanical rods.
+• Match Format: Three periods (typically 60 or 90 seconds each) tracked by a countdown clock. Most goals wins.
+• Face-offs: Held at the center spot to start periods, after goals, or when the puck becomes stuck.
+• Face-off Rules: The puck must be dropped flat from ~5cm above the figures. Pre-drop, center forwards and left defenders must stay on their side of the red line. A goal cannot be scored within three seconds of a face-off.
+• Valid Goals: The puck must fully enter the goal chute and register on the scoreboard; bounce-outs do not count.
+## Fair Play & Conduct
+• No Spinning: Continuous, excessive spinning ("helicoptering") is banned; shots are restricted to one full rotation per attempt.
+• No Stalling: Players cannot hold the puck indefinitely. Opponents or refs can start a 5-second countdown, after which the puck must be passed or shot.
+• Physical Infractions: Table tilting, lifting, or interfering with an opponent's rods is strictly prohibited and carries penalty/forfeit risks.
+## League Specifics
+• Format & Setup: Supports singles  on stable, official bubble hockey tables (e.g., Super Chexx).
+• Standings Points: Wins award 3 points, overtime wins 2 points, overtime lose is 1 point, and losses award 0 points.
+• Forfeits: A 5–10 minute grace period is allowed for late arrivals before an automatic forfeit is issued.
+• Authority: League Commissioner hold final decision-making power on all disputes.

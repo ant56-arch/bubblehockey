@@ -1,9 +1,5 @@
-name,department,favorite_team,joined,bio
-Alex Rivera,Accounting,Bruins,2023-01-01,Plays like it's game 7 every lunch break.
-Jordan Kim,IT,Rangers,2024-02-01,Plays like it's game 7 every lunch break.
-Sam Patel,Sales,Red Wings,2025-03-01,Plays like it's game 7 every lunch break.
-Taylor Brooks,HR,Maple Leafs,2023-04-01,Plays like it's game 7 every lunch break.
-Morgan Lee,Operations,Penguins,2024-05-01,Plays like it's game 7 every lunch break.
-Casey Nguyen,Marketing,Blackhawks,2025-06-01,Plays like it's game 7 every lunch break.
-Riley Chen,Engineering,Canadiens,2023-07-01,Plays like it's game 7 every lunch break.
-Drew Murphy,Facilities,Flyers,2024-08-01,Plays like it's game 7 every lunch break.
+name,short_name,team_name,established
+Anthony Trotta,Trotta,The Pontiac Firebirds,2026-10-01
+Connor Dalton,Connor,The Bo-Buffalo Trouble Bubble,2026-10-01
+Tommy Wilson,Tommy,The Flint River Bodydumpers,2026-10-01
+Boban Stojkovic,Boban,The Sweenland Kings,2026-10-02

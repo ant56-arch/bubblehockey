@@ -74,3 +74,13 @@ select { background: var(--panel); color: var(--text); border: 1px solid var(--p
 .match .side.won { background: var(--panel-2); font-weight: 700; }
 .match .seed { color: var(--muted); margin-right: 6px; font-size: .8rem; }
 .champ { font-size: 1.1rem; margin: 6px 0 12px; }
+
+/* Content text, member cards, bracket labels */
+.rules ul { padding-left: 20px; margin: 0 0 8px; }
+.rules li, .card li { margin-bottom: 8px; }
+.card h2:first-child, .rules h2:first-child { margin-top: 4px; }
+.rules h2 { margin-top: 22px; }
+.member .team { color: var(--accent-2); font-weight: 600; }
+.match .gname { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 6px 12px 0; }
+.match.skipped { opacity: .45; }
+ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }

@@ -1,7 +1,2 @@
-season,round,round_name,match,seed1,player1,score1,seed2,player2,score2
-2025,1,Semifinals,1,1,Alex Rivera,4,4,Taylor Brooks,2
-2025,1,Semifinals,2,2,Jordan Kim,3,3,Sam Patel,4
-2025,2,Final,1,1,Alex Rivera,4,3,Sam Patel,3
-2026,1,Semifinals,1,1,Alex Rivera,4,4,Taylor Brooks,1
-2026,1,Semifinals,2,2,Jordan Kim,,3,Sam Patel,
-2026,2,Final,1,,,,,,
+month,seed1,seed2,seed3,seed4,g1,g2,g3,g4,g5,g6,g7
+2026-10,Connor,Trotta,Tommy,Boban,Connor,Trotta,Tommy,Connor,Tommy,Connor,
