@@ -45,7 +45,7 @@ function addSnippet() {
   const out = document.getElementById('a-out');
   if (problems.length) { out.innerHTML = `<p class="muted">${problems.map(esc).join(' ')}</p>`; return; }
   const line = '    { ' + Object.entries(o).map(([k, val]) => `"${k}": ${JSON.stringify(val)}`).join(', ') + ' }';
-  const text = ',\n' + line;
+  const text = (D.games.length ? ',\n' : '\n') + line;      // the comma joins it to the game before it (not needed for the very first game)
   const preview = o.dnp ? `${o.home} vs ${o.road}: DNP` : o.homeScore !== undefined ? `${o.home} ${o.homeScore} – ${o.roadScore} ${o.road}${o.overtime ? ' (OT)' : ''}` : `${o.home} vs ${o.road}, ${o.winner} won`;
   out.innerHTML = `<h2>${esc(preview)}</h2><pre class="snip">${esc(text)}</pre><button class="btn" id="a-copy" type="button">Copy</button> <span id="a-copied" class="form-note ok"></span>`;
   out.dataset.text = text;
