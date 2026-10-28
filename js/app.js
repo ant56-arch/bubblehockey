@@ -1,6 +1,6 @@
 /* Bubble Hockey League site. All data lives in /data (see README). */
 const PAGES = [
-  ['home', 'Home'], ['rules', 'Rules'], ['members', 'Members'],
+  ['home', 'Home'], ['rules', 'Rules'], ['members', 'Members'], ['schedule', 'Schedule'],
   ['gamelog', 'Game Log'], ['gamelog-history', 'Game Log History'],
   ['standings', 'Standings'], ['standings-history', 'Standings History'],
   ['playoffs', 'Playoff Bracket'], ['playoffs-history', 'Playoff History'],
@@ -206,6 +206,7 @@ const view = {
         <div class="card stat"><div class="num">${D.members.length}</div><div class="label">Players</div></div>
         <div class="card stat"><div class="num">${esc(lastChamp || '—')}</div><div class="label">Last champion</div></div>
       </div>
+      ${typeof todayCard === 'function' ? todayCard() : ''}
       <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4)}
       <h2>Latest games</h2>${gamesTable([...D.games].sort(cmpNew).slice(0, 5))}
       ${t.html.includes('<h2>') ? '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') : ''}`;
@@ -264,7 +265,7 @@ function route(keepScroll) {
 (async () => {
   await load();
   document.getElementById('league-name').textContent = D.config.leagueName;
-  document.getElementById('nav').innerHTML = PAGES.map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
+  document.getElementById('nav').innerHTML = PAGES.filter(p => p[0] !== 'admin' || D.fb).map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
   document.querySelector('.menu-toggle').onclick = e => {
     const open = document.getElementById('nav').classList.toggle('open');
     e.currentTarget.setAttribute('aria-expanded', open);
