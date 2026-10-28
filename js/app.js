@@ -143,19 +143,21 @@ function monthlyRecords() {
     <p class="muted" style="margin-top:10px">Wins-losses-overtime losses (overtime wins count as wins), with total points.</p>`;
 }
 
-const STAT_KEY = `<details><summary>Stat key</summary><div class="inner"><ul class="key">
+/* PTS% (points earned out of points possible) was used for October's seeding, so it shows for months up to config.standings.ptsPercentThrough and not after. */
+const showPtsPct = month => !!month && !!(D.config.standings || {}).ptsPercentThrough && month <= D.config.standings.ptsPercentThrough;
+const statKey = month => `<details><summary>Stat key</summary><div class="inner"><ul class="key">
 <li><b>GP</b> games played · <b>W</b> regulation wins · <b>L</b> regulation losses · <b>OTW</b> overtime wins · <b>OTL</b> overtime losses</li>
-<li><b>PTS</b> points (3 win, 2 OT win, 1 OT loss, 0 loss) · <b>PTS%</b> points earned out of points possible</li>
+<li><b>PTS</b> points (3 win, 2 OT win, 1 OT loss, 0 loss)${showPtsPct(month) ? ' · <b>PTS%</b> points earned out of points possible' : ''}</li>
 <li><b>GF/GA/GD</b> goals for, against, and difference · <b>SF/SA</b> shots for and against</li>
 <li><b>Shot%</b> goals ÷ shots taken · <b>SV%</b> share of opponent shots stopped · <b>SO</b> shutouts</li>
 <li><b>Home / Road</b> win–loss record at each table position · <b>Strk</b> current win or loss streak</li></ul></div></details>`;
 
-function standingsTable(rows, limit) {
+function standingsTable(rows, limit, month) {
   rows = limit ? rows.slice(0, limit) : rows;
   const n = (x, opt) => `<td class="n${opt ? ' opt' : ''}">${x}</td>`;
-  const heads = [['GP'], ['W'], ['L'], ['OTW'], ['OTL'], ['PTS'], ['PTS%', 1], ['GF', 1], ['GA', 1], ['GD'], ['SF', 1], ['SA', 1], ['Shot%', 1], ['SV%', 1], ['SO', 1], ['Home', 1], ['Road', 1], ['Strk']];
+  const heads = [['GP'], ['W'], ['L'], ['OTW'], ['OTL'], ['PTS'], ...(showPtsPct(month) ? [['PTS%', 1]] : []), ['GF', 1], ['GA', 1], ['GD'], ['SF', 1], ['SA', 1], ['Shot%', 1], ['SV%', 1], ['SO', 1], ['Home', 1], ['Road', 1], ['Strk']];
   return `<div class="stand"><div class="table-scroll"><table><thead><tr><th>#</th><th>Player</th>${heads.map(([h, o]) => `<th class="n${o ? ' opt' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
-    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name)}</td>${n(r.gp)}${n(r.w)}${n(r.l)}${n(r.otw)}${n(r.otl)}<td class="n"><b>${r.pts}</b></td>${n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 1)}${n(r.gf, 1)}${n(r.ga, 1)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 1)}${n(r.sa, 1)}${n(r.sf ? pct(r.gf / r.sf) : '–', 1)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 1)}${n(r.so, 1)}${n(r.hw + '-' + r.hl, 1)}${n(r.rw + '-' + r.rl, 1)}${n(r.streak)}</tr>`).join('')
+    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name)}</td>${n(r.gp)}${n(r.w)}${n(r.l)}${n(r.otw)}${n(r.otl)}<td class="n"><b>${r.pts}</b></td>${showPtsPct(month) ? n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 1) : ''}${n(r.gf, 1)}${n(r.ga, 1)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 1)}${n(r.sa, 1)}${n(r.sf ? pct(r.gf / r.sf) : '–', 1)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 1)}${n(r.so, 1)}${n(r.hw + '-' + r.hl, 1)}${n(r.rw + '-' + r.rl, 1)}${n(r.streak)}</tr>`).join('')
   }</tbody></table></div><button class="more-stats" type="button">Show all stats</button></div>`;
 }
 
@@ -257,7 +259,7 @@ const view = {
         <div class="card stat"><div class="num">${esc(lastChamp ? lastChamp.c : '—')}</div><div class="label">${lastChamp ? 'Last champion · ' + monthLabel(lastChamp.m) : 'Last champion'}</div></div>
       </div>
       ${typeof todayCard === 'function' ? todayCard() : ''}
-      <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4)}
+      <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4, useNow ? m : prev)}
       <h2>Latest games</h2>${gamesTable(D.games.filter(isCounted).sort(cmpNew).slice(0, 5))}
       ${t.html.includes('<h2>') ? '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') : ''}`;
   },
@@ -273,7 +275,7 @@ const view = {
   standings() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
     const c = chipsFor('standings', months, m => m === cur() ? 'current' : ''), ch = c.sel === cur() ? '' : championOf(c.sel);
-    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss. Playoff games count too.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}${monthlyRecords()}`;
+    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss. Playoff games count too.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)), 0, c.sel)}${statKey(c.sel)}${monthlyRecords()}`;
   },
   playoffs() {
     const months = [cur(), ...pastMonths().filter(hasPlayoffs)];

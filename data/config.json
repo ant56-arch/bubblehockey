@@ -10,5 +10,8 @@
   "schedule": {
     "playoffDays": 2,
     "autoDnpFrom": "2026-11-01"
+  },
+  "standings": {
+    "ptsPercentThrough": "2026-10"
   }
 }
