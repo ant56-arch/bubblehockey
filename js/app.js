@@ -34,7 +34,7 @@ function parseCSV(text) {
 const D = {};
 async function load() {
   const get = async (f, kind) => {
-    try { const r = await fetch('data/' + f); if (!r.ok) throw 0; return kind === 'json' ? r.json() : kind === 'text' ? r.text() : parseCSV(await r.text()); }
+    try { const r = await fetch('data/' + f, { cache: 'no-cache' }); if (!r.ok) throw 0; return kind === 'json' ? r.json() : kind === 'text' ? r.text() : parseCSV(await r.text()); }
     catch { return kind === 'json' ? {} : kind === 'text' ? '' : []; }
   };
   const [config, members, games, playoffs, home, rules] = await Promise.all([
@@ -128,8 +128,8 @@ function seedsFor(month) {
   const live = standingsFor(monthGames(month)).filter(r => r.gp).slice(0, 4).map(r => r.name);
   return { seeds: [0, 1, 2, 3].map(i => live[i] || ''), data: {}, live: true };
 }
-function buildBracket(month) {
-  const { seeds, data, live } = seedsFor(month), G = {};
+function bracketModel(seeds, data) {
+  const G = {};
   const win = (n, a, b) => { const w = data['g' + n]; return w && (w === a || w === b) ? w : ''; };
   const mk = (n, a, b, extra = {}) => { const w = a && b ? win(n, a, b) : ''; G[n] = { n, a, b, w, l: w ? (w === a ? b : a) : '', ...extra }; };
   mk(1, seeds[0], seeds[3], { sa: 1, sb: 4 }); mk(2, seeds[1], seeds[2], { sa: 2, sb: 3 });
@@ -138,7 +138,11 @@ function buildBracket(month) {
   const needG7 = !(G[6].w && G[6].w === G[4].w);
   mk(7, G[6].w, G[6].l); if (!needG7) G[7].skipped = true;
   const champion = G[6].w && !needG7 ? G[6].w : (G[7].w || '');
-  return { G, champion, live, seeds };
+  return { G, champion, seeds };
+}
+function buildBracket(month) {
+  const { seeds, data, live } = seedsFor(month);
+  return { ...bracketModel(seeds, data), live };
 }
 function championOf(month) { return D.playoffs.some(p => p.month === month) ? buildBracket(month).champion : ''; }
 
