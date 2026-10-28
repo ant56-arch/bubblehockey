@@ -6,12 +6,12 @@
   --surface-2: #ebebed;
   --line: #e4e4e7;
   --text: #0a0a0a;
-  --muted: #6b6b73;
+  --muted: #64646c;
   --ink: #0a0a0a;
   --on-ink: #ffffff;
   --brand: #0d3b6e;
   --lime: #8cc63f;
-  --win: #1d8a3a;
+  --win: #137a35;
   --err: #d92d20;
   --radius: 24px;
   --radius-sm: 14px;
@@ -136,7 +136,7 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .match.skipped { opacity: .45; }
 .champ { font-size: 1.15rem; margin: 6px 0 12px; }
 
-/* Admin forms */
+/* Forms (Add Game) */
 .form { display: grid; gap: 16px; }
 .f { display: grid; gap: 7px; font-weight: 600; font-size: .88rem; }
 .f input, .f select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; font: inherit; font-size: 16px; font-weight: 400; min-height: 48px; }
@@ -146,7 +146,6 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .check { display: flex; gap: 10px; align-items: center; min-height: 44px; } .check input { width: 22px; height: 22px; accent-color: var(--ink); }
 .btn { background: var(--ink); color: var(--on-ink); border: 0; border-radius: 999px; padding: 13px 24px; font: inherit; font-weight: 600; min-height: 48px; cursor: pointer; transition: transform .15s, opacity .15s; }
 .btn:hover { opacity: .88; } .btn:active { transform: scale(.97); } .btn:disabled { opacity: .5; }
-.btn.ghost { background: var(--surface-2); color: var(--text); margin-top: 12px; }
 .link { background: none; border: 0; color: var(--text); text-decoration: underline; font: inherit; cursor: pointer; padding: 0; }
 .form-note { margin: 0; min-height: 1.2em; font-size: .95rem; } .form-note.ok { color: var(--win); } .form-note.err { color: var(--err); }
 .steps { padding-left: 20px; } .steps li { margin-bottom: 8px; }
@@ -238,7 +237,3 @@ code { background: var(--surface); border-radius: 6px; padding: 1px 6px; font-si
   .row2 { gap: 10px; }
 }
 
-.sess { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
-.glist { display: grid; gap: 8px; }
-.grow { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border-radius: 16px; padding: 10px 14px; }
-.grow .btn { min-height: 38px; padding: 6px 16px; font-size: .85rem; }

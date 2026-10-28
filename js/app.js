@@ -39,8 +39,12 @@ async function load() {
     try { const r = await fetch('data/' + f, { cache: 'no-cache' }); if (!r.ok) throw 0; return kind === 'json' ? r.json() : kind === 'text' ? r.text() : parseCSV(await r.text()); }
     catch { return kind === 'json' ? {} : kind === 'text' ? '' : []; }
   };
+  const getGames = async () => {
+    try { const r = await fetch('data/games.json', { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.text(); }
+    catch (e) { D.problems.push(`data/games.json could not be loaded (${e.message}). If you opened index.html straight from your computer, use the published site or run a local web server (see the README).`); return ''; }
+  };
   const [config, members, gamesText, home, rules] = await Promise.all([
-    get('config.json', 'json'), get('members.csv'), get('games.json', 'text'), get('home.txt', 'text'), get('rules.txt', 'text')]);
+    get('config.json', 'json'), get('members.csv'), getGames(), get('home.txt', 'text'), get('rules.txt', 'text')]);
   D.config = { leagueName: 'Bubble Hockey League', tagline: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
   D.members = members.map(m => ({ ...m, short_name: m.short_name || m.name }));
   D.home = home; D.rules = rules;
@@ -68,6 +72,18 @@ async function load() {
   });
   D.games.sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq);
   const count = {}; D.games.forEach(g => { if (isCounted(g)) g.id = count[g.month] = (count[g.month] || 0) + 1; });
+
+  // Warnings for entries that are accepted but look wrong (so a typo does not go unnoticed).
+  const d0 = new Date(), today = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
+  const name = g => `Game ${g.seq + 1} in games.json (${g.date || g.month}, ${g.home} vs ${g.road})`, seen = {}, warn = [];
+  for (const g of D.games) {
+    if (g.date && g.date > today) warn.push(`${name(g)} is dated in the future. Check the year.`);
+    const key = [g.date, g.month, g.home, g.road, g.hg, g.rg, g.hs, g.rs, g.ot, g.playoff, g.dnp, g.winner].join('|');
+    if (seen[key] !== undefined) warn.push(`${name(g)} looks identical to game ${seen[key] + 1}. Is it a duplicate?`); else seen[key] = g.seq;
+  }
+  for (const m of [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort())
+    for (const g of buildBracket(m).unmatched) warn.push(`Playoff ${name(g)} does not fit the ${monthLabel(m)} bracket (wrong players for the next open game, or not needed). Playoff games must be entered in the order they were played.`);
+  D.problems.push(...warn.slice(0, 8), ...(warn.length > 8 ? [`...and ${warn.length - 8} more.`] : []));
 }
 
 /* ---------- helpers ---------- */
@@ -192,16 +208,22 @@ function bracketModel(seeds, data) {
 /* With asOf (a date), only playoff games dated on or before it count, so a future playoff day does not show results. */
 function buildBracket(month, asOf) {
   const { seeds, live } = seedsFor(month, asOf), data = {}, scores = {}, dates = {};
-  for (const g of D.games.filter(g => g.playoff && g.month === month && (!asOf || (g.date && g.date <= asOf)))) {
-    const m = bracketModel(seeds, data);
-    const n = [1, 2, 3, 4, 5, 6, 7].find(k => { const x = m.G[k]; return x.a && x.b && !x.w && !x.skipped && [x.a, x.b].includes(g.home) && [x.a, x.b].includes(g.road); });
-    if (!n) continue;
-    const hasScores = !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
-    data['g' + n] = hasScores ? (g.hg > g.rg ? g.home : g.road) : g.winner;
-    if (hasScores) scores[n] = { [g.home]: g.hg, [g.road]: g.rg };
-    dates[n] = g.date;
+  let pending = D.games.filter(g => g.playoff && g.month === month && (!asOf || (g.date && g.date <= asOf)));
+  // Match each playoff game to the next open bracket game with the same two players. A game whose slot is not open yet is retried after the others.
+  for (let progress = true; pending.length && progress;) {
+    progress = false; const next = [];
+    for (const g of pending) {
+      const m = bracketModel(seeds, data);
+      const n = [1, 2, 3, 4, 5, 6, 7].find(k => { const x = m.G[k]; return x.a && x.b && !x.w && !x.skipped && [x.a, x.b].includes(g.home) && [x.a, x.b].includes(g.road); });
+      if (!n) { next.push(g); continue; }
+      const hasScores = !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
+      data['g' + n] = hasScores ? (g.hg > g.rg ? g.home : g.road) : g.winner;
+      if (hasScores) scores[n] = { [g.home]: g.hg, [g.road]: g.rg };
+      dates[n] = g.date; progress = true;
+    }
+    pending = next;
   }
-  return { ...bracketModel(seeds, data), scores, dates, live };
+  return { ...bracketModel(seeds, data), scores, dates, live, unmatched: pending };
 }
 function championOf(month) { return hasPlayoffs(month) ? buildBracket(month).champion : ''; }
 

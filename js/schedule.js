@@ -171,7 +171,7 @@ function dayCard(v) {
   if (v.spare) return spareDayCard(v);
   const today = v.date === todayStr(), past = v.date < todayStr();
   const row = (r, i) => {
-    const g = r.result, hw = g && g.hg > g.rg, rw = g && g.rg > g.hg;
+    const g = r.result, winner = g && !g.dnp ? (g.hg > g.rg ? g.home : g.road) : '', hw = winner === r.home, rw = winner === r.road;      // the logged game may have the sides the other way round
     if (g && g.dnp) return `<div class="mrow dnp"><span class="gno">${i + 1}</span><span class="side">${who(r.home, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(r.road, 26)}</span></div>`;
     return `<div class="mrow"><span class="gno">${i + 1}</span><span class="side ${hw ? 'win' : ''}">${who(r.home, 26)}</span>
       <span class="vs">${g ? `<b>${g.home === r.home ? scoreHTML(g.hg, g.rg) : scoreHTML(g.rg, g.hg)}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}` : 'vs'}</span>
@@ -210,7 +210,7 @@ view.schedule = function () {
   // Past days with no games logged (e.g. before the league started) are left out; today and future days always show.
   const hadGames = d => D.games.some(g => g.date === d && (isCounted(g) || g.dnp));
   const days = mode === 'month' ? gameDaysIn(cur()).filter(d => d >= todayStr() || hadGames(d)) : upcomingDays(5);
-  return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held on the ${monthPlan(cur()).po.length === 1 ? 'game day' : monthPlan(cur()).po.length + ' game days'} before the month's last game day, which is kept open as a makeup day.</p>${chips}
+  return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held near the end of each month, and the last game day is kept open as a makeup day.</p>${chips}
     ${(() => { const off = daysOffIn(cur()); return off.length ? `<p class="muted">No games: ${off.map(o => `${esc(o.name)}, ${dayLabel(o.date)}`).join(' · ')}</p>` : ''; })()}
     <div class="days">${days.map(d => dayCard(dayView(d))).join('') || '<p class="muted">No game days found.</p>'}</div>${balanceCard(cur())}`;
 };
