@@ -23,8 +23,10 @@ This rewrites everything in `data/` from the workbook's Home, Rules, Members, `<
 | `data/home.txt`, `data/rules.txt` | page text: `# title`, `## heading`, `• bullet`, otherwise a paragraph |
 | `data/config.json` | league name, tagline, `currentMonth`, points per result |
 
-## Entering data from the website (commissioner only)
-Open the **Enter** tab. The first time on a device, create a GitHub fine-grained token (Settings → Developer settings → Personal access tokens → Fine-grained) limited to this repository with **Contents: Read and write**, and paste it in. It is stored only in that browser. From there you can add games, add or edit members and teams (with logo uploads), save playoff results, and set the current month; each save commits to `data/` and the live site updates in about a minute. Anyone without the token can open the page but cannot save anything.
+## Entering data from the website (password protected)
+Open the **Enter** tab. The first time, you do a one-time setup: create a GitHub fine-grained token limited to this repository with **Contents: Read and write**, paste it in, and choose a league password (12+ characters). The token is locked with the password (AES-256, key derived with PBKDF2) and saved as `data/auth.json`; the password itself is never stored. After that, anyone who knows the password can unlock the page, add games, add or edit members and teams (with logo uploads), save playoff results, and set the current month. Each save commits to `data/` and the live site updates in about a minute.
+
+Notes: use a long password, because the locked file is public and could be guessed at offline. The token only has access to this repository, and every change is in the git history so it can be undone. If the token expires, use **Set up a new one** on the Enter page. **Change the password** is at the bottom of the Enter page once you are signed in.
 
 Pick one source of truth: if you enter games on the website, don't re-run `xlsx_to_csv.py` from an older spreadsheet, or it will overwrite them.
 
