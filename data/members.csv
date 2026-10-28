@@ -1,5 +1,5 @@
-name,short_name,team_name,established
-Anthony Trotta,Trotta,The Pontiac Firebirds,2026-10-01
-Connor Dalton,Connor,The Bo-Buffalo Trouble Bubble,2026-10-01
-Tommy Wilson,Tommy,The Flint River Bodydumpers,2026-10-01
-Boban Stojkovic,Boban,The Sweenland Kings,2026-10-02
+name,short_name,team_name,established,logo,alt_logo
+Anthony Trotta,Trotta,The Pontiac Firebirds,2026-10-01,images/teams/trotta.webp,images/teams/trotta-alt.webp
+Connor Dalton,Connor,The Bo-Buffalo Trouble Bubble,2026-10-01,images/teams/connor.webp,images/teams/connor-alt.webp
+Tommy Wilson,Tommy,The Flint River Bodydumpers,2026-10-01,images/teams/tommy.webp,images/teams/tommy-alt.webp
+Boban Stojkovic,Boban,The Sweenland Kings,2026-10-02,images/teams/boban.webp,images/teams/boban-alt.webp

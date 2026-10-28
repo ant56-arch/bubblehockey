@@ -1,4 +1,4 @@
-/* UWM Bubble Hockey League site. All data lives in /data (see README). */
+/* Bubble Hockey League site. All data lives in /data (see README). */
 const PAGES = [
   ['home', 'Home'], ['rules', 'Rules'], ['members', 'Members'],
   ['gamelog', 'Game Log'], ['gamelog-history', 'Game Log History'],
@@ -56,6 +56,8 @@ const dateLabel = d => { const [y, m, dd] = d.split('-'); return new Date(+y, +m
 const cur = () => D.config.currentMonth;
 const monthGames = m => D.games.filter(g => g.month === m);
 const pastMonths = () => [...new Set([...D.games.map(g => g.month), ...D.playoffs.map(p => p.month)])].filter(m => m && m !== cur()).sort().reverse();
+const member = n => D.members.find(m => m.short_name === n);
+const who = (n, size = 26) => { const m = member(n); return `<span class="who">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}</span></span>`; };
 const pct = x => (isFinite(x) ? (x * 100).toFixed(1) + '%' : '–');
 
 function standingsFor(games) {
@@ -90,16 +92,17 @@ const STAT_KEY = `<details><summary>Stat key</summary><div class="inner"><ul cla
 
 function standingsTable(rows, limit) {
   rows = limit ? rows.slice(0, limit) : rows;
-  const n = x => `<td class="n">${x}</td>`;
-  return `<div class="table-scroll"><table><thead><tr><th>#</th><th>Player</th>${['GP', 'W', 'L', 'OTW', 'OTL', 'PTS', 'PTS%', 'GF', 'GA', 'GD', 'SF', 'SA', 'Shot%', 'SV%', 'SO', 'Home', 'Road', 'Strk'].map(h => `<th class="n">${h}</th>`).join('')}</tr></thead><tbody>${
-    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${esc(r.name)}</td>${n(r.gp)}${n(r.w)}${n(r.l)}${n(r.otw)}${n(r.otl)}<td class="n"><b>${r.pts}</b></td>${n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–')}${n(r.gf)}${n(r.ga)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf)}${n(r.sa)}${n(r.sf ? pct(r.gf / r.sf) : '–')}${n(r.sa ? pct(1 - r.ga / r.sa) : '–')}${n(r.so)}${n(r.hw + '-' + r.hl)}${n(r.rw + '-' + r.rl)}${n(r.streak)}</tr>`).join('')
-  }</tbody></table></div>`;
+  const n = (x, opt) => `<td class="n${opt ? ' opt' : ''}">${x}</td>`;
+  const heads = [['GP'], ['W'], ['L'], ['OTW'], ['OTL'], ['PTS'], ['PTS%', 1], ['GF', 1], ['GA', 1], ['GD'], ['SF', 1], ['SA', 1], ['Shot%', 1], ['SV%', 1], ['SO', 1], ['Home', 1], ['Road', 1], ['Strk']];
+  return `<div class="stand"><div class="table-scroll"><table><thead><tr><th>#</th><th>Player</th>${heads.map(([h, o]) => `<th class="n${o ? ' opt' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
+    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name)}</td>${n(r.gp)}${n(r.w)}${n(r.l)}${n(r.otw)}${n(r.otl)}<td class="n"><b>${r.pts}</b></td>${n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 1)}${n(r.gf, 1)}${n(r.ga, 1)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 1)}${n(r.sa, 1)}${n(r.sf ? pct(r.gf / r.sf) : '–', 1)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 1)}${n(r.so, 1)}${n(r.hw + '-' + r.hl, 1)}${n(r.rw + '-' + r.rl, 1)}${n(r.streak)}</tr>`).join('')
+  }</tbody></table></div><button class="more-stats" type="button">Show all stats</button></div>`;
 }
 
 function gamesTable(games) {
   if (!games.length) return '<p class="muted">No games played yet.</p>';
-  return `<div class="table-scroll"><table><thead><tr><th class="n">#</th><th>Date</th><th>Home</th><th class="n">Score</th><th>Road</th><th class="n">Shots</th><th></th></tr></thead><tbody>${
-    [...games].sort(cmpNew).map(g => `<tr><td class="n">${g.id}</td><td>${dateLabel(g.date)}</td><td class="${g.hg > g.rg ? 'win' : ''}">${esc(g.home)}</td><td class="n">${g.hg} – ${g.rg}</td><td class="${g.rg > g.hg ? 'win' : ''}">${esc(g.road)}</td><td class="n">${g.hs || g.rs ? `${g.hs} – ${g.rs}` : ''}</td><td>${g.ot ? '<span class="tag">OT</span>' : ''}${!g.hg || !g.rg ? '<span class="tag">SO</span>' : ''}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-scroll"><table class="games"><thead><tr><th class="n opt">#</th><th>Date</th><th>Home</th><th class="n">Score</th><th>Road</th><th class="n opt">Shots</th><th></th></tr></thead><tbody>${
+    [...games].sort(cmpNew).map(g => `<tr><td class="n opt">${g.id}</td><td class="nowrap">${dateLabel(g.date)}</td><td class="${g.hg > g.rg ? 'win' : ''}">${who(g.home, 20)}</td><td class="n nowrap">${g.hg} – ${g.rg}</td><td class="${g.rg > g.hg ? 'win' : ''}">${who(g.road, 20)}</td><td class="n opt">${g.hs || g.rs ? `${g.hs} – ${g.rs}` : ''}</td><td>${g.ot ? '<span class="tag">OT</span>' : ''}${!g.hg || !g.rg ? '<span class="tag">SO</span>' : ''}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* Plain-text content: "# title", "## heading", "• bullet", anything else is a paragraph. */
@@ -142,7 +145,7 @@ function championOf(month) { return D.playoffs.some(p => p.month === month) ? bu
 function bracketHTML(month) {
   const { G, champion, live } = buildBracket(month);
   const card = g => {
-    const side = (p, seed, won, ph) => `<div class="side ${won ? 'won' : ''}"><span>${seed ? `<span class="seed">${seed}</span>` : ''}${esc(p) || `<span class="muted">${ph}</span>`}</span>${won ? '<span>✔</span>' : ''}</div>`;
+    const side = (p, seed, won, ph) => `<div class="side ${won ? 'won' : ''}"><span>${seed ? `<span class="seed">${seed}</span>` : ''}${p ? who(p, 22) : `<span class="muted">${ph}</span>`}</span>${won ? '<span>✔</span>' : ''}</div>`;
     return `<div class="match ${g.skipped ? 'skipped' : ''}"><div class="gname">Game ${g.n}${g.n === 7 ? ' · Championship' : ''}${g.skipped ? ' · not needed' : g.n === 7 ? ' · only if needed' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, 'TBD')}${side(g.b, g.sb, g.w && g.w === g.b, 'TBD')}</div>`;
   };
   const col = (title, ns) => `<div class="round"><h3>${title}</h3><div class="matches">${ns.map(n => card(G[n])).join('')}</div></div>`;
@@ -160,7 +163,7 @@ const view = {
     const prev = pastMonths().find(x => monthGames(x).length);
     const useNow = now.some(r => r.gp), board = useNow ? now : standingsFor(monthGames(prev || ''));
     const lastChamp = pastMonths().map(championOf).find(Boolean);
-    return `<h1>${esc(t.title || D.config.leagueName)}</h1>${t.html.split('<h2>')[0]}
+    return `<div class="hero"><img class="hero-logo" src="images/league-logo.webp" alt="${esc(D.config.leagueName)} logo"><div><h1>${esc(t.title || D.config.leagueName)}</h1>${t.html.split('<h2>')[0]}</div></div>
       <div class="grid">
         <div class="card stat"><div class="num">${esc(board[0]?.gp ? board[0].name : '—')}</div><div class="label">${useNow ? 'Current leader' : (prev ? monthLabel(prev) + ' leader' : 'Leader')}</div></div>
         <div class="card stat"><div class="num">${monthGames(m).length}</div><div class="label">Games in ${m ? monthLabel(m) : 'this month'}</div></div>
@@ -177,8 +180,8 @@ const view = {
   },
   members() {
     const ini = n => n.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    return `<h1>Members</h1><p class="lead">${D.members.length} players in the league.</p><div class="grid">${D.members.map(m =>
-      `<div class="card member"><div class="avatar">${esc(ini(m.name))}</div><div><b>${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>${m.established ? `<div class="muted">Established ${dateLabel(m.established)}</div>` : ''}</div></div>`).join('')}</div>`;
+    return `<h1>Members</h1><p class="lead">${D.members.length} players in the league.</p><div class="grid members">${D.members.map(m =>
+      `<div class="card member">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}<div class="minfo"><b>${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>${m.established ? `<div class="muted">Established ${dateLabel(m.established)}</div>` : ''}</div>${m.alt_logo ? `<img class="alogo" src="${esc(m.alt_logo)}" alt="${esc(m.team_name)} alternate logo" loading="lazy">` : ''}</div>`).join('')}</div>`;
   },
   gamelog() {
     const m = cur(), games = monthGames(m);
@@ -231,6 +234,7 @@ function route() {
     const open = document.getElementById('nav').classList.toggle('open');
     e.currentTarget.setAttribute('aria-expanded', open);
   };
+  document.addEventListener('click', e => { const b = e.target.closest('.more-stats'); if (!b) return; const on = b.closest('.stand').classList.toggle('show-all'); b.textContent = on ? 'Show fewer stats' : 'Show all stats'; });
   window.addEventListener('hashchange', route);
   route();
 })();

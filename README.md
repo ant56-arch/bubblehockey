@@ -1,4 +1,4 @@
-# UWM Bubble Hockey League
+# Bubble Hockey League
 
 Static website (no build step). Tabs: Home, Rules, Members, Game Log, Game Log History, Standings, Standings History, Playoff Bracket, Playoff History.
 

@@ -1,4 +1,4 @@
-# UWM Bubble Hockey League Rules
+# Bubble Hockey League Rules
 ## General Gameplay
 • Objective: Score more goals than your opponent by navigating the puck into their net using the mechanical rods.
 • Match Format: Three periods (typically 60 or 90 seconds each) tracked by a countdown clock. Most goals wins.
