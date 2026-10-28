@@ -30,6 +30,8 @@ function parseCSV(text) {
 }
 
 const D = { problems: [] };
+/* A game counts in the standings and records when it has two different scores (playoff games count too). */
+const isCounted = g => !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
 
 /* All the data is static files in /data: games.json (every game, including playoff games), members.csv, config.json and the page text. */
 async function load() {
@@ -64,7 +66,7 @@ async function load() {
     D.games.push({ seq: i, date, home: g.home, road: g.road, hg, rg, hs: +g.homeShots || 0, rs: +g.roadShots || 0, ot: !!g.overtime, playoff, winner: g.winner || '', month });
   });
   D.games.sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq);
-  const count = {}; D.games.forEach(g => { if (!g.playoff) g.id = count[g.month] = (count[g.month] || 0) + 1; });
+  const count = {}; D.games.forEach(g => { if (isCounted(g)) g.id = count[g.month] = (count[g.month] || 0) + 1; });
 }
 
 /* ---------- helpers ---------- */
@@ -74,7 +76,7 @@ const monthLabel = m => { const [y, mo] = m.split('-'); return new Date(+y, +mo 
 const dateLabel = d => { const [y, m, dd] = d.split('-'); return new Date(+y, +m - 1, +dd).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' }); };
 /* The current month is simply the month it is today (on the viewer's clock). */
 const cur = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
-const monthGames = m => D.games.filter(g => g.month === m && !g.playoff);      // regular-season games
+const monthGames = m => D.games.filter(g => g.month === m && isCounted(g));      // every game that counts, playoff games included
 const hasPlayoffs = m => D.games.some(g => g.month === m && g.playoff);
 const pastMonths = () => [...new Set(D.games.map(g => g.month))].filter(m => m !== cur()).sort().reverse();
 const member = n => D.members.find(m => m.short_name === n);
@@ -111,7 +113,7 @@ function standingsFor(games) {
 
 /* Every player's record in every month: wins-losses-overtime losses, and points. */
 function monthlyRecords() {
-  const months = [...new Set(D.games.filter(g => !g.playoff).map(g => g.month))].sort().reverse();
+  const months = [...new Set(D.games.filter(isCounted).map(g => g.month))].sort().reverse();
   if (!months.length) return '';
   const by = Object.fromEntries(months.map(m => [m, Object.fromEntries(standingsFor(monthGames(m)).map(r => [r.name, r]))]));
   return `<h2>Record by month</h2><div class="table-scroll"><table><thead><tr><th>Player</th>${months.map(m => `<th class="n">${monthLabel(m)}</th>`).join('')}</tr></thead><tbody>${
@@ -138,7 +140,7 @@ function standingsTable(rows, limit) {
 function gamesTable(games) {
   if (!games.length) return '<p class="muted">No games played yet.</p>';
   return `<div class="table-scroll"><table class="games"><thead><tr><th class="n opt">#</th><th>Date</th><th>Home</th><th class="n">Score</th><th>Road</th><th class="n opt">Shots</th><th></th></tr></thead><tbody>${
-    [...games].sort(cmpNew).map(g => `<tr><td class="n opt">${g.id}</td><td class="nowrap">${dateLabel(g.date)}</td><td class="${g.hg > g.rg ? 'win' : ''}">${who(g.home, 20)}</td><td class="n nowrap">${g.hg} – ${g.rg}</td><td class="${g.rg > g.hg ? 'win' : ''}">${who(g.road, 20)}</td><td class="n opt">${g.hs || g.rs ? `${g.hs} – ${g.rs}` : ''}</td><td>${g.ot ? '<span class="tag">OT</span>' : ''}${!g.hg || !g.rg ? '<span class="tag">SO</span>' : ''}</td></tr>`).join('')}</tbody></table></div>`;
+    [...games].sort(cmpNew).map(g => `<tr><td class="n opt">${g.id}</td><td class="nowrap">${dateLabel(g.date)}</td><td class="${g.hg > g.rg ? 'win' : ''}">${who(g.home, 20)}</td><td class="n nowrap">${g.hg} – ${g.rg}</td><td class="${g.rg > g.hg ? 'win' : ''}">${who(g.road, 20)}</td><td class="n opt">${g.hs || g.rs ? `${g.hs} – ${g.rs}` : ''}</td><td>${g.playoff ? '<span class="tag">Playoff</span>' : ''}${g.ot ? '<span class="tag">OT</span>' : ''}${!g.hg || !g.rg ? '<span class="tag">SO</span>' : ''}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* Plain-text content: "# title", "## heading", "• bullet", anything else is a paragraph. */
@@ -158,14 +160,13 @@ function textBlocks(txt) {
 }
 
 /* ---------- playoffs: 4 players, double elimination, 7 games ---------- */
-/* Playoff games live in games.json with "playoff": true. Each one is matched to the next open bracket game with the same two players. */
+/* Playoff games live in games.json with "playoff": true (they count in the standings like any game). Seeds come from the month's other games. Each one is matched to the next open bracket game with the same two players. */
 function seedsFor(month, asOf) {
   const override = D.seedsOverride[month];
   const po = D.games.filter(g => g.playoff && g.month === month);
   const shown = po.filter(g => !asOf || (g.date && g.date <= asOf));
   if (override && override.length === 4) return { seeds: override, live: !shown.length };
-  const cutoff = (po.find(g => g.date) || {}).date || null;      // seeds come from the regular season before the playoffs began
-  const top = standingsFor(monthGames(month).filter(g => !cutoff || g.date < cutoff)).filter(r => r.gp).slice(0, 4).map(r => r.name);
+  const top = standingsFor(monthGames(month).filter(g => !g.playoff)).filter(r => r.gp).slice(0, 4).map(r => r.name);
   return { seeds: [0, 1, 2, 3].map(i => top[i] || ''), live: !shown.length };
 }
 function bracketModel(seeds, data) {
@@ -182,7 +183,7 @@ function bracketModel(seeds, data) {
 }
 /* With asOf (a date), only playoff games dated on or before it count, so a future playoff day does not show results. */
 function buildBracket(month, asOf) {
-  const { seeds, live } = seedsFor(month, asOf), data = {}, scores = {};
+  const { seeds, live } = seedsFor(month, asOf), data = {}, scores = {}, dates = {};
   for (const g of D.games.filter(g => g.playoff && g.month === month && (!asOf || (g.date && g.date <= asOf)))) {
     const m = bracketModel(seeds, data);
     const n = [1, 2, 3, 4, 5, 6, 7].find(k => { const x = m.G[k]; return x.a && x.b && !x.w && !x.skipped && [x.a, x.b].includes(g.home) && [x.a, x.b].includes(g.road); });
@@ -190,8 +191,9 @@ function buildBracket(month, asOf) {
     const hasScores = !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
     data['g' + n] = hasScores ? (g.hg > g.rg ? g.home : g.road) : g.winner;
     if (hasScores) scores[n] = { [g.home]: g.hg, [g.road]: g.rg };
+    dates[n] = g.date;
   }
-  return { ...bracketModel(seeds, data), scores, live };
+  return { ...bracketModel(seeds, data), scores, dates, live };
 }
 function championOf(month) { return hasPlayoffs(month) ? buildBracket(month).champion : ''; }
 
@@ -226,7 +228,7 @@ const view = {
       </div>
       ${typeof todayCard === 'function' ? todayCard() : ''}
       <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4)}
-      <h2>Latest games</h2>${gamesTable(D.games.filter(g => !g.playoff).sort(cmpNew).slice(0, 5))}
+      <h2>Latest games</h2>${gamesTable(D.games.filter(isCounted).sort(cmpNew).slice(0, 5))}
       ${t.html.includes('<h2>') ? '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') : ''}`;
   },
   rules() {
@@ -236,12 +238,12 @@ const view = {
   gamelog() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
     const c = chipsFor('gamelog', months, m => m === cur() ? 'current' : monthGames(m).length + ' games'), games = monthGames(c.sel);
-    return `<h1>Game Log</h1><p class="lead">${c.sel === cur() ? `${monthLabel(c.sel)} · ${games.length} games. The log starts fresh each month; earlier months are in the buttons below.` : `${monthLabel(c.sel)} · ${games.length} games.`}</p>${c.html}${gamesTable(games)}`;
+    return `<h1>Game Log</h1><p class="lead">${c.sel === cur() ? `${monthLabel(c.sel)} · ${games.length} games. Playoff games are included and tagged. The log starts fresh each month; earlier months are in the buttons below.` : `${monthLabel(c.sel)} · ${games.length} games.`}</p>${c.html}${gamesTable(games)}`;
   },
   standings() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
     const c = chipsFor('standings', months, m => m === cur() ? 'current' : ''), ch = c.sel === cur() ? '' : championOf(c.sel);
-    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}${monthlyRecords()}`;
+    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss. Playoff games count too.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}${monthlyRecords()}`;
   },
   playoffs() {
     const months = [cur(), ...pastMonths().filter(hasPlayoffs)];

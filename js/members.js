@@ -20,7 +20,7 @@ function playoffRecord(name) {
 
 /* Career numbers that the standings table does not have: best win, longest win streak, head to head, month by month. */
 function playerProfile(name) {
-  const mine = D.games.filter(g => !g.playoff && (g.home === name || g.road === name)).sort(cmpOld);
+  const mine = D.games.filter(g => isCounted(g) && (g.home === name || g.road === name)).sort(cmpOld);
   const won = g => (g.home === name) === (g.hg > g.rg), opp = g => (g.home === name ? g.road : g.home);
   let best = null, run = 0, longest = 0; const h2h = {};
   for (const g of mine) {
@@ -38,7 +38,7 @@ function playerProfile(name) {
 
 view.members = function () {
   const ini = n => n.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  const career = Object.fromEntries(standingsFor(D.games.filter(g => !g.playoff)).map(r => [r.name, r]));
+  const career = Object.fromEntries(standingsFor(D.games.filter(isCounted)).map(r => [r.name, r]));
   const now = standingsFor(monthGames(cur()));
   const titleCount = m => playoffRecord(m.short_name).titles.length;
   const cards = D.members.map(m => {

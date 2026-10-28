@@ -27,11 +27,11 @@ Easier: open the **Add Game** tab (`#/add`). Fill in the form and it builds the 
 If something is mistyped, the site shows a yellow box at the top saying what is wrong (a missing comma, a name that is not a member, a missing score) instead of breaking.
 
 ### Playoff games
-Add them to the same file with `"playoff": true`, either the scores or `"winner"`, and a `date` (or just a `"month": "2026-11"` if you do not know the day; a playoff game without a date never shows on a schedule day):
+A playoff game is a normal game with `"playoff": true`. **It still counts in the standings and everyone's records** (the Game Log tags it "Playoff"):
 ```json
-{ "date": "2026-11-26", "home": "Connor", "road": "Boban", "homeScore": 4, "roadScore": 1, "playoff": true }
+{ "date": "2026-11-25", "home": "Connor", "road": "Boban", "homeScore": 4, "roadScore": 1, "playoff": true }
 ```
-The Playoffs tab matches each one to the next open game in the 7-game double-elimination bracket by its two players, so enter them in the order they were played. Seeds come from the regular-season standings before the first playoff game. To force the seeds for a month, add `"playoffSeeds": { "2026-10": ["Connor", "Trotta", "Tommy", "Boban"] }` (as October has). Playoff games do not count in standings.
+The Playoffs tab matches each playoff game to the next open game in the 7-game double-elimination bracket by its two players, so enter them in the order they were played. Seeds come from the standings of the month's non-playoff games. To force the seeds for a month, add `"playoffSeeds": { "2026-10": ["Connor", "Trotta", "Tommy", "Boban"] }` (as October has). If you only know who won, a playoff game can use `"winner": "Name"` and a `date` (or just `"month": "2026-11"`) instead of scores; those do not count in the standings.
 
 ## Publishing the update
 GitHub Pages republishes whenever `main` changes, about a minute after you commit.
@@ -54,7 +54,7 @@ The **Schedule** tab builds the matchups from the date; there is nothing to ente
 
 The schedule gives these days off automatically: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday on a weekend is observed on the nearest weekday (Saturday becomes Friday, Sunday becomes Monday).
 
-Playoffs take 2 game days, placed just before the month's last game day, which is kept open as a makeup day. Playoff days are never placed on a day that already has regular games logged, so if regular games run into the planned playoff days the playoffs move later in the month. Optional settings in `data/config.json`:
+Playoffs take up to 2 game days, planned for just before the month's last game day, which is kept open as a makeup day. Once playoff games are logged, the days they were actually played become the playoff days (October's were all on Oct 28), and the days after are open. A planned playoff day is never placed on a day that already has regular games logged. Optional settings in `data/config.json`:
 ```
 "schedule": { "roundsPerDay": 0, "skipDates": ["2026-12-24"], "holidays": true, "playoffDays": 2, "makeupDay": true,
               "playoffDates": { "2026-10": ["2026-10-29", "2026-10-30"] } }

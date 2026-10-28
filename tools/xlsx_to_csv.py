@@ -67,7 +67,12 @@ for date, home, road, hg, rg, hs, rs, ot in games:
     if ot == "yes": e["overtime"] = True
     if hs != "" and rs != "": e["homeShots"], e["roadShots"] = int(hs), int(rs)      # 0 shots is a real value
     entries.append(e)
-entries += [g for g in old.get("games", []) if g.get("playoff")]
+key = lambda g: (g.get("date"), g.get("home"), g.get("road"), g.get("homeScore"), g.get("roadScore"))
+flagged = {key(g) for g in old.get("games", []) if g.get("playoff") and "homeScore" in g}
+for e in entries:
+    if key(e) in flagged: e["playoff"] = True                      # a logged game that was a playoff game
+matched = {key(e) for e in entries}
+entries += [g for g in old.get("games", []) if g.get("playoff") and key(g) not in matched]   # winner-only playoff entries
 line = lambda g: "    { " + ", ".join('"%s": %s' % (k, json.dumps(v)) for k, v in g.items()) + " }"
 (out / "games.json").write_text('{\n  "_how_to_add": %s,\n  "playoffSeeds": %s,\n  "games": [\n%s\n  ]\n}\n' % (
     json.dumps(old.get("_how_to_add", "See README.md, 'Adding a game'.")), json.dumps(old.get("playoffSeeds", {})), ",\n".join(line(g) for g in entries)))

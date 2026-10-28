@@ -12,7 +12,7 @@ view.add = function () {
       <div class="row2">${num('a-hs', 'Home score')}${num('a-rs', 'Road score')}</div>
       <label class="check"><input id="a-ot" type="checkbox"> Decided in overtime</label>
       <div class="row2">${num('a-hsh', 'Home shots (optional)')}${num('a-rsh', 'Road shots (optional)')}</div>
-      <label class="check"><input id="a-po" type="checkbox"> Playoff game</label>
+      <label class="check"><input id="a-po" type="checkbox"> Playoff game <span class="muted">(still counts in the standings)</span></label>
       <label class="f" id="a-win-wrap" hidden>Winner <span class="muted">(only if you are not entering scores)</span><select id="a-win"><option value=""></option></select></label>
     </form></div>
     <div id="a-out"></div>

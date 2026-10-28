@@ -43,6 +43,13 @@ function monthPlan(month) {
   const all = gameDaysIn(month), fixed = (SCHED().playoffDates || {})[month];       // optional: pin a month's playoff dates in config.json
   if (Array.isArray(fixed) && fixed.length) return { reg: all.filter(d => d < fixed[0]), po: fixed, spare: all.filter(d => d > fixed[fixed.length - 1]) };
   const n = Math.min(2, Math.max(0, +SCHED().playoffDays || 0), all.length);
+  // Once playoff games are logged, the days they were played on are the playoff days (plus the next planned day if the final is still to come).
+  const played = [...new Set(D.games.filter(g => g.playoff && g.month === month && g.date).map(g => g.date))].sort();
+  if (played.length) {
+    const extra = buildBracket(month).champion ? [] : all.filter(d => d > played[played.length - 1]).slice(0, Math.max(0, n - played.length));
+    const po = [...played, ...extra];
+    return { reg: all.filter(d => d < po[0]), po, spare: all.filter(d => d > po[po.length - 1]) };
+  }
   // Playoffs never land on a day that already has regular games logged: they start after the last logged regular game.
   const lastReg = D.games.filter(g => !g.playoff && g.month === month).reduce((m, g) => (g.date > m ? g.date : m), '');
   const idx = lastReg ? all.findIndex(d => d > lastReg) : 0, firstOpen = idx === -1 ? all.length : idx;
@@ -97,14 +104,21 @@ function slateFor(date) {
 const PO_LABELS = { 1: ['Seed 1', 'Seed 4'], 2: ['Seed 2', 'Seed 3'], 3: ['Loser G1', 'Loser G2'], 4: ['Winner G1', 'Winner G2'], 5: ['Loser G4', 'Winner G3'], 6: ['Winner G4', 'Winner G5'], 7: ['Winner G6', 'Loser G6'] };
 const PO_SPLITS = { 1: [[1, 2, 3, 4, 5, 6, 7]], 2: [[1, 2, 3, 4], [5, 6, 7]], 3: [[1, 2], [3, 4], [5, 6, 7]], 4: [[1, 2], [3, 4], [5], [6, 7]], 5: [[1, 2], [3, 4], [5], [6], [7]] };
 function playoffView(date) {
-  const month = date.slice(0, 7), { po } = monthPlan(month), { G, live } = buildBracket(month, date);
-  const rows = PO_SPLITS[po.length][po.indexOf(date)].map(n => ({ n, a: G[n].a, b: G[n].b, sa: G[n].sa, sb: G[n].sb, w: G[n].w, skipped: G[n].skipped, la: PO_LABELS[n]?.[0], lb: PO_LABELS[n]?.[1] }));
-  return { date, playoff: true, rows, projected: live && date >= todayStr() };
+  const month = date.slice(0, 7), { po } = monthPlan(month), B = buildBracket(month), { G } = B;
+  const mk = n => ({ n, a: G[n].a, b: G[n].b, sa: G[n].sa, sb: G[n].sb, w: G[n].w, skipped: G[n].skipped, la: PO_LABELS[n]?.[0], lb: PO_LABELS[n]?.[1], score: B.scores[n] });
+  const nums = [1, 2, 3, 4, 5, 6, 7];
+  let rows = nums.filter(n => B.dates[n] === date).map(mk);                          // games played on this day
+  const lastPlayed = Object.values(B.dates).sort().pop() || '', open = po.filter(d => d > lastPlayed);
+  if (open.includes(date)) {                                                         // games still to play, split over the days left
+    const pending = nums.filter(n => !G[n].w && !G[n].skipped), split = PO_SPLITS[Math.min(open.length, 5)];
+    rows = rows.concat(split[open.indexOf(date)].filter(n => pending.includes(n)).map(mk));
+  }
+  return { date, playoff: true, rows, projected: B.live && date >= todayStr() };
 }
 function dayView(date) {
   const kind = dayKind(date); if (!kind) return null;
   if (kind === 'playoff') return playoffView(date);
-  if (kind === 'spare') return { date, spare: true, rows: [], extra: D.games.filter(g => g.date === date && !g.playoff) };
+  if (kind === 'spare') return { date, spare: true, rows: [], extra: D.games.filter(g => g.date === date && isCounted(g)) };
   const slate = slateFor(date);
   const played = D.games.filter(g => g.date === date && !g.playoff), used = new Set();
   const rows = slate.map(s => {
@@ -122,10 +136,10 @@ function playoffDayCard(v) {
   const today = v.date === todayStr();
   const row = r => {
     const side = (p, seed, label, won) => `<span class="side ${won ? 'win' : ''}">${p ? who(p, 26) + (seed ? ` <span class="seed">#${seed}</span>` : '') : `<span class="muted">${label || 'TBD'}</span>`}</span>`;
-    return `<div class="mrow ${r.skipped ? 'skipped' : ''}"><span class="gno">${r.n}</span>${side(r.a, r.sa, r.la, r.w && r.w === r.a)}<span class="vs">${r.skipped ? 'not needed' : r.w ? '✔' : (r.n === 7 ? 'if needed' : 'vs')}</span>${side(r.b, r.sb, r.lb, r.w && r.w === r.b).replace('class="side', 'class="side r')}</div>`;
+    return `<div class="mrow ${r.skipped ? 'skipped' : ''}"><span class="gno">${r.n}</span>${side(r.a, r.sa, r.la, r.w && r.w === r.a)}<span class="vs">${r.skipped ? 'not needed' : r.score ? `<b>${r.score[r.a]} – ${r.score[r.b]}</b>` : r.w ? '✔' : (r.n === 7 ? 'if needed' : 'vs')}</span>${side(r.b, r.sb, r.lb, r.w && r.w === r.b).replace('class="side', 'class="side r')}</div>`;
   };
   return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b><span class="tag">Playoffs</span>${today ? '<span class="tag">Today</span>' : ''}<span class="muted">${v.rows.length} games</span></div>
-    <div class="mhead"><span></span><span>Matchup</span><span></span><span class="r"></span></div>${v.rows.map(row).join('')}
+    ${v.rows.length ? `<div class="mhead"><span></span><span>Matchup</span><span></span><span class="r"></span></div>${v.rows.map(row).join('')}` : '<p class="muted" style="margin:0">All playoff games are done.</p>'}
     ${v.projected ? '<p class="muted" style="margin:10px 0 0">Seeds are projected from the current standings until the regular season ends.</p>' : ''}</div>`;
 }
 function spareDayCard(v) {
