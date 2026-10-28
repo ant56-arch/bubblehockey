@@ -5,9 +5,9 @@ Usage: python3 tools/xlsx_to_csv.py BUBBLE_HOCKEY.xlsx
 Needs: pip install openpyxl
 
 Reads:  Home, Rules, Members, every "<Month> Game Log" sheet, "Game Log History",
-        and "Playoff History" (and "Playoffs" if it has been filled in).
-Writes: home.txt, rules.txt, members.csv, games.csv, playoffs.csv
-Standings are NOT imported; the site calculates them from games.csv.
+Writes: home.txt, rules.txt, members.csv, games.json (regular-season games; any playoff games and
+        playoffSeeds already in games.json are kept)
+Standings are NOT imported; the site calculates them from the games.
 """
 import csv, re, sys, pathlib, datetime
 from openpyxl import load_workbook
@@ -59,30 +59,16 @@ with open(out / "members.csv", "w", newline="") as f:
             short = next((p for p in parts if p in used), parts[0])
             w.writerow([r[0], short, r[1] or "", iso(r[2]) if r[2] else "", old.get(short, {}).get("logo", ""), old.get(short, {}).get("alt_logo", "")])
 
-with open(out / "games.csv", "w", newline="") as f:
-    w = csv.writer(f); w.writerow(["game_id", "date", "home", "road", "home_goals", "road_goals", "home_shots", "road_shots", "overtime"])
-    for i, g in enumerate(games, 1): w.writerow([i] + g)
-
-# --- playoff history: seeds + winner of each game, read from the bracket layout
-def bracket(ws, month):
-    def above(label):
-        for row in ws.iter_rows():
-            for c in row:
-                if c.value == label: return ws.cell(c.row - 1, c.column).value
-    def winner(n):
-        for row in ws.iter_rows():
-            for c in row:
-                if isinstance(c.value, str) and re.match(rf"Game {n}\b", c.value): return ws.cell(c.row, c.column + 1).value
-    seeds = [above(l) for l in ("First Place Team", "Second Place Team", "Third Place Team", "Fourth Place Team")]
-    g = [winner(n) for n in range(1, 7)]
-    champ = above("Champion")
-    g7 = champ if g[5] and g[5] != g[3] else ""
-    return [month] + seeds + [x or "" for x in g] + [g7]
-
-with open(out / "playoffs.csv", "w", newline="") as f:
-    w = csv.writer(f); w.writerow(["month", "seed1", "seed2", "seed3", "seed4", "g1", "g2", "g3", "g4", "g5", "g6", "g7"])
-    ws = wb["Playoff History"]
-    m = re.search(r"for (\w+) (\d{4})", ws["A1"].value)
-    month = datetime.datetime.strptime(f"{m.group(1)} {m.group(2)}", "%B %Y").strftime("%Y-%m")
-    w.writerow(bracket(ws, month))
-print("done:", len(games), "games")
+import json
+old = json.loads((out / "games.json").read_text()) if (out / "games.json").exists() else {}
+entries = []
+for date, home, road, hg, rg, hs, rs, ot in games:
+    e = {"date": date, "home": home, "road": road, "homeScore": int(hg), "roadScore": int(rg)}
+    if ot == "yes": e["overtime"] = True
+    if hs not in ("", None) and rs not in ("", None) and (int(hs) or int(rs)): e["homeShots"], e["roadShots"] = int(hs), int(rs)
+    entries.append(e)
+entries += [g for g in old.get("games", []) if g.get("playoff")]
+line = lambda g: "    { " + ", ".join('"%s": %s' % (k, json.dumps(v)) for k, v in g.items()) + " }"
+(out / "games.json").write_text('{\n  "_how_to_add": %s,\n  "playoffSeeds": %s,\n  "games": [\n%s\n  ]\n}\n' % (
+    json.dumps(old.get("_how_to_add", "See README.md, 'Adding a game'.")), json.dumps(old.get("playoffSeeds", {})), ",\n".join(line(g) for g in entries)))
+print("done:", len(games), "regular games")

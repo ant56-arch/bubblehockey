@@ -164,6 +164,12 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .mrow .side { display: flex; align-items: center; min-width: 0; }
 @media (max-width: 640px) { .mhead, .mrow { grid-template-columns: 18px 1fr 66px 1fr; gap: 4px; font-size: .9rem; } .mrow .vs { font-size: .8rem; white-space: nowrap; } .mrow .who { gap: 5px; } .mrow .tlogo { width: 22px !important; height: 22px !important; } }
 
+/* Notices and the add-a-game output */
+.alert { background: color-mix(in srgb, #f5b301 18%, var(--bg)); border: 1px solid #f5b301; border-radius: 16px; padding: 12px 16px; margin: 20px 0 0; font-size: .92rem; }
+.alert ul { margin: 6px 0 0; padding-left: 18px; }
+.snip { background: var(--surface); border-radius: 16px; padding: 14px 16px; overflow-x: auto; font-size: .82rem; white-space: pre; margin: 0 0 12px; }
+code { background: var(--surface); border-radius: 6px; padding: 1px 6px; font-size: .88em; }
+
 /* Motion: content eases in; cards lift on hover. Disabled for people who prefer less motion. */
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 #app > * { animation: rise .45s cubic-bezier(.2, .7, .2, 1) both; }

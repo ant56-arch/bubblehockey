@@ -29,57 +29,53 @@ function parseCSV(text) {
   return body.map(r => Object.fromEntries(keys.map((k, i) => [k, (r[i] ?? '').trim()])));
 }
 
-const D = {};
-/* If data/firebase.json exists, the league data comes from Firestore (editable in the Admin tab);
-   otherwise it comes from the CSV files in /data. Each Firestore document holds one JSON string. */
-const FS = fb => `https://firestore.googleapis.com/v1/projects/${fb.projectId}/databases/(default)/documents`;
-async function fsList(col) {
-  const out = []; let tok = '';
-  do {
-    const r = await fetch(`${FS(D.fb)}/${col}?pageSize=300&key=${D.fb.apiKey}${tok ? '&pageToken=' + tok : ''}`, { cache: 'no-store' });
-    if (!r.ok) throw new Error('Firestore ' + r.status);
-    const j = await r.json(); out.push(...(j.documents || [])); tok = j.nextPageToken || '';
-  } while (tok);
-  return Object.fromEntries(out.map(d => [d.name.split('/').pop(), JSON.parse(d.fields?.json?.stringValue || 'null')]));
-}
-async function loadRemote() {
-  if (!D.fb) return null;
-  try {
-    const [league, months] = await Promise.all([fsList('league'), fsList('games')]);
-    if (!league.config) return null;
-    return { config: league.config, members: league.members || [], playoffs: league.playoffs || [], games: Object.values(months).flat() };
-  } catch { return null; }
-}
+const D = { problems: [] };
 
+/* All the data is static files in /data: games.json (every game, including playoff games), members.csv, config.json and the page text. */
 async function load() {
   const get = async (f, kind) => {
     try { const r = await fetch('data/' + f, { cache: 'no-cache' }); if (!r.ok) throw 0; return kind === 'json' ? r.json() : kind === 'text' ? r.text() : parseCSV(await r.text()); }
     catch { return kind === 'json' ? {} : kind === 'text' ? '' : []; }
   };
-  const fb = await get('firebase.json', 'json');
-  D.fb = fb.apiKey && fb.projectId ? fb : null;
-  const remote = await loadRemote();
-  D.source = remote ? 'firestore' : 'files';
-  const [fConfig, fMembers, fGames, fPlayoffs, home, rules] = await Promise.all([
-    remote ? null : get('config.json', 'json'), remote ? null : get('members.csv'), remote ? null : get('games.csv'), remote ? null : get('playoffs.csv'), get('home.txt', 'text'), get('rules.txt', 'text')]);
-  const config = remote ? remote.config : fConfig, members = remote ? remote.members : fMembers, games = remote ? remote.games : fGames, playoffs = remote ? remote.playoffs : fPlayoffs;
-  D.config = { leagueName: 'Bubble Hockey League', tagline: '', currentMonth: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
+  const [config, members, gamesText, home, rules] = await Promise.all([
+    get('config.json', 'json'), get('members.csv'), get('games.json', 'text'), get('home.txt', 'text'), get('rules.txt', 'text')]);
+  D.config = { leagueName: 'Bubble Hockey League', tagline: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
   D.members = members.map(m => ({ ...m, short_name: m.short_name || m.name }));
-  D.games = games.map(g => ({ ...g, id: +g.game_id || 0, hg: +g.home_goals, rg: +g.road_goals, hs: +g.home_shots || 0, rs: +g.road_shots || 0, ot: /^(y|yes|true|1|overtime|ot)$/i.test(g.overtime || ''), month: (g.date || '').slice(0, 7) }))
-    .filter(g => g.home && g.road && g.date && !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg);
-  D.playoffs = playoffs;
   D.home = home; D.rules = rules;
-  if (!D.config.currentMonth) D.config.currentMonth = D.games.map(g => g.month).sort().pop() || '';
+
+  let file = {};
+  try { file = JSON.parse(gamesText || '{}'); }
+  catch (e) { D.problems.push(`data/games.json has a typo and could not be read (${e.message}). Check for a missing comma, bracket or quote near the last game you added.`); }
+  D.seedsOverride = (!Array.isArray(file) && file.playoffSeeds) || {};
+  const known = new Set(D.members.map(m => m.short_name));
+  const num = v => (v === '' || v == null ? NaN : +v);
+  D.games = [];
+  (Array.isArray(file) ? file : file.games || []).forEach((g, i) => {
+    const where = `Game ${i + 1} in games.json (${g.date || 'no date'}, ${g.home || '?'} vs ${g.road || '?'})`;
+    const bad = msg => D.problems.push(`${where} was skipped: ${msg}.`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(g.date || '')) return bad('the date must look like 2026-11-03');
+    if (!g.home || !g.road || g.home === g.road) return bad('it needs two different players');
+    const unknown = [g.home, g.road].find(n => !known.has(n));
+    if (unknown) return bad(`"${unknown}" is not a member (names must match the short names in members.csv exactly)`);
+    const hg = num(g.homeScore), rg = num(g.roadScore), playoff = !!g.playoff, hasScores = !isNaN(hg) && !isNaN(rg);
+    if (!playoff && (!hasScores || hg === rg)) return bad('it needs two different scores (homeScore and roadScore)');
+    if (playoff && !(hasScores && hg !== rg) && ![g.home, g.road].includes(g.winner)) return bad('a playoff game needs two different scores or a "winner"');
+    D.games.push({ seq: i, date: g.date, home: g.home, road: g.road, hg, rg, hs: +g.homeShots || 0, rs: +g.roadShots || 0, ot: !!g.overtime, playoff, winner: g.winner || '', month: g.date.slice(0, 7) });
+  });
+  D.games.sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq);
+  const count = {}; D.games.forEach(g => { if (!g.playoff) g.id = count[g.month] = (count[g.month] || 0) + 1; });
 }
 
 /* ---------- helpers ---------- */
-const cmpOld = (a, b) => a.date.localeCompare(b.date) || a.id - b.id;
+const cmpOld = (a, b) => a.date.localeCompare(b.date) || a.seq - b.seq;
 const cmpNew = (a, b) => cmpOld(b, a);
 const monthLabel = m => { const [y, mo] = m.split('-'); return new Date(+y, +mo - 1, 1).toLocaleString('en', { month: 'long', year: 'numeric' }); };
 const dateLabel = d => { const [y, m, dd] = d.split('-'); return new Date(+y, +m - 1, +dd).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' }); };
-const cur = () => D.config.currentMonth;
-const monthGames = m => D.games.filter(g => g.month === m);
-const pastMonths = () => [...new Set([...D.games.map(g => g.month), ...D.playoffs.map(p => p.month)])].filter(m => m && m !== cur()).sort().reverse();
+/* The current month is simply the month it is today (on the viewer's clock). */
+const cur = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+const monthGames = m => D.games.filter(g => g.month === m && !g.playoff);      // regular-season games
+const hasPlayoffs = m => D.games.some(g => g.month === m && g.playoff);
+const pastMonths = () => [...new Set(D.games.map(g => g.month))].filter(m => m !== cur()).sort().reverse();
 const member = n => D.members.find(m => m.short_name === n);
 const who = (n, size = 26) => { const m = member(n); return `<span class="who">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}</span></span>`; };
 const UI = {};
@@ -110,6 +106,16 @@ function standingsFor(games) {
     for (let i = r.form.length - 1; i >= 0 && r.form[i] === last; i--) n++;
     return { ...r, streak: last ? last + n : '–' };
   }).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || a.name.localeCompare(b.name));
+}
+
+/* Every player's record in every month: wins-losses-overtime losses, and points. */
+function monthlyRecords() {
+  const months = [...new Set(D.games.filter(g => !g.playoff).map(g => g.month))].sort().reverse();
+  if (!months.length) return '';
+  const by = Object.fromEntries(months.map(m => [m, Object.fromEntries(standingsFor(monthGames(m)).map(r => [r.name, r]))]));
+  return `<h2>Record by month</h2><div class="table-scroll"><table><thead><tr><th>Player</th>${months.map(m => `<th class="n">${monthLabel(m)}</th>`).join('')}</tr></thead><tbody>${
+    D.members.map(mb => `<tr><td>${who(mb.short_name)}</td>${months.map(m => { const r = by[m][mb.short_name]; return r && r.gp ? `<td class="n nowrap">${r.w + r.otw}-${r.l}-${r.otl}<br><span class="muted">${r.pts} pts</span></td>` : '<td class="n muted">–</td>'; }).join('')}</tr>`).join('')}</tbody></table></div>
+    <p class="muted" style="margin-top:10px">Wins-losses-overtime losses (overtime wins count as wins), with total points.</p>`;
 }
 
 const STAT_KEY = `<details><summary>Stat key</summary><div class="inner"><ul class="key">
@@ -151,11 +157,14 @@ function textBlocks(txt) {
 }
 
 /* ---------- playoffs: 4 players, double elimination, 7 games ---------- */
+/* Playoff games live in games.json with "playoff": true. Each one is matched to the next open bracket game with the same two players. */
 function seedsFor(month) {
-  const row = D.playoffs.find(p => p.month === month);
-  if (row) return { seeds: [row.seed1, row.seed2, row.seed3, row.seed4], data: row };
-  const live = standingsFor(monthGames(month)).filter(r => r.gp).slice(0, 4).map(r => r.name);
-  return { seeds: [0, 1, 2, 3].map(i => live[i] || ''), data: {}, live: true };
+  const override = D.seedsOverride[month];
+  const po = D.games.filter(g => g.playoff && g.month === month);
+  if (override && override.length === 4) return { seeds: override, live: false };
+  const cutoff = po.length ? po[0].date : null;      // seeds come from the regular season before the playoffs began
+  const top = standingsFor(monthGames(month).filter(g => !cutoff || g.date < cutoff)).filter(r => r.gp).slice(0, 4).map(r => r.name);
+  return { seeds: [0, 1, 2, 3].map(i => top[i] || ''), live: !po.length };
 }
 function bracketModel(seeds, data) {
   const G = {};
@@ -170,19 +179,27 @@ function bracketModel(seeds, data) {
   return { G, champion, seeds };
 }
 function buildBracket(month) {
-  const { seeds, data, live } = seedsFor(month);
-  return { ...bracketModel(seeds, data), live };
+  const { seeds, live } = seedsFor(month), data = {}, scores = {};
+  for (const g of D.games.filter(g => g.playoff && g.month === month)) {
+    const m = bracketModel(seeds, data);
+    const n = [1, 2, 3, 4, 5, 6, 7].find(k => { const x = m.G[k]; return x.a && x.b && !x.w && !x.skipped && [x.a, x.b].includes(g.home) && [x.a, x.b].includes(g.road); });
+    if (!n) continue;
+    const hasScores = !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
+    data['g' + n] = hasScores ? (g.hg > g.rg ? g.home : g.road) : g.winner;
+    if (hasScores) scores[n] = { [g.home]: g.hg, [g.road]: g.rg };
+  }
+  return { ...bracketModel(seeds, data), scores, live };
 }
-function championOf(month) { return D.playoffs.some(p => p.month === month) ? buildBracket(month).champion : ''; }
+function championOf(month) { return hasPlayoffs(month) ? buildBracket(month).champion : ''; }
 
 function bracketHTML(month) {
-  const { G, champion, live } = buildBracket(month);
+  const { G, champion, live, scores } = buildBracket(month);
   const card = g => {
-    const side = (p, seed, won, ph) => `<div class="side ${won ? 'won' : ''}"><span>${seed ? `<span class="seed">${seed}</span>` : ''}${p ? who(p, 22) : `<span class="muted">${ph}</span>`}</span>${won ? '<span>✔</span>' : ''}</div>`;
+    const side = (p, seed, won, ph) => `<div class="side ${won ? 'won' : ''}"><span>${seed ? `<span class="seed">${seed}</span>` : ''}${p ? who(p, 22) : `<span class="muted">${ph}</span>`}</span>${scores[g.n]?.[p] != null ? `<span>${scores[g.n][p]}</span>` : won ? '<span>✔</span>' : ''}</div>`;
     return `<div class="match ${g.skipped ? 'skipped' : ''}"><div class="gname">Game ${g.n}${g.n === 7 ? ' · Championship' : ''}${g.skipped ? ' · not needed' : g.n === 7 ? ' · only if needed' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, 'TBD')}${side(g.b, g.sb, g.w && g.w === g.b, 'TBD')}</div>`;
   };
   const col = (title, ns) => `<div class="round"><h3>${title}</h3><div class="matches">${ns.map(n => card(G[n])).join('')}</div></div>`;
-  return `${champion ? `<p class="champ">🏆 Champion: <b>${esc(champion)}</b></p>` : ''}${live ? '<p class="muted">Seeded from the current standings. Updates as results come in.</p>' : ''}
+  return `${champion ? `<p class="champ">🏆 Champion: <b>${esc(champion)}</b></p>` : ''}${live ? '<p class="muted">Seeded from the current standings. Updates as playoff games are added.</p>' : ''}
     <h2>Winners bracket</h2><div class="bracket">${col('Round 1', [1, 2])}${col('Round 2', [4])}${col('Round 3', [6])}</div>
     <h2>Losers bracket</h2><div class="bracket">${col('Round 1', [3])}${col('Round 2', [5])}</div>
     <h2>Championship</h2><div class="bracket">${col('Game 7', [7])}</div>`;
@@ -206,7 +223,7 @@ const view = {
       </div>
       ${typeof todayCard === 'function' ? todayCard() : ''}
       <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4)}
-      <h2>Latest games</h2>${gamesTable([...D.games].sort(cmpNew).slice(0, 5))}
+      <h2>Latest games</h2>${gamesTable(D.games.filter(g => !g.playoff).sort(cmpNew).slice(0, 5))}
       ${t.html.includes('<h2>') ? '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') : ''}`;
   },
   rules() {
@@ -219,17 +236,17 @@ const view = {
       `<div class="card member">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}<div class="minfo"><b>${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>${m.established ? `<div class="muted">Established ${dateLabel(m.established)}</div>` : ''}</div>${m.alt_logo ? `<img class="alogo" src="${esc(m.alt_logo)}" alt="${esc(m.team_name)} alternate logo" loading="lazy">` : ''}</div>`).join('')}</div>`;
   },
   gamelog() {
-    const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)].filter(Boolean);
+    const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
     const c = chipsFor('gamelog', months, m => m === cur() ? 'current' : monthGames(m).length + ' games'), games = monthGames(c.sel);
     return `<h1>Game Log</h1><p class="lead">${c.sel === cur() ? `${monthLabel(c.sel)} · ${games.length} games. The log starts fresh each month; earlier months are in the buttons below.` : `${monthLabel(c.sel)} · ${games.length} games.`}</p>${c.html}${gamesTable(games)}`;
   },
   standings() {
-    const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)].filter(Boolean);
+    const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
     const c = chipsFor('standings', months, m => m === cur() ? 'current' : ''), ch = c.sel === cur() ? '' : championOf(c.sel);
-    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}`;
+    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}${monthlyRecords()}`;
   },
   playoffs() {
-    const months = [cur(), ...pastMonths().filter(m => D.playoffs.some(p => p.month === m))].filter(Boolean);
+    const months = [cur(), ...pastMonths().filter(hasPlayoffs)];
     const c = chipsFor('playoffs', months, m => m === cur() ? 'current' : '');
     return `<h1>Playoffs</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · every month the players are seeded by standings into a double-elimination bracket.' : ' · final bracket.'}</p>${c.html}${bracketHTML(c.sel)}`;
   },
@@ -237,10 +254,10 @@ const view = {
 
 /* ---------- router ---------- */
 function route(keepScroll) {
-  const OLD = { 'gamelog-history': 'gamelog', 'standings-history': 'standings', 'playoffs-history': 'playoffs', 'enter': 'admin' };
+  const OLD = { 'gamelog-history': 'gamelog', 'standings-history': 'standings', 'playoffs-history': 'playoffs', enter: 'add', admin: 'add' };
   let id = location.hash.replace(/^#\/?/, '') || 'home'; id = OLD[id] || id;
   const page = view[id] ? id : 'home';
-  document.getElementById('app').innerHTML = view[page]();
+  document.getElementById('app').innerHTML = (D.problems.length ? `<div class="alert"><b>Heads up, the data file needs attention:</b><ul>${D.problems.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : '') + view[page]();
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));
   document.getElementById('nav').classList.remove('open');
   document.title = `${PAGES.find(p => p[0] === page)[1]} · ${D.config.leagueName}`;
@@ -250,7 +267,7 @@ function route(keepScroll) {
 (async () => {
   await load();
   document.getElementById('league-name').textContent = D.config.leagueName;
-  document.getElementById('nav').innerHTML = PAGES.filter(p => p[0] !== 'admin' || D.fb).map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
+  document.getElementById('nav').innerHTML = PAGES.filter(p => !p[2]).map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
   document.querySelector('.menu-toggle').onclick = e => {
     const open = document.getElementById('nav').classList.toggle('open');
     e.currentTarget.setAttribute('aria-expanded', open);
