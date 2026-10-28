@@ -1,9 +1,7 @@
 /* Bubble Hockey League site. All data lives in /data (see README). */
 const PAGES = [
   ['home', 'Home'], ['rules', 'Rules'], ['members', 'Members'], ['schedule', 'Schedule'],
-  ['gamelog', 'Game Log'], ['gamelog-history', 'Game Log History'],
-  ['standings', 'Standings'], ['standings-history', 'Standings History'],
-  ['playoffs', 'Playoff Bracket'], ['playoffs-history', 'Playoff History'],
+  ['gamelog', 'Game Log'], ['standings', 'Standings'], ['playoffs', 'Playoffs'],
 ];
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -221,39 +219,26 @@ const view = {
       `<div class="card member">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}<div class="minfo"><b>${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>${m.established ? `<div class="muted">Established ${dateLabel(m.established)}</div>` : ''}</div>${m.alt_logo ? `<img class="alogo" src="${esc(m.alt_logo)}" alt="${esc(m.team_name)} alternate logo" loading="lazy">` : ''}</div>`).join('')}</div>`;
   },
   gamelog() {
-    const m = cur(), games = monthGames(m);
-    return `<h1>Game Log</h1><p class="lead">${m ? monthLabel(m) : ''} · ${games.length} games. The log starts fresh each month; earlier months are in <a href="#/gamelog-history">Game Log History</a>.</p>${gamesTable(games)}`;
-  },
-  'gamelog-history'() {
-    const ms = pastMonths().filter(m => monthGames(m).length);
-    if (!ms.length) return '<h1>Game Log History</h1><p class="muted">No archived months yet.</p>';
-    const c = chipsFor('gamelog-history', ms, m => monthGames(m).length);
-    return `<h1>Game Log History</h1><p class="lead">Every game from past months.</p>${c.html}${gamesTable(monthGames(c.sel))}`;
+    const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)].filter(Boolean);
+    const c = chipsFor('gamelog', months, m => m === cur() ? 'current' : monthGames(m).length + ' games'), games = monthGames(c.sel);
+    return `<h1>Game Log</h1><p class="lead">${c.sel === cur() ? `${monthLabel(c.sel)} · ${games.length} games. The log starts fresh each month; earlier months are in the buttons below.` : `${monthLabel(c.sel)} · ${games.length} games.`}</p>${c.html}${gamesTable(games)}`;
   },
   standings() {
-    const m = cur();
-    return `<h1>Current Standings</h1><p class="lead">${m ? monthLabel(m) : ''} · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss.</p>${standingsTable(standingsFor(monthGames(m)))}${STAT_KEY}`;
-  },
-  'standings-history'() {
-    const ms = pastMonths().filter(m => monthGames(m).length);
-    if (!ms.length) return '<h1>Standings History</h1><p class="muted">No completed months yet.</p>';
-    const c = chipsFor('standings-history', ms), ch = championOf(c.sel);
-    return `<h1>Standings History</h1><p class="lead">Final standings from past months.</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}`;
+    const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)].filter(Boolean);
+    const c = chipsFor('standings', months, m => m === cur() ? 'current' : ''), ch = c.sel === cur() ? '' : championOf(c.sel);
+    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}`;
   },
   playoffs() {
-    return `<h1>Playoff Bracket</h1><p class="lead">${monthLabel(cur())} · every month the players are seeded by standings into a double-elimination bracket.</p>${bracketHTML(cur())}`;
-  },
-  'playoffs-history'() {
-    const ms = pastMonths().filter(m => D.playoffs.some(p => p.month === m));
-    if (!ms.length) return '<h1>Playoff History</h1><p class="muted">No past playoffs yet.</p>';
-    const c = chipsFor('playoffs-history', ms);
-    return `<h1>Playoff History</h1><p class="lead">Brackets and champions from past months.</p>${c.html}${bracketHTML(c.sel)}`;
+    const months = [cur(), ...pastMonths().filter(m => D.playoffs.some(p => p.month === m))].filter(Boolean);
+    const c = chipsFor('playoffs', months, m => m === cur() ? 'current' : '');
+    return `<h1>Playoffs</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · every month the players are seeded by standings into a double-elimination bracket.' : ' · final bracket.'}</p>${c.html}${bracketHTML(c.sel)}`;
   },
 };
 
 /* ---------- router ---------- */
 function route(keepScroll) {
-  const id = location.hash.replace(/^#\/?/, '') || 'home';
+  const OLD = { 'gamelog-history': 'gamelog', 'standings-history': 'standings', 'playoffs-history': 'playoffs', 'enter': 'admin' };
+  let id = location.hash.replace(/^#\/?/, '') || 'home'; id = OLD[id] || id;
   const page = view[id] ? id : 'home';
   document.getElementById('app').innerHTML = view[page]();
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));

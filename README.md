@@ -1,6 +1,6 @@
 # Bubble Hockey League
 
-Static website (no build step). Tabs: Home, Rules, Members, Game Log, Game Log History, Standings, Standings History, Playoff Bracket, Playoff History.
+Static website (no build step). Tabs: Home, Rules, Members, Schedule, Game Log, Standings, Playoffs (each of the last three has month buttons for the current month and past months), plus a hidden-until-connected Admin tab.
 
 ## Run locally
 ```
