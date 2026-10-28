@@ -1,0 +1,8 @@
+{
+  "leagueName": "Bubble Hockey League",
+  "tagline": "Lunch-break glory. One puck at a time.",
+  "currentSeason": "2026",
+  "pointsForWin": 2,
+  "pointsForOvertimeLoss": 1,
+  "pointsForLoss": 0
+}
