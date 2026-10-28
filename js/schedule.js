@@ -126,7 +126,7 @@ function dayView(date) {
     if (i >= 0) used.add(i);
     return { ...s, result: i >= 0 ? played[i] : null };
   });
-  return { date, rows, extra: played.filter((_, j) => !used.has(j)) };
+  return { date, rows, extra: played.filter((g, j) => !used.has(j) && !g.dnp) };
 }
 
 const todayStr = () => ymd(new Date());
@@ -136,7 +136,7 @@ function playoffDayCard(v) {
   const today = v.date === todayStr();
   const row = r => {
     const side = (p, seed, label, won) => `<span class="side ${won ? 'win' : ''}">${p ? who(p, 26) + (seed ? ` <span class="seed">#${seed}</span>` : '') : `<span class="muted">${label || 'TBD'}</span>`}</span>`;
-    return `<div class="mrow ${r.skipped ? 'skipped' : ''}"><span class="gno">${r.n}</span>${side(r.a, r.sa, r.la, r.w && r.w === r.a)}<span class="vs">${r.skipped ? 'not needed' : r.score ? `<b>${r.score[r.a]} – ${r.score[r.b]}</b>` : r.w ? '✔' : (r.n === 7 ? 'if needed' : 'vs')}</span>${side(r.b, r.sb, r.lb, r.w && r.w === r.b).replace('class="side', 'class="side r')}</div>`;
+    return `<div class="mrow ${r.skipped ? 'skipped' : ''}"><span class="gno">${r.n}</span>${side(r.a, r.sa, r.la, r.w && r.w === r.a)}<span class="vs">${r.skipped ? 'not needed' : r.score ? `<b>${scoreHTML(r.score[r.a], r.score[r.b])}</b>` : r.w ? '✔' : (r.n === 7 ? 'if needed' : 'vs')}</span>${side(r.b, r.sb, r.lb, r.w && r.w === r.b).replace('class="side', 'class="side r')}</div>`;
   };
   return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b><span class="tag">Playoffs</span>${today ? '<span class="tag">Today</span>' : ''}<span class="muted">${v.rows.length} games</span></div>
     ${v.rows.length ? `<div class="mhead"><span></span><span>Matchup</span><span></span><span class="r"></span></div>${v.rows.map(row).join('')}` : '<p class="muted" style="margin:0">All playoff games are done.</p>'}
@@ -154,12 +154,13 @@ function dayCard(v) {
   const today = v.date === todayStr(), past = v.date < todayStr();
   const row = (r, i) => {
     const g = r.result, hw = g && g.hg > g.rg, rw = g && g.rg > g.hg;
+    if (g && g.dnp) return `<div class="mrow dnp"><span class="gno">${i + 1}</span><span class="side">${who(r.home, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(r.road, 26)}</span></div>`;
     return `<div class="mrow"><span class="gno">${i + 1}</span><span class="side ${hw ? 'win' : ''}">${who(r.home, 26)}</span>
-      <span class="vs">${g ? `<b>${g.home === r.home ? `${g.hg} – ${g.rg}` : `${g.rg} – ${g.hg}`}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}` : 'vs'}</span>
+      <span class="vs">${g ? `<b>${g.home === r.home ? scoreHTML(g.hg, g.rg) : scoreHTML(g.rg, g.hg)}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}` : 'vs'}</span>
       <span class="side r ${rw ? 'win' : ''}">${who(r.road, 26)}</span></div>`;
   };
-  const done = v.rows.filter(r => r.result).length;
-  return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b>${today ? '<span class="tag">Today</span>' : ''}<span class="muted">${v.rows.length} games${done ? ` · ${done} played` : (past ? ' · none played' : '')}</span></div>
+  const done = v.rows.filter(r => r.result && !r.result.dnp).length, dnpCount = v.rows.filter(r => r.result && r.result.dnp).length;
+  return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b>${today ? '<span class="tag">Today</span>' : ''}<span class="muted">${v.rows.length} games${done ? ` · ${done} played` : (past && !dnpCount ? ' · none played' : '')}${dnpCount ? ` · ${dnpCount} DNP` : ''}</span></div>
     <div class="mhead"><span></span><span>Home</span><span></span><span class="r">Road</span></div>${v.rows.map(row).join('')}
     ${v.extra.length ? `<p class="muted" style="margin:10px 0 0">Also played: ${v.extra.map(g => `${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}`).join(', ')}</p>` : ''}</div>`;
 }
@@ -189,7 +190,7 @@ view.schedule = function () {
   const mode = UI.schedule === 'month' ? 'month' : 'upcoming';
   const chips = `<div class="chips">${[['upcoming', 'Upcoming'], ['month', monthLabel(cur())]].map(([k, l]) => `<button type="button" class="chip ${mode === k ? 'on' : ''}" data-page="schedule" data-m="${k}">${l}</button>`).join('')}</div>`;
   // Past days with no games logged (e.g. before the league started) are left out; today and future days always show.
-  const hadGames = d => D.games.some(g => g.date === d && isCounted(g));
+  const hadGames = d => D.games.some(g => g.date === d && (isCounted(g) || g.dnp));
   const days = mode === 'month' ? gameDaysIn(cur()).filter(d => d >= todayStr() || hadGames(d)) : upcomingDays(5);
   return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held on the ${monthPlan(cur()).po.length === 1 ? 'game day' : monthPlan(cur()).po.length + ' game days'} before the month's last game day, which is kept open as a makeup day.</p>${chips}
     ${(() => { const off = daysOffIn(cur()); return off.length ? `<p class="muted">No games: ${off.map(o => `${esc(o.name)}, ${dayLabel(o.date)}`).join(' · ')}</p>` : ''; })()}

@@ -26,6 +26,12 @@ Easier: open the **Add Game** tab (`#/add`). Fill in the form and it builds the 
 
 If something is mistyped, the site shows a yellow box at the top saying what is wrong (a missing comma, a name that is not a member, a missing score) instead of breaking.
 
+### Games that were not played (DNP)
+```json
+{ "date": "2026-11-10", "home": "Connor", "road": "Boban", "dnp": true }
+```
+It appears in the Game Log and on the Schedule marked **DNP** (and in the player's "Did not play" count), and does not count in any record.
+
 ### Playoff games
 A playoff game is a normal game with `"playoff": true`. **It still counts in the standings and everyone's records** (the Game Log tags it "Playoff"):
 ```json
