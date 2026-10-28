@@ -43,9 +43,14 @@ function monthPlan(month) {
   const all = gameDaysIn(month), fixed = (SCHED().playoffDates || {})[month];       // optional: pin a month's playoff dates in config.json
   if (Array.isArray(fixed) && fixed.length) return { reg: all.filter(d => d < fixed[0]), po: fixed, spare: all.filter(d => d > fixed[fixed.length - 1]) };
   const n = Math.min(2, Math.max(0, +SCHED().playoffDays || 0), all.length);
-  const spare = SCHED().makeupDay !== false && all.length - n - 1 >= 1 ? 1 : 0;      // keep the last day open when there is room
+  // Playoffs never land on a day that already has regular games logged: they start after the last logged regular game.
+  const lastReg = D.games.filter(g => !g.playoff && g.month === month).reduce((m, g) => (g.date > m ? g.date : m), '');
+  const idx = lastReg ? all.findIndex(d => d > lastReg) : 0, firstOpen = idx === -1 ? all.length : idx;
+  let spare = SCHED().makeupDay !== false && all.length - n - 1 >= 1 ? 1 : 0;
+  const start = Math.max(all.length - spare - n, firstOpen);
+  if (all.length - start < n + spare) spare = 0;                                // not enough days left for a makeup day too
   const end = all.length - spare;
-  return { reg: all.slice(0, end - n), po: all.slice(end - n, end), spare: all.slice(end) };
+  return { reg: all.slice(0, start), po: all.slice(start, end), spare: all.slice(end) };
 }
 const dayKind = date => { const p = monthPlan(date.slice(0, 7)); return p.reg.includes(date) ? 'regular' : p.po.includes(date) ? 'playoff' : p.spare.includes(date) ? 'spare' : null; };
 
@@ -92,7 +97,7 @@ function slateFor(date) {
 const PO_LABELS = { 1: ['Seed 1', 'Seed 4'], 2: ['Seed 2', 'Seed 3'], 3: ['Loser G1', 'Loser G2'], 4: ['Winner G1', 'Winner G2'], 5: ['Loser G4', 'Winner G3'], 6: ['Winner G4', 'Winner G5'], 7: ['Winner G6', 'Loser G6'] };
 const PO_SPLITS = { 1: [[1, 2, 3, 4, 5, 6, 7]], 2: [[1, 2, 3, 4], [5, 6, 7]], 3: [[1, 2], [3, 4], [5, 6, 7]], 4: [[1, 2], [3, 4], [5], [6, 7]], 5: [[1, 2], [3, 4], [5], [6], [7]] };
 function playoffView(date) {
-  const month = date.slice(0, 7), { po } = monthPlan(month), { G, live } = buildBracket(month);
+  const month = date.slice(0, 7), { po } = monthPlan(month), { G, live } = buildBracket(month, date);
   const rows = PO_SPLITS[po.length][po.indexOf(date)].map(n => ({ n, a: G[n].a, b: G[n].b, sa: G[n].sa, sb: G[n].sb, w: G[n].w, skipped: G[n].skipped, la: PO_LABELS[n]?.[0], lb: PO_LABELS[n]?.[1] }));
   return { date, playoff: true, rows, projected: live && date >= todayStr() };
 }

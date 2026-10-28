@@ -8,12 +8,6 @@
     "loss": 0
   },
   "schedule": {
-    "playoffDays": 2,
-    "playoffDates": {
-      "2026-10": [
-        "2026-10-29",
-        "2026-10-30"
-      ]
-    }
+    "playoffDays": 2
   }
 }

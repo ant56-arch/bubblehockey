@@ -51,16 +51,17 @@ async function load() {
   const num = v => (v === '' || v == null ? NaN : +v);
   D.games = [];
   (Array.isArray(file) ? file : file.games || []).forEach((g, i) => {
-    const where = `Game ${i + 1} in games.json (${g.date || 'no date'}, ${g.home || '?'} vs ${g.road || '?'})`;
+    const where = `Game ${i + 1} in games.json (${g.date || g.month || 'no date'}, ${g.home || '?'} vs ${g.road || '?'})`;
     const bad = msg => D.problems.push(`${where} was skipped: ${msg}.`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(g.date || '')) return bad('the date must look like 2026-11-03');
+    const date = g.date || '', month = date ? date.slice(0, 7) : g.month || '';      // a playoff game may have just a month
+    if (date ? !/^\d{4}-\d{2}-\d{2}$/.test(date) : !(g.playoff && /^\d{4}-\d{2}$/.test(month))) return bad(g.playoff ? 'it needs a date (2026-11-03) or a month (2026-11)' : 'the date must look like 2026-11-03');
     if (!g.home || !g.road || g.home === g.road) return bad('it needs two different players');
     const unknown = [g.home, g.road].find(n => !known.has(n));
     if (unknown) return bad(`"${unknown}" is not a member (names must match the short names in members.csv exactly)`);
     const hg = num(g.homeScore), rg = num(g.roadScore), playoff = !!g.playoff, hasScores = !isNaN(hg) && !isNaN(rg);
     if (!playoff && (!hasScores || hg === rg)) return bad('it needs two different scores (homeScore and roadScore)');
     if (playoff && !(hasScores && hg !== rg) && ![g.home, g.road].includes(g.winner)) return bad('a playoff game needs two different scores or a "winner"');
-    D.games.push({ seq: i, date: g.date, home: g.home, road: g.road, hg, rg, hs: +g.homeShots || 0, rs: +g.roadShots || 0, ot: !!g.overtime, playoff, winner: g.winner || '', month: g.date.slice(0, 7) });
+    D.games.push({ seq: i, date, home: g.home, road: g.road, hg, rg, hs: +g.homeShots || 0, rs: +g.roadShots || 0, ot: !!g.overtime, playoff, winner: g.winner || '', month });
   });
   D.games.sort((a, b) => a.date.localeCompare(b.date) || a.seq - b.seq);
   const count = {}; D.games.forEach(g => { if (!g.playoff) g.id = count[g.month] = (count[g.month] || 0) + 1; });
@@ -158,13 +159,14 @@ function textBlocks(txt) {
 
 /* ---------- playoffs: 4 players, double elimination, 7 games ---------- */
 /* Playoff games live in games.json with "playoff": true. Each one is matched to the next open bracket game with the same two players. */
-function seedsFor(month) {
+function seedsFor(month, asOf) {
   const override = D.seedsOverride[month];
   const po = D.games.filter(g => g.playoff && g.month === month);
-  if (override && override.length === 4) return { seeds: override, live: false };
-  const cutoff = po.length ? po[0].date : null;      // seeds come from the regular season before the playoffs began
+  const shown = po.filter(g => !asOf || (g.date && g.date <= asOf));
+  if (override && override.length === 4) return { seeds: override, live: !shown.length };
+  const cutoff = (po.find(g => g.date) || {}).date || null;      // seeds come from the regular season before the playoffs began
   const top = standingsFor(monthGames(month).filter(g => !cutoff || g.date < cutoff)).filter(r => r.gp).slice(0, 4).map(r => r.name);
-  return { seeds: [0, 1, 2, 3].map(i => top[i] || ''), live: !po.length };
+  return { seeds: [0, 1, 2, 3].map(i => top[i] || ''), live: !shown.length };
 }
 function bracketModel(seeds, data) {
   const G = {};
@@ -178,9 +180,10 @@ function bracketModel(seeds, data) {
   const champion = G[6].w && !needG7 ? G[6].w : (G[7].w || '');
   return { G, champion, seeds };
 }
-function buildBracket(month) {
-  const { seeds, live } = seedsFor(month), data = {}, scores = {};
-  for (const g of D.games.filter(g => g.playoff && g.month === month)) {
+/* With asOf (a date), only playoff games dated on or before it count, so a future playoff day does not show results. */
+function buildBracket(month, asOf) {
+  const { seeds, live } = seedsFor(month, asOf), data = {}, scores = {};
+  for (const g of D.games.filter(g => g.playoff && g.month === month && (!asOf || (g.date && g.date <= asOf)))) {
     const m = bracketModel(seeds, data);
     const n = [1, 2, 3, 4, 5, 6, 7].find(k => { const x = m.G[k]; return x.a && x.b && !x.w && !x.skipped && [x.a, x.b].includes(g.home) && [x.a, x.b].includes(g.road); });
     if (!n) continue;
@@ -212,14 +215,14 @@ const view = {
     const now = standingsFor(monthGames(m));
     const prev = pastMonths().find(x => monthGames(x).length);
     const useNow = now.some(r => r.gp), board = useNow ? now : standingsFor(monthGames(prev || ''));
-    const lastChamp = pastMonths().map(championOf).find(Boolean);
+    const lastChamp = [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort().reverse().map(mm => ({ m: mm, c: championOf(mm) })).find(x => x.c);
     const [head, ...tail] = (t.title || D.config.leagueName).split(':');
     return `<div class="hero"><div class="hero-text"><span class="eyebrow">${m ? monthLabel(m) : 'Season'}</span><h1>${esc(head)}${tail.length ? `<span class="sub">${esc(tail.join(':').trim())}</span>` : ''}</h1>${t.html.split('<h2>')[0]}</div><img class="hero-logo" src="images/league-logo.webp" alt="${esc(D.config.leagueName)} logo"></div>
       <div class="grid">
         <div class="card stat"><div class="num">${esc(board[0]?.gp ? board[0].name : '—')}</div><div class="label">${useNow ? 'Current leader' : (prev ? monthLabel(prev) + ' leader' : 'Leader')}</div></div>
         <div class="card stat"><div class="num">${monthGames(m).length}</div><div class="label">Games in ${m ? monthLabel(m) : 'this month'}</div></div>
         <div class="card stat"><div class="num">${D.members.length}</div><div class="label">Players</div></div>
-        <div class="card stat"><div class="num">${esc(lastChamp || '—')}</div><div class="label">Last champion</div></div>
+        <div class="card stat"><div class="num">${esc(lastChamp ? lastChamp.c : '—')}</div><div class="label">${lastChamp ? 'Last champion · ' + monthLabel(lastChamp.m) : 'Last champion'}</div></div>
       </div>
       ${typeof todayCard === 'function' ? todayCard() : ''}
       <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4)}

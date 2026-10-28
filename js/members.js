@@ -47,31 +47,34 @@ view.members = function () {
       ? `🏆 <b>${plural(po.titles.length, 'championship')}</b> <span class="muted">· ${po.titles.map(monthLabel).join(', ')}</span>`
       : '<span class="muted">🏆 No championships yet</span>';
     const kv = rows => `<div class="kv">${rows.map(([k, v]) => `<div class="kvr"><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;
-    return `<div class="card mcard">
+    const sec = (title, body) => `<h3 class="msec">${title}</h3>${body}`;
+    return `<details class="card mcard"><summary>
       <div class="mtop">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}
-        <div class="minfo"><b class="mname">${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>${m.established ? `<div class="muted">Established ${dateLabel(m.established)}</div>` : ''}</div>
+        <div class="minfo"><b class="mname">${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>
+          <div class="muted nowline">${po.titles.length ? `🏆 ${plural(po.titles.length, 'championship')} · ${po.titles.map(monthLabel).join(', ')}` : 'No championships yet'}</div></div>
         ${m.alt_logo ? `<img class="alogo" src="${esc(m.alt_logo)}" alt="${esc(m.team_name)} alternate logo" loading="lazy">` : ''}</div>
-      <p class="trophy">${trophy}</p>
-      <p class="muted nowline">${cur() && now[pos - 1]?.gp ? `Currently <b>#${pos}</b> in ${monthLabel(cur())} with ${now[pos - 1].pts} pts` : `No games yet in ${monthLabel(cur())}`}</p>
       <div class="tiles">
-        <div class="tile"><b>${wins}-${c.l}-${c.otl}</b><span>All-time record (W-L-OTL)</span></div>
-        <div class="tile"><b>${played ? pct(wins / c.gp) : '–'}</b><span>Win percentage</span></div>
-        <div class="tile"><b>${c.pts}</b><span>Points${played ? ` · ${(c.pts / c.gp).toFixed(2)} per game` : ''}</span></div>
-        <div class="tile"><b>${signed(c.gf - c.ga)}</b><span>Goal difference</span></div>
+        <div class="tile"><b>${wins}-${c.l}-${c.otl}</b><span>Record</span></div>
+        <div class="tile"><b>${played ? pct(wins / c.gp) : '–'}</b><span>Win %</span></div>
+        <div class="tile"><b>${c.pts}</b><span>Points</span></div>
+        <div class="tile"><b>${signed(c.gf - c.ga)}</b><span>Goal diff</span></div>
       </div>
-      <details open><summary>Career stats</summary><div class="inner">${kv([
-        ['Games played', c.gp], ['Wins (overtime wins)', `${wins} (${c.otw})`], ['Losses (overtime losses)', `${c.l + c.otl} (${c.otl})`],
-        ['Goals for / against', `${c.gf} / ${c.ga}`], ['Shots for / against', c.sf || c.sa ? `${c.sf} / ${c.sa}` : '–'],
-        ['Shooting %', c.sf ? pct(c.gf / c.sf) : '–'], ['Save %', c.sa ? pct(1 - c.ga / c.sa) : '–'], ['Shutouts', c.so],
-        ['Home record', `${c.hw}-${c.hl}`], ['Road record', `${c.rw}-${c.rl}`], ['Current streak', c.streak], ['Longest win streak', p.longest || '–'],
-        ['Biggest win', p.best ? `${p.best.score} vs ${esc(p.best.o)} (${dateLabel(p.best.date)})` : '–'],
-        ['Playoff games', po.w + po.l ? `${po.w}-${po.l}` : '–'], ['Finals', po.finals ? `${po.finals} (${plural(po.titles.length, 'title')}, ${plural(po.runnerUps, 'runner-up')})` : '–']])}</div></details>
-      <details><summary>Month by month</summary><div class="inner">${p.months.length ? `<div class="table-scroll"><table><thead><tr><th>Month</th><th class="n">Finish</th><th class="n">Record</th><th class="n">Pts</th></tr></thead><tbody>${
-        p.months.map(x => `<tr><td>${monthLabel(x.m)}${x.champ ? ' 🏆' : ''}</td><td class="n">${x.rank ? '#' + x.rank + ' of ' + x.of : '–'}</td><td class="n nowrap">${x.r.w + x.r.otw}-${x.r.l}-${x.r.otl}</td><td class="n">${x.r.pts}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No games yet.</p>'}</div></details>
-      <details><summary>Head to head</summary><div class="inner">${Object.keys(p.h2h).length ? `<div class="table-scroll"><table><thead><tr><th>Opponent</th><th class="n">W-L</th><th class="n">Goals</th></tr></thead><tbody>${
-        Object.entries(p.h2h).sort((a, b) => a[0].localeCompare(b[0])).map(([o, h]) => `<tr><td>${who(o, 22)}</td><td class="n nowrap">${h.w}-${h.l}</td><td class="n nowrap">${h.gf}–${h.ga}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No games yet.</p>'}</div></details>
-    </div>`;
+      <span class="more">${cur() && now[pos - 1]?.gp ? `#${pos} in ${monthLabel(cur())} · ` : ''}Tap for the full profile</span></summary>
+      <div class="inner">
+        <p class="muted" style="margin:0 0 4px">${esc(m.team_name)}${m.established ? ` · established ${dateLabel(m.established)}` : ''}${played ? ` · ${(c.pts / c.gp).toFixed(2)} points per game` : ''}</p>
+        ${sec('Career stats', kv([
+          ['Games played', c.gp], ['Wins (overtime wins)', `${wins} (${c.otw})`], ['Losses (overtime losses)', `${c.l + c.otl} (${c.otl})`],
+          ['Goals for / against', `${c.gf} / ${c.ga}`], ['Shots for / against', c.sf || c.sa ? `${c.sf} / ${c.sa}` : '–'],
+          ['Shooting %', c.sf ? pct(c.gf / c.sf) : '–'], ['Save %', c.sa ? pct(1 - c.ga / c.sa) : '–'], ['Shutouts', c.so],
+          ['Home record', `${c.hw}-${c.hl}`], ['Road record', `${c.rw}-${c.rl}`], ['Current streak', c.streak], ['Longest win streak', p.longest || '–'],
+          ['Biggest win', p.best ? `${p.best.score} vs ${esc(p.best.o)} (${dateLabel(p.best.date)})` : '–']]))}
+        ${sec('Playoffs', kv([['Championships', po.titles.length ? `${po.titles.length} (${po.titles.map(monthLabel).join(', ')})` : '0'], ['Finals', po.finals ? `${po.finals} (${plural(po.titles.length, 'title')}, ${plural(po.runnerUps, 'runner-up')})` : '–'], ['Playoff games', po.w + po.l ? `${po.w}-${po.l}` : '–']]))}
+        ${sec('Month by month', p.months.length ? `<div class="table-scroll"><table><thead><tr><th>Month</th><th class="n">Finish</th><th class="n">Record</th><th class="n">Pts</th></tr></thead><tbody>${
+          p.months.map(x => `<tr><td>${monthLabel(x.m)}${x.champ ? ' 🏆' : ''}</td><td class="n">${x.rank ? '#' + x.rank + ' of ' + x.of : '–'}</td><td class="n nowrap">${x.r.w + x.r.otw}-${x.r.l}-${x.r.otl}</td><td class="n">${x.r.pts}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No games yet.</p>')}
+        ${sec('Head to head', Object.keys(p.h2h).length ? `<div class="table-scroll"><table><thead><tr><th>Opponent</th><th class="n">W-L</th><th class="n">Goals</th></tr></thead><tbody>${
+          Object.entries(p.h2h).sort((a, b) => a[0].localeCompare(b[0])).map(([o, h]) => `<tr><td>${who(o, 22)}</td><td class="n nowrap">${h.w}-${h.l}</td><td class="n nowrap">${h.gf}–${h.ga}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No games yet.</p>')}
+      </div></details>`;
   });
   const champs = D.members.map(m => [m.short_name, titleCount(m)]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
-  return `<h1>Members</h1><p class="lead">${D.members.length} players${champs.length ? ` · most championships: ${champs.filter(x => x[1] === champs[0][1]).map(x => esc(x[0])).join(', ')} (${champs[0][1]})` : ''}. Tap a section on a card for more.</p><div class="grid members">${cards.join('')}</div>`;
+  return `<h1>Members</h1><p class="lead">${D.members.length} players${champs.length ? ` · most championships: ${champs.filter(x => x[1] === champs[0][1]).map(x => esc(x[0])).join(', ')} (${champs[0][1]})` : ''}. Tap a card for the full profile.</p><div class="grid members">${cards.join('')}</div>`;
 };
