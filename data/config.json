@@ -8,6 +8,7 @@
     "loss": 0
   },
   "schedule": {
-    "playoffDays": 2
+    "playoffDays": 2,
+    "autoDnpFrom": "2026-11-01"
   }
 }

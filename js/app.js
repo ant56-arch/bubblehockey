@@ -80,7 +80,7 @@ const dateLabel = d => { const [y, m, dd] = d.split('-'); return new Date(+y, +m
 /* The current month is simply the month it is today (on the viewer's clock). */
 const cur = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
 const monthGames = m => D.games.filter(g => g.month === m && isCounted(g));      // every game that counts, playoff games included
-const monthLog = m => D.games.filter(g => g.month === m && (isCounted(g) || g.dnp));      // what the Game Log lists
+const monthLog = m => [...D.games.filter(g => g.month === m && (isCounted(g) || g.dnp)), ...(typeof derivedDnp === 'function' ? derivedDnp(m) : [])];      // what the Game Log lists (counted games + DNP games)
 const hasPlayoffs = m => D.games.some(g => g.month === m && g.playoff);
 const pastMonths = () => [...new Set(D.games.map(g => g.month))].filter(m => m !== cur()).sort().reverse();
 const member = n => D.members.find(m => m.short_name === n);
@@ -146,7 +146,7 @@ function standingsTable(rows, limit) {
 function gamesTable(games) {
   if (!games.length) return '<p class="muted">No games played yet.</p>';
   const row = g => g.dnp
-    ? `<tr class="dnp"><td class="n opt"></td><td class="nowrap">${dateShort(g.date)}</td><td>${who(g.home, 20)}</td><td class="n nowrap"><span class="tag dnp">DNP</span></td><td>${who(g.road, 20)}</td><td class="n opt"></td><td class="muted opt">Did not play</td></tr>`
+    ? `<tr class="dnp"><td class="n opt"></td><td class="nowrap">${dateShort(g.date)}</td><td>${who(g.home, 20)}</td><td class="n nowrap"><span class="tag dnp">DNP</span></td><td>${who(g.road, 20)}</td><td class="n opt"></td><td class="muted opt">${g.auto ? 'Did not play (not logged)' : 'Did not play'}</td></tr>`
     : `<tr><td class="n opt">${g.id}</td><td class="nowrap">${dateShort(g.date)}</td><td class="${g.hg > g.rg ? 'win' : ''}">${who(g.home, 20)}</td><td class="n nowrap">${scoreHTML(g.hg, g.rg)}</td><td class="${g.rg > g.hg ? 'win' : ''}">${who(g.road, 20)}</td><td class="n opt">${g.hs || g.rs ? `${g.hs} – ${g.rs}` : ''}</td><td>${g.playoff ? '<span class="tag">Playoff</span>' : ''}${g.ot ? '<span class="tag">OT</span>' : ''}${!g.hg || !g.rg ? '<span class="tag">SO</span>' : ''}</td></tr>`;
   return `<div class="table-scroll"><table class="games"><thead><tr><th class="n opt">#</th><th>Date</th><th>Home</th><th class="n">Score</th><th>Road</th><th class="n opt">Shots</th><th></th></tr></thead><tbody>${[...games].sort(cmpNew).map(row).join('')}</tbody></table></div>`;
 }

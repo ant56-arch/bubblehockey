@@ -4,9 +4,11 @@
    - Every game day (Mon-Fri, minus the holidays below and any data/config.json "schedule.skipDates") is a full round robin: each player plays each other player once.
    - Home/road sides alternate every game day, so over any two game days each player has played the same number of games on each side.
    - Games are ordered so a player rests between games when possible.
+   - "schedule.autoDnpFrom" (a date, optional): from that date on, a scheduled regular game on a past day that was never logged is shown as DNP
+     (only on days where at least one game or DNP was logged; never counted in any record).
    - "schedule.roundsPerDay" (optional) limits a day to that many rounds (each round = everyone plays once); the rounds then continue on the next day. */
 
-const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 2, playoffDates: {}, makeupDay: true, ...(D.config.schedule || {}) });
+const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 2, playoffDates: {}, makeupDay: true, autoDnpFrom: '', ...(D.config.schedule || {}) });
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseYmd = s => { const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d); };
 /* Days off: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday that
@@ -126,10 +128,26 @@ function dayView(date) {
     if (i >= 0) used.add(i);
     return { ...s, result: i >= 0 ? played[i] : null };
   });
+  // Automatic DNP: on a past day that had any game or DNP logged, scheduled games that never appeared are DNP.
+  if (played.length && autoDnpDay(date)) rows.forEach(r => { if (!r.result) r.result = { dnp: true, auto: true, home: r.home, road: r.road, date }; });
   return { date, rows, extra: played.filter((g, j) => !used.has(j) && !g.dnp) };
 }
 
 const todayStr = () => ymd(new Date());
+const autoDnpDay = date => { const from = SCHED().autoDnpFrom; return !!from && date >= from && date < todayStr(); };
+/* The automatic DNP games of a month, shaped like logged DNP games (they are never counted in the standings). */
+function derivedDnp(month) {
+  if (!SCHED().autoDnpFrom) return [];
+  const out = [];
+  for (const d of monthPlan(month).reg) {
+    if (!autoDnpDay(d)) continue;
+    const v = dayView(d); if (!v) continue;
+    v.rows.forEach(r => { if (r.result && r.result.auto) out.push({ seq: 1e6 + out.length, date: d, home: r.home, road: r.road, hg: NaN, rg: NaN, hs: 0, rs: 0, ot: false, playoff: false, dnp: true, auto: true, month }); });
+  }
+  return out;
+}
+/* Every DNP game: the logged ones plus the automatic ones. */
+const allDnp = () => [...D.games.filter(g => g.dnp), ...[...new Set([...D.games.map(g => g.month), cur()])].flatMap(derivedDnp)];
 const dayLabel = s => parseYmd(s).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
 
 function playoffDayCard(v) {
