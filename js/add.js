@@ -12,6 +12,7 @@ view.add = function () {
       <div class="row2">${num('a-hs', 'Home score')}${num('a-rs', 'Road score')}</div>
       <label class="check"><input id="a-ot" type="checkbox"> Decided in overtime</label>
       <div class="row2">${num('a-hsh', 'Home shots (optional)')}${num('a-rsh', 'Road shots (optional)')}</div>
+      <label class="check"><input id="a-dnp" type="checkbox"> Did not play (DNP) <span class="muted">(shown as DNP, no effect on the standings)</span></label>
       <label class="check"><input id="a-po" type="checkbox"> Playoff game <span class="muted">(still counts in the standings)</span></label>
       <label class="f" id="a-win-wrap" hidden>Winner <span class="muted">(only if you are not entering scores)</span><select id="a-win"><option value=""></option></select></label>
     </form></div>
@@ -31,19 +32,21 @@ function addSnippet() {
   document.getElementById('a-win-wrap').hidden = !po;
   const w = document.getElementById('a-win'); const want = [v('a-home'), v('a-road')].filter(Boolean);
   if (w.options.length !== want.length + 1 || [...w.options].slice(1).some((x, i) => x.value !== want[i])) { const keep = w.value; w.innerHTML = '<option value=""></option>' + want.map(n => `<option>${esc(n)}</option>`).join(''); if (want.includes(keep)) w.value = keep; }
-  const problems = [];
+  const problems = []; const dnp = ck('a-dnp');
   if (!o.date) problems.push('Pick the date.');
   if (!o.home || !o.road) problems.push('Pick both players.'); else if (o.home === o.road) problems.push('Pick two different players.');
-  if (hs !== '' && rs !== '') { o.homeScore = +hs; o.roadScore = +rs; if (+hs === +rs) problems.push('A game cannot end tied. Enter the final score, including the overtime goal.'); }
+  if (dnp) { /* no scores for a game that was not played */ }
+  else if (hs !== '' && rs !== '') { o.homeScore = +hs; o.roadScore = +rs; if (+hs === +rs) problems.push('A game cannot end tied. Enter the final score, including the overtime goal.'); }
   else if (!po) problems.push('Enter both scores.');
-  if (ck('a-ot')) o.overtime = true;
-  if (v('a-hsh') !== '' && v('a-rsh') !== '') { o.homeShots = +v('a-hsh'); o.roadShots = +v('a-rsh'); }
-  if (po) { o.playoff = true; if (o.homeScore === undefined) { if (!w.value) problems.push('Enter the scores or pick the winner.'); else o.winner = w.value; } }
+  if (!dnp && ck('a-ot')) o.overtime = true;
+  if (!dnp && v('a-hsh') !== '' && v('a-rsh') !== '') { o.homeShots = +v('a-hsh'); o.roadShots = +v('a-rsh'); }
+  if (dnp) o.dnp = true;
+  else if (po) { o.playoff = true; if (o.homeScore === undefined) { if (!w.value) problems.push('Enter the scores or pick the winner.'); else o.winner = w.value; } }
   const out = document.getElementById('a-out');
   if (problems.length) { out.innerHTML = `<p class="muted">${problems.map(esc).join(' ')}</p>`; return; }
   const line = '    { ' + Object.entries(o).map(([k, val]) => `"${k}": ${JSON.stringify(val)}`).join(', ') + ' }';
   const text = ',\n' + line;
-  const preview = o.homeScore !== undefined ? `${o.home} ${o.homeScore} – ${o.roadScore} ${o.road}${o.overtime ? ' (OT)' : ''}` : `${o.home} vs ${o.road}, ${o.winner} won`;
+  const preview = o.dnp ? `${o.home} vs ${o.road}: DNP` : o.homeScore !== undefined ? `${o.home} ${o.homeScore} – ${o.roadScore} ${o.road}${o.overtime ? ' (OT)' : ''}` : `${o.home} vs ${o.road}, ${o.winner} won`;
   out.innerHTML = `<h2>${esc(preview)}</h2><pre class="snip">${esc(text)}</pre><button class="btn" id="a-copy" type="button">Copy</button> <span id="a-copied" class="form-note ok"></span>`;
   out.dataset.text = text;
 }

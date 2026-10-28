@@ -43,7 +43,10 @@ for ws in wb.worksheets:
     if ws.title.endswith("Game Log") or ws.title == "Game Log History":
         for r in ws.iter_rows(min_row=2, values_only=True):
             gid, date, home, road, hg, rg, hs, rs = r[:8]
-            if not (home and road) or hg in (None, "DNP") or rg in (None, "DNP"): continue
+            if not (home and road): continue
+            if hg == "DNP" or rg == "DNP":                       # a scheduled game that was not played
+                games.append([iso(date), home, road, "DNP", "DNP", "", "", "no"]); continue
+            if hg is None or rg is None: continue
             games.append([iso(date), home, road, hg, rg, "" if hs is None else hs, "" if rs is None else rs, "yes" if r[9] == "Overtime" else "no"])
 games.sort(key=lambda g: g[0])
 
@@ -63,6 +66,8 @@ import json
 old = json.loads((out / "games.json").read_text()) if (out / "games.json").exists() else {}
 entries = []
 for date, home, road, hg, rg, hs, rs, ot in games:
+    if hg == "DNP":
+        entries.append({"date": date, "home": home, "road": road, "dnp": True}); continue
     e = {"date": date, "home": home, "road": road, "homeScore": int(hg), "roadScore": int(rg)}
     if ot == "yes": e["overtime"] = True
     if hs != "" and rs != "": e["homeShots"], e["roadShots"] = int(hs), int(rs)      # 0 shots is a real value

@@ -83,6 +83,9 @@ tr.leader td:first-child { box-shadow: inset 3px 0 var(--lime); }
 .win { color: var(--win); font-weight: 650; }
 .tag { font-size: .68rem; font-weight: 600; background: var(--ink); color: var(--on-ink); border-radius: 999px; padding: 2px 8px; margin-left: 4px; }
 .nowrap { white-space: nowrap; }
+.tag.dnp { background: var(--surface-2); color: var(--muted); }
+tr.dnp td, .mrow.dnp { color: var(--muted); }
+.mrow.dnp .who { opacity: .75; }
 
 /* Chips */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
@@ -196,6 +199,8 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .snip { background: var(--surface); border-radius: 16px; padding: 14px 16px; overflow-x: auto; font-size: .82rem; white-space: pre; margin: 0 0 12px; }
 code { background: var(--surface); border-radius: 6px; padding: 1px 6px; font-size: .88em; }
 
+@media (max-width: 380px) { .games .tlogo { display: none; } }
+
 /* Motion: content eases in; cards lift on hover. Disabled for people who prefer less motion. */
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 #app > * { animation: rise .45s cubic-bezier(.2, .7, .2, 1) both; }
@@ -212,6 +217,9 @@ code { background: var(--surface); border-radius: 6px; padding: 1px 6px; font-si
   nav a { padding: 12px 14px; font-size: 1rem; }
 }
 @media (max-width: 640px) {
+  .games th, .games td { padding-left: 3px; padding-right: 3px; font-size: .84rem; }
+  .games .tag { margin-left: 0; padding: 2px 6px; font-size: .62rem; }
+  .games .who { gap: 5px; }
   .wrap { padding: 0 16px; }
   h1 { margin-top: 28px; }
   .eyebrow { margin-top: 28px; }

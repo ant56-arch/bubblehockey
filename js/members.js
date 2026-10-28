@@ -67,7 +67,7 @@ view.members = function () {
           ['Goals for / against', `${c.gf} / ${c.ga}`], ['Shots for / against', c.sf || c.sa ? `${c.sf} / ${c.sa}` : '–'],
           ['Shooting %', c.sf ? pct(c.gf / c.sf) : '–'], ['Save %', c.sa ? pct(1 - c.ga / c.sa) : '–'], ['Shutouts', c.so],
           ['Home record', `${c.hw}-${c.hl}`], ['Road record', `${c.rw}-${c.rl}`], ['Current streak', c.streak], ['Longest win streak', p.longest || '–'],
-          ['Biggest win', p.best ? `${p.best.score} vs ${esc(p.best.o)} (${dateLabel(p.best.date)})` : '–']]))}
+          ['Did not play (DNP)', D.games.filter(g => g.dnp && (g.home === n || g.road === n)).length], ['Biggest win', p.best ? `${p.best.score} vs ${esc(p.best.o)} (${dateLabel(p.best.date)})` : '–']]))}
         ${sec('Playoffs', kv([['Championships', po.titles.length ? `${po.titles.length} (${po.titles.map(monthLabel).join(', ')})` : '0'], ['Finals', po.finals ? `${po.finals} (${plural(po.titles.length, 'title')}, ${plural(po.runnerUps, 'runner-up')})` : '–'], ['Playoff games', po.w + po.l ? `${po.w}-${po.l}` : '–']]))}
         ${sec('Month by month', p.months.length ? `<div class="table-scroll"><table><thead><tr><th>Month</th><th class="n">Finish</th><th class="n">Record</th><th class="n">Pts</th></tr></thead><tbody>${
           p.months.map(x => `<tr><td>${monthLabel(x.m)}${x.champ ? ' 🏆' : ''}</td><td class="n">${x.rank ? '#' + x.rank + ' of ' + x.of : '–'}</td><td class="n nowrap">${x.r.w + x.r.otw}-${x.r.l}-${x.r.otl}</td><td class="n">${x.r.pts}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No games yet.</p>')}
