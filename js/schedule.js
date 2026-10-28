@@ -1,11 +1,12 @@
 /* Schedule: automatic daily matchups, worked out from the date alone (nothing to enter).
-   - The last "schedule.playoffDays" game days of each month (default 2) are playoff days; the regular round robin runs on the days before them.
+   - Playoffs take up to 2 game days ("schedule.playoffDays", default 2, max 2) and are placed just before the month's last game day,
+     which is left open as a makeup day ("schedule.makeupDay": false turns that off). The regular round robin runs on the days before.
    - Every game day (Mon-Fri, minus data/config.json "schedule.skipDates") is a full round robin: each player plays each other player once.
    - Home/road sides alternate every game day, so over any two game days each player has played the same number of games on each side.
    - Games are ordered so a player rests between games when possible.
    - "schedule.roundsPerDay" (optional) limits a day to that many rounds (each round = everyone plays once); the rounds then continue on the next day. */
 
-const SCHED = () => ({ roundsPerDay: 0, skipDates: [], playoffDays: 2, ...(D.config.schedule || {}) });
+const SCHED = () => ({ roundsPerDay: 0, skipDates: [], playoffDays: 2, makeupDay: true, ...(D.config.schedule || {}) });
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseYmd = s => { const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d); };
 const isGameDay = s => { const wd = parseYmd(s).getDay(); return wd >= 1 && wd <= 5 && !SCHED().skipDates.includes(s); };
@@ -15,12 +16,14 @@ function gameDaysIn(month) {
   return out;
 }
 
-/* Regular-season days and playoff days for a month. */
+/* Regular-season days, playoff days and the makeup day for a month. */
 function monthPlan(month) {
-  const all = gameDaysIn(month), n = Math.min(5, Math.max(0, +SCHED().playoffDays || 0), all.length);
-  return { reg: all.slice(0, all.length - n), po: all.slice(all.length - n) };
+  const all = gameDaysIn(month), n = Math.min(2, Math.max(0, +SCHED().playoffDays || 0), all.length);
+  const spare = SCHED().makeupDay !== false && all.length - n - 1 >= 1 ? 1 : 0;      // keep the last day open when there is room
+  const end = all.length - spare;
+  return { reg: all.slice(0, end - n), po: all.slice(end - n, end), spare: all.slice(end) };
 }
-const dayKind = date => { const p = monthPlan(date.slice(0, 7)); return p.reg.includes(date) ? 'regular' : p.po.includes(date) ? 'playoff' : null; };
+const dayKind = date => { const p = monthPlan(date.slice(0, 7)); return p.reg.includes(date) ? 'regular' : p.po.includes(date) ? 'playoff' : p.spare.includes(date) ? 'spare' : null; };
 
 /* Who is home in the pairing of player indexes lo < hi (before the day-to-day flip). A cyclic tournament: each
    player is home against the next few players in the list, so home games are spread evenly (within one game). */
@@ -72,6 +75,7 @@ function playoffView(date) {
 function dayView(date) {
   const kind = dayKind(date); if (!kind) return null;
   if (kind === 'playoff') return playoffView(date);
+  if (kind === 'spare') return { date, spare: true, rows: [], extra: D.games.filter(g => g.date === date) };
   const slate = slateFor(date);
   const played = D.games.filter(g => g.date === date), used = new Set();
   const rows = slate.map(s => {
@@ -95,8 +99,15 @@ function playoffDayCard(v) {
     <div class="mhead"><span></span><span>Matchup</span><span></span><span class="r"></span></div>${v.rows.map(row).join('')}
     ${v.projected ? '<p class="muted" style="margin:10px 0 0">Seeds are projected from the current standings until the regular season ends.</p>' : ''}</div>`;
 }
+function spareDayCard(v) {
+  const today = v.date === todayStr();
+  return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b><span class="tag">Makeup day</span>${today ? '<span class="tag">Today</span>' : ''}</div>
+    <p class="muted" style="margin:0">No scheduled games. This day is kept open for any games that were missed or postponed, including playoff games.</p>
+    ${v.extra.length ? `<p style="margin:10px 0 0">Played: ${v.extra.map(g => `${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}`).join(', ')}</p>` : ''}</div>`;
+}
 function dayCard(v) {
   if (v.playoff) return playoffDayCard(v);
+  if (v.spare) return spareDayCard(v);
   const today = v.date === todayStr(), past = v.date < todayStr();
   const row = (r, i) => {
     const g = r.result, hw = g && g.hg > g.rg, rw = g && g.rg > g.hg;
@@ -135,6 +146,6 @@ view.schedule = function () {
   const mode = UI.schedule === 'month' ? 'month' : 'upcoming';
   const chips = `<div class="chips">${[['upcoming', 'Upcoming'], ['month', monthLabel(cur())]].map(([k, l]) => `<button type="button" class="chip ${mode === k ? 'on' : ''}" data-page="schedule" data-m="${k}">${l}</button>`).join('')}</div>`;
   const days = mode === 'month' ? gameDaysIn(cur()) : upcomingDays(5);
-  return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. The last ${monthPlan(cur()).po.length} game days of the month are the playoffs.</p>${chips}
+  return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held on the ${monthPlan(cur()).po.length === 1 ? 'game day' : monthPlan(cur()).po.length + ' game days'} before the month's last game day, which is kept open as a makeup day.</p>${chips}
     <div class="days">${days.map(d => dayCard(dayView(d))).join('') || '<p class="muted">No game days found.</p>'}</div>${balanceCard(cur())}`;
 };

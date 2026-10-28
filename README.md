@@ -44,7 +44,7 @@ The **Schedule** tab builds the matchups itself from the date; there is nothing 
 ```
 "schedule": { "roundsPerDay": 0, "skipDates": ["2026-11-26"], "playoffDays": 2 }
 ```
-`skipDates` are holidays with no games. `playoffDays` (default 2, up to 5) is how many of the month's last game days are playoff days; the playoff games (the 7-game double-elimination bracket) are listed on those days and the regular round robin runs on the days before. `roundsPerDay` limits a day to that many rounds (each round is everyone playing once); `0` means the full round robin every day.
+`skipDates` are holidays with no games. `playoffDays` (default 2, maximum 2) is how many game days the playoffs take; the 7-game double-elimination bracket is split across them. They are placed just before the month's last game day, which is left open as a **makeup day** for postponed games (`"makeupDay": false` turns that off). The regular round robin runs on the days before the playoffs. `roundsPerDay` limits a regular day to that many rounds (each round is everyone playing once); `0` means the full round robin every day.
 
 ## Logos
 Team logos live in `images/teams/` and are referenced by the `logo` and `alt_logo` columns of `data/members.csv`. The league logo is `images/league-logo.webp`.
