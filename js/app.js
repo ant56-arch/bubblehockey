@@ -58,6 +58,11 @@ const monthGames = m => D.games.filter(g => g.month === m);
 const pastMonths = () => [...new Set([...D.games.map(g => g.month), ...D.playoffs.map(p => p.month)])].filter(m => m && m !== cur()).sort().reverse();
 const member = n => D.members.find(m => m.short_name === n);
 const who = (n, size = 26) => { const m = member(n); return `<span class="who">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}</span></span>`; };
+const UI = {};
+const chipsFor = (page, months, labelExtra) => {
+  const sel = months.includes(UI[page]) ? UI[page] : months[0];
+  return { sel, html: `<div class="chips" role="tablist">${months.map(m => `<button type="button" class="chip ${m === sel ? 'on' : ''}" data-page="${page}" data-m="${m}">${monthLabel(m)}${labelExtra ? `<small>${labelExtra(m)}</small>` : ''}</button>`).join('')}</div>` };
+};
 const pct = x => (isFinite(x) ? (x * 100).toFixed(1) + '%' : '–');
 
 function standingsFor(games) {
@@ -167,7 +172,8 @@ const view = {
     const prev = pastMonths().find(x => monthGames(x).length);
     const useNow = now.some(r => r.gp), board = useNow ? now : standingsFor(monthGames(prev || ''));
     const lastChamp = pastMonths().map(championOf).find(Boolean);
-    return `<div class="hero"><img class="hero-logo" src="images/league-logo.webp" alt="${esc(D.config.leagueName)} logo"><div><h1>${esc(t.title || D.config.leagueName)}</h1>${t.html.split('<h2>')[0]}</div></div>
+    const [head, ...tail] = (t.title || D.config.leagueName).split(':');
+    return `<div class="hero"><div class="hero-text"><span class="eyebrow">${m ? monthLabel(m) : 'Season'}</span><h1>${esc(head)}${tail.length ? `<span class="sub">${esc(tail.join(':').trim())}</span>` : ''}</h1>${t.html.split('<h2>')[0]}</div><img class="hero-logo" src="images/league-logo.webp" alt="${esc(D.config.leagueName)} logo"></div>
       <div class="grid">
         <div class="card stat"><div class="num">${esc(board[0]?.gp ? board[0].name : '—')}</div><div class="label">${useNow ? 'Current leader' : (prev ? monthLabel(prev) + ' leader' : 'Leader')}</div></div>
         <div class="card stat"><div class="num">${monthGames(m).length}</div><div class="label">Games in ${m ? monthLabel(m) : 'this month'}</div></div>
@@ -193,8 +199,9 @@ const view = {
   },
   'gamelog-history'() {
     const ms = pastMonths().filter(m => monthGames(m).length);
-    return `<h1>Game Log History</h1><p class="lead">Every game from past months.</p>${ms.length ? ms.map((m, i) =>
-      `<details ${i === 0 ? 'open' : ''}><summary>${monthLabel(m)} <span class="muted">· ${monthGames(m).length} games</span></summary><div class="inner">${gamesTable(monthGames(m))}</div></details>`).join('') : '<p class="muted">No archived months yet.</p>'}`;
+    if (!ms.length) return '<h1>Game Log History</h1><p class="muted">No archived months yet.</p>';
+    const c = chipsFor('gamelog-history', ms, m => monthGames(m).length);
+    return `<h1>Game Log History</h1><p class="lead">Every game from past months.</p>${c.html}${gamesTable(monthGames(c.sel))}`;
   },
   standings() {
     const m = cur();
@@ -202,32 +209,30 @@ const view = {
   },
   'standings-history'() {
     const ms = pastMonths().filter(m => monthGames(m).length);
-    return `<h1>Standings History</h1><p class="lead">Final standings from past months.</p>${ms.length ? ms.map((m, i) => {
-      const ch = championOf(m);
-      return `<details ${i === 0 ? 'open' : ''}><summary>${monthLabel(m)}${ch ? ` — 🏆 ${esc(ch)}` : ''}</summary><div class="inner">${standingsTable(standingsFor(monthGames(m)))}</div></details>`;
-    }).join('') + STAT_KEY : '<p class="muted">No completed months yet.</p>'}`;
+    if (!ms.length) return '<h1>Standings History</h1><p class="muted">No completed months yet.</p>';
+    const c = chipsFor('standings-history', ms), ch = championOf(c.sel);
+    return `<h1>Standings History</h1><p class="lead">Final standings from past months.</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)))}${STAT_KEY}`;
   },
   playoffs() {
     return `<h1>Playoff Bracket</h1><p class="lead">${monthLabel(cur())} · every month the players are seeded by standings into a double-elimination bracket.</p>${bracketHTML(cur())}`;
   },
   'playoffs-history'() {
     const ms = pastMonths().filter(m => D.playoffs.some(p => p.month === m));
-    return `<h1>Playoff History</h1><p class="lead">Brackets and champions from past months.</p>${ms.length ? ms.map((m, i) => {
-      const ch = championOf(m);
-      return `<details ${i === 0 ? 'open' : ''}><summary>${monthLabel(m)}${ch ? ` — 🏆 ${esc(ch)}` : ''}</summary><div class="inner">${bracketHTML(m)}</div></details>`;
-    }).join('') : '<p class="muted">No past playoffs yet.</p>'}`;
+    if (!ms.length) return '<h1>Playoff History</h1><p class="muted">No past playoffs yet.</p>';
+    const c = chipsFor('playoffs-history', ms);
+    return `<h1>Playoff History</h1><p class="lead">Brackets and champions from past months.</p>${c.html}${bracketHTML(c.sel)}`;
   },
 };
 
 /* ---------- router ---------- */
-function route() {
+function route(keepScroll) {
   const id = location.hash.replace(/^#\/?/, '') || 'home';
   const page = view[id] ? id : 'home';
   document.getElementById('app').innerHTML = view[page]();
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));
   document.getElementById('nav').classList.remove('open');
   document.title = `${PAGES.find(p => p[0] === page)[1]} · ${D.config.leagueName}`;
-  window.scrollTo(0, 0);
+  if (keepScroll !== true) window.scrollTo(0, 0);
 }
 
 (async () => {
@@ -239,6 +244,11 @@ function route() {
     e.currentTarget.setAttribute('aria-expanded', open);
   };
   document.addEventListener('click', e => { const b = e.target.closest('.more-stats'); if (!b) return; const on = b.closest('.stand').classList.toggle('show-all'); b.textContent = on ? 'Show fewer stats' : 'Show all stats'; });
-  window.addEventListener('hashchange', route);
+  document.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; UI[c.dataset.page] = c.dataset.m; route(true); });
+  document.getElementById('theme-toggle').onclick = () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next; try { localStorage.setItem('bhl_theme', next); } catch { }
+  };
+  window.addEventListener('hashchange', () => route());
   route();
 })();
