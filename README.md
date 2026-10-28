@@ -1,6 +1,6 @@
 # Bubble Hockey League
 
-A small static website (no build step, no login, no backend, nothing to pay for) hosted on GitHub Pages. Tabs: Home, Rules, Members, Schedule, Game Log, Standings, Playoffs. Game Log, Standings and Playoffs each have month buttons for the current and past months.
+A small static website (no build step, no login, no backend, nothing to pay for) hosted on GitHub Pages. Tabs: Home, Rules, Members, Schedule, Game Log, Standings, Playoffs, Add Game. Game Log, Standings and Playoffs each have month buttons for the current and past months.
 
 Everything is calculated from one file, **`data/games.json`**: standings, the game log, per-player records for every month, the schedule's results and the playoff brackets. The current month is simply today's month, so the game log and standings reset by themselves on the 1st.
 
@@ -22,7 +22,7 @@ Open `data/games.json` on GitHub, tap the pencil (Edit), copy the last game line
 | `playoff` | no | `true` for a playoff game (see below) |
 | `winner` | no | for a playoff game with no scores |
 
-Easier: open the site's **`#/add`** page (there is an "Add a game" link in the footer). Fill in the form and it builds the line for you. Tap **Copy**, edit `data/games.json`, tap at the end of the last game line (right after its `}`), paste, and commit. The page saves nothing itself.
+Easier: open the **Add Game** tab (`#/add`). Fill in the form and it builds the line for you. Tap **Copy**, edit `data/games.json`, tap at the end of the last game line (right after its `}`), paste, and commit. The page saves nothing itself.
 
 If something is mistyped, the site shows a yellow box at the top saying what is wrong (a missing comma, a name that is not a member, a missing score) instead of breaking.
 
@@ -59,7 +59,7 @@ Playoffs take 2 game days, placed just before the month's last game day, which i
 `skipDates` are extra days with no games, `holidays: false` turns the holiday list off, `makeupDay: false` uses the last day for games, `roundsPerDay` limits a day to that many rounds (0 = the full round robin), and `playoffDates` pins a month's playoff dates.
 
 ## Members and logos
-Members are in `data/members.csv` (`name, short_name, team_name, established, logo, alt_logo`). To add a player, add a row and upload a logo into `images/teams/`. The league logo is `images/league-logo.webp`. The Home and Rules text are in `data/home.txt` and `data/rules.txt`.
+Each member gets a profile on the Members tab (titles, career record, playoff record, month by month, head to head), all calculated from the games. Members are in `data/members.csv` (`name, short_name, team_name, established, logo, alt_logo`). To add a player, add a row and upload a logo into `images/teams/`. The league logo is `images/league-logo.webp`. The Home and Rules text are in `data/home.txt` and `data/rules.txt`.
 
 ## Importing from the Excel workbook
 ```

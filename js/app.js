@@ -230,11 +230,6 @@ const view = {
     const t = textBlocks(D.rules);
     return `<h1>${esc(t.title || 'Rules')}</h1><div class="card rules">${t.html}</div>`;
   },
-  members() {
-    const ini = n => n.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    return `<h1>Members</h1><p class="lead">${D.members.length} players in the league.</p><div class="grid members">${D.members.map(m =>
-      `<div class="card member">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}<div class="minfo"><b>${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>${m.established ? `<div class="muted">Established ${dateLabel(m.established)}</div>` : ''}</div>${m.alt_logo ? `<img class="alogo" src="${esc(m.alt_logo)}" alt="${esc(m.team_name)} alternate logo" loading="lazy">` : ''}</div>`).join('')}</div>`;
-  },
   gamelog() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
     const c = chipsFor('gamelog', months, m => m === cur() ? 'current' : monthGames(m).length + ' games'), games = monthGames(c.sel);

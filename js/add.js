@@ -1,5 +1,5 @@
 /* Add-a-game helper (#/add). It only builds a line of JSON for data/games.json; it saves nothing and needs no login. */
-PAGES.push(['add', 'Add a game', true]);      // reachable at #/add, kept out of the tab bar
+PAGES.push(['add', 'Add Game']);      // the last tab, at #/add
 
 view.add = function () {
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);

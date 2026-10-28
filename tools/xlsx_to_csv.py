@@ -44,7 +44,7 @@ for ws in wb.worksheets:
         for r in ws.iter_rows(min_row=2, values_only=True):
             gid, date, home, road, hg, rg, hs, rs = r[:8]
             if not (home and road) or hg in (None, "DNP") or rg in (None, "DNP"): continue
-            games.append([iso(date), home, road, hg, rg, hs or "", rs or "", "yes" if r[9] == "Overtime" else "no"])
+            games.append([iso(date), home, road, hg, rg, "" if hs is None else hs, "" if rs is None else rs, "yes" if r[9] == "Overtime" else "no"])
 games.sort(key=lambda g: g[0])
 
 # --- members (emails are intentionally left out; this is a public page). Logo paths are kept from the existing file.
@@ -65,7 +65,7 @@ entries = []
 for date, home, road, hg, rg, hs, rs, ot in games:
     e = {"date": date, "home": home, "road": road, "homeScore": int(hg), "roadScore": int(rg)}
     if ot == "yes": e["overtime"] = True
-    if hs not in ("", None) and rs not in ("", None) and (int(hs) or int(rs)): e["homeShots"], e["roadShots"] = int(hs), int(rs)
+    if hs != "" and rs != "": e["homeShots"], e["roadShots"] = int(hs), int(rs)      # 0 shots is a real value
     entries.append(e)
 entries += [g for g in old.get("games", []) if g.get("playoff")]
 line = lambda g: "    { " + ", ".join('"%s": %s' % (k, json.dumps(v)) for k, v in g.items()) + " }"
