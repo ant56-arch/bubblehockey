@@ -42,9 +42,9 @@ Without `data/firebase.json` the site simply reads the CSV files in `data/` and 
 ## Schedule
 The **Schedule** tab builds the matchups itself from the date; there is nothing to enter. Every game day (Monday to Friday) is a full round robin: each player plays every other player once, and the home/road sides flip every game day, so after any two game days everyone has had the same number of games at home and on the road. Games already in the game log are filled in with their scores. Optional settings in `data/config.json`:
 ```
-"schedule": { "roundsPerDay": 0, "skipDates": ["2026-11-26"] }
+"schedule": { "roundsPerDay": 0, "skipDates": ["2026-11-26"], "playoffDays": 2 }
 ```
-`skipDates` are holidays with no games. `roundsPerDay` limits a day to that many rounds (each round is everyone playing once); `0` means the full round robin every day.
+The schedule automatically gives these days off: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday on a weekend is observed on the nearest weekday (Saturday becomes Friday, Sunday becomes Monday). `"holidays": false` turns that off, and `skipDates` adds extra days with no games (e.g. a company shutdown day). `playoffDays` (default 2, maximum 2) is how many game days the playoffs take; the 7-game double-elimination bracket is split across them. They are placed just before the month's last game day, which is left open as a **makeup day** for postponed games (`"makeupDay": false` turns that off). The regular round robin runs on the days before the playoffs. `roundsPerDay` limits a regular day to that many rounds (each round is everyone playing once); `0` means the full round robin every day.
 
 ## Logos
 Team logos live in `images/teams/` and are referenced by the `logo` and `alt_logo` columns of `data/members.csv`. The league logo is `images/league-logo.webp`.
