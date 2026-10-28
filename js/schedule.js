@@ -1,12 +1,12 @@
 /* Schedule: automatic daily matchups, worked out from the date alone (nothing to enter).
    - Playoffs take up to 2 game days ("schedule.playoffDays", default 2, max 2) and are placed just before the month's last game day,
-     which is left open as a makeup day ("schedule.makeupDay": false turns that off). The regular round robin runs on the days before.
+     which is left open as a makeup day ("schedule.makeupDay": false turns that off). "schedule.playoffDates" can pin exact dates for a month. The regular round robin runs on the days before.
    - Every game day (Mon-Fri, minus the holidays below and any data/config.json "schedule.skipDates") is a full round robin: each player plays each other player once.
    - Home/road sides alternate every game day, so over any two game days each player has played the same number of games on each side.
    - Games are ordered so a player rests between games when possible.
    - "schedule.roundsPerDay" (optional) limits a day to that many rounds (each round = everyone plays once); the rounds then continue on the next day. */
 
-const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 2, makeupDay: true, ...(D.config.schedule || {}) });
+const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 2, playoffDates: {}, makeupDay: true, ...(D.config.schedule || {}) });
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseYmd = s => { const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d); };
 /* Days off: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday that
@@ -40,7 +40,9 @@ function gameDaysIn(month) {
 
 /* Regular-season days, playoff days and the makeup day for a month. */
 function monthPlan(month) {
-  const all = gameDaysIn(month), n = Math.min(2, Math.max(0, +SCHED().playoffDays || 0), all.length);
+  const all = gameDaysIn(month), fixed = (SCHED().playoffDates || {})[month];       // optional: pin a month's playoff dates in config.json
+  if (Array.isArray(fixed) && fixed.length) return { reg: all.filter(d => d < fixed[0]), po: fixed, spare: all.filter(d => d > fixed[fixed.length - 1]) };
+  const n = Math.min(2, Math.max(0, +SCHED().playoffDays || 0), all.length);
   const spare = SCHED().makeupDay !== false && all.length - n - 1 >= 1 ? 1 : 0;      // keep the last day open when there is room
   const end = all.length - spare;
   return { reg: all.slice(0, end - n), po: all.slice(end - n, end), spare: all.slice(end) };
@@ -97,9 +99,9 @@ function playoffView(date) {
 function dayView(date) {
   const kind = dayKind(date); if (!kind) return null;
   if (kind === 'playoff') return playoffView(date);
-  if (kind === 'spare') return { date, spare: true, rows: [], extra: D.games.filter(g => g.date === date) };
+  if (kind === 'spare') return { date, spare: true, rows: [], extra: D.games.filter(g => g.date === date && !g.playoff) };
   const slate = slateFor(date);
-  const played = D.games.filter(g => g.date === date), used = new Set();
+  const played = D.games.filter(g => g.date === date && !g.playoff), used = new Set();
   const rows = slate.map(s => {
     const i = played.findIndex((g, j) => !used.has(j) && ((g.home === s.home && g.road === s.road) || (g.home === s.road && g.road === s.home)));
     if (i >= 0) used.add(i);
