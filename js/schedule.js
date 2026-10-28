@@ -1,15 +1,37 @@
 /* Schedule: automatic daily matchups, worked out from the date alone (nothing to enter).
    - Playoffs take up to 2 game days ("schedule.playoffDays", default 2, max 2) and are placed just before the month's last game day,
      which is left open as a makeup day ("schedule.makeupDay": false turns that off). The regular round robin runs on the days before.
-   - Every game day (Mon-Fri, minus data/config.json "schedule.skipDates") is a full round robin: each player plays each other player once.
+   - Every game day (Mon-Fri, minus the holidays below and any data/config.json "schedule.skipDates") is a full round robin: each player plays each other player once.
    - Home/road sides alternate every game day, so over any two game days each player has played the same number of games on each side.
    - Games are ordered so a player rests between games when possible.
    - "schedule.roundsPerDay" (optional) limits a day to that many rounds (each round = everyone plays once); the rounds then continue on the next day. */
 
-const SCHED = () => ({ roundsPerDay: 0, skipDates: [], playoffDays: 2, makeupDay: true, ...(D.config.schedule || {}) });
+const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 2, makeupDay: true, ...(D.config.schedule || {}) });
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseYmd = s => { const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d); };
-const isGameDay = s => { const wd = parseYmd(s).getDay(); return wd >= 1 && wd <= 5 && !SCHED().skipDates.includes(s); };
+/* Days off: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday that
+   lands on a weekend is observed on the nearest weekday (Saturday -> Friday, Sunday -> Monday). */
+const holidayCache = {};
+function holidaysOf(year) {
+  if (holidayCache[year]) return holidayCache[year];
+  const nth = (m, wd, n) => { const d = new Date(year, m, 1); d.setDate(1 + ((wd - d.getDay() + 7) % 7) + 7 * (n - 1)); return d; };
+  const last = (m, wd) => { const d = new Date(year, m + 1, 0); d.setDate(d.getDate() - ((d.getDay() - wd + 7) % 7)); return d; };
+  const fixed = (m, day) => { const d = new Date(year, m, day), wd = d.getDay(); if (wd === 6) d.setDate(d.getDate() - 1); if (wd === 0) d.setDate(d.getDate() + 1); return d; };
+  const list = [["New Year's Day", fixed(0, 1), new Date(year, 0, 1)], ['Memorial Day', last(4, 1)], ['Independence Day', fixed(6, 4), new Date(year, 6, 4)],
+    ['Labor Day', nth(8, 1, 1)], ['Thanksgiving', nth(10, 4, 4)], ['Christmas Day', fixed(11, 25), new Date(year, 11, 25)]];
+  return holidayCache[year] = list.map(([name, d, actual]) => ({ name, date: ymd(d), observed: actual && ymd(actual) !== ymd(d) }));
+}
+const holidayOn = s => { if (SCHED().holidays === false) return null; const y = +s.slice(0, 4); return [...holidaysOf(y), ...holidaysOf(y + 1)].find(h => h.date === s) || null; };
+const isGameDay = s => { const wd = parseYmd(s).getDay(); return wd >= 1 && wd <= 5 && !SCHED().skipDates.includes(s) && !holidayOn(s); };
+/* Days off in a month (holidays that fall on a weekday after observing, plus any skipDates), for display. */
+function daysOffIn(month) {
+  const [y, m] = month.split('-'), out = [];
+  for (const d = new Date(+y, +m - 1, 1); d.getMonth() === +m - 1; d.setDate(d.getDate() + 1)) {
+    const s = ymd(d), h = holidayOn(s), wd = d.getDay();
+    if (h) out.push({ date: s, name: h.name + (h.observed ? ' (observed)' : '') }); else if (wd >= 1 && wd <= 5 && SCHED().skipDates.includes(s)) out.push({ date: s, name: 'No games' });
+  }
+  return out;
+}
 function gameDaysIn(month) {
   const [y, m] = month.split('-'), out = [];
   for (const d = new Date(+y, +m - 1, 1); d.getMonth() === +m - 1; d.setDate(d.getDate() + 1)) { const s = ymd(d); if (isGameDay(s)) out.push(s); }
@@ -147,5 +169,6 @@ view.schedule = function () {
   const chips = `<div class="chips">${[['upcoming', 'Upcoming'], ['month', monthLabel(cur())]].map(([k, l]) => `<button type="button" class="chip ${mode === k ? 'on' : ''}" data-page="schedule" data-m="${k}">${l}</button>`).join('')}</div>`;
   const days = mode === 'month' ? gameDaysIn(cur()) : upcomingDays(5);
   return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held on the ${monthPlan(cur()).po.length === 1 ? 'game day' : monthPlan(cur()).po.length + ' game days'} before the month's last game day, which is kept open as a makeup day.</p>${chips}
+    ${(() => { const off = daysOffIn(cur()); return off.length ? `<p class="muted">No games: ${off.map(o => `${esc(o.name)}, ${dayLabel(o.date)}`).join(' · ')}</p>` : ''; })()}
     <div class="days">${days.map(d => dayCard(dayView(d))).join('') || '<p class="muted">No game days found.</p>'}</div>${balanceCard(cur())}`;
 };
