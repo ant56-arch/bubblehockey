@@ -188,7 +188,9 @@ view.schedule = function () {
   if (D.members.length < 2) return '<h1>Schedule</h1><p class="muted">Add at least two members to generate a schedule.</p>';
   const mode = UI.schedule === 'month' ? 'month' : 'upcoming';
   const chips = `<div class="chips">${[['upcoming', 'Upcoming'], ['month', monthLabel(cur())]].map(([k, l]) => `<button type="button" class="chip ${mode === k ? 'on' : ''}" data-page="schedule" data-m="${k}">${l}</button>`).join('')}</div>`;
-  const days = mode === 'month' ? gameDaysIn(cur()) : upcomingDays(5);
+  // Past days with no games logged (e.g. before the league started) are left out; today and future days always show.
+  const hadGames = d => D.games.some(g => g.date === d && isCounted(g));
+  const days = mode === 'month' ? gameDaysIn(cur()).filter(d => d >= todayStr() || hadGames(d)) : upcomingDays(5);
   return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held on the ${monthPlan(cur()).po.length === 1 ? 'game day' : monthPlan(cur()).po.length + ' game days'} before the month's last game day, which is kept open as a makeup day.</p>${chips}
     ${(() => { const off = daysOffIn(cur()); return off.length ? `<p class="muted">No games: ${off.map(o => `${esc(o.name)}, ${dayLabel(o.date)}`).join(' · ')}</p>` : ''; })()}
     <div class="days">${days.map(d => dayCard(dayView(d))).join('') || '<p class="muted">No game days found.</p>'}</div>${balanceCard(cur())}`;
