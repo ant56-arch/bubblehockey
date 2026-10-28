@@ -164,28 +164,30 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .mrow .side { display: flex; align-items: center; min-width: 0; }
 @media (max-width: 640px) { .mhead, .mrow { grid-template-columns: 18px 1fr 66px 1fr; gap: 4px; font-size: .9rem; } .mrow .vs { font-size: .8rem; white-space: nowrap; } .mrow .who { gap: 5px; } .mrow .tlogo { width: 22px !important; height: 22px !important; } }
 
-/* Member profiles */
+/* Member profiles: a compact card that opens into the full profile */
 .grid.members { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); align-items: start; }
-.mcard { display: block; }
-.mcard:hover { transform: none; }
-.mtop { display: flex; gap: 16px; align-items: center; }
-.mname { font-size: 1.15rem; letter-spacing: -0.02em; }
-.trophy { margin: 14px 0 2px; }
-.nowline { margin: 0 0 14px; font-size: .92rem; }
-.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.tile { background: var(--bg); border-radius: 16px; padding: 12px 14px; }
-.tile b { display: block; font-size: 1.35rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.tile span { color: var(--muted); font-size: .8rem; }
-.mcard details { background: var(--bg); margin: 8px 0 0; border-radius: 16px; }
-.mcard summary { padding: 12px 16px; }
-.mcard details > .inner { padding: 0 12px 12px; }
-.mcard .table-scroll { background: transparent; padding: 0; }
-.kv { padding: 0 4px; }
+.mcard { padding: 0; margin: 0; }
+.mcard > summary { list-style: none; padding: 18px 20px; font-weight: 400; }
+.mcard > summary::-webkit-details-marker { display: none; }
+.mtop { display: flex; gap: 14px; align-items: center; }
+.mname { font-size: 1.1rem; letter-spacing: -0.02em; }
+.nowline { font-size: .88rem; margin-top: 2px; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0 10px; }
+.tile { background: var(--bg); border-radius: 14px; padding: 9px 10px; min-width: 0; }
+.tile b { display: block; font-size: 1.02rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tile span { color: var(--muted); font-size: .72rem; }
+.more { color: var(--muted); font-size: .85rem; }
+.more::after { content: " ▾"; }
+.mcard[open] .more::after { content: " ▴"; }
+.mcard > .inner { padding: 0 20px 20px; }
+.msec { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
+.mcard .table-scroll { background: var(--bg); padding: 4px 8px; }
+.kv { padding: 0 2px; }
 .kvr { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid var(--line); }
 .kvr:first-child { border-top: 0; }
 .kvr span { color: var(--muted); font-size: .92rem; flex: 0 0 auto; }
 .kvr b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 0; }
-@media (max-width: 640px) { .grid.members { grid-template-columns: 1fr; } .tile b { font-size: 1.2rem; } }
+@media (max-width: 640px) { .grid.members { grid-template-columns: 1fr; } .mcard > summary { padding: 16px; } .mcard > .inner { padding: 0 16px 16px; } .tile b { font-size: .86rem; letter-spacing: -0.03em; } .tile { padding: 8px 7px; } .tiles { gap: 6px; } }
 
 /* Notices and the add-a-game output */
 .alert { background: color-mix(in srgb, #f5b301 18%, var(--bg)); border: 1px solid #f5b301; border-radius: 16px; padding: 12px 16px; margin: 20px 0 0; font-size: .92rem; }

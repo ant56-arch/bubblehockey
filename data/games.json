@@ -1,5 +1,5 @@
 {
-  "_how_to_add": "HOW TO ADD A GAME: copy the last line in the list below, paste it after it, and change the values. Put a comma at the end of every game line except the very last one. Required: date (YYYY-MM-DD), home, road (player short names exactly as in members.csv), homeScore, roadScore. Optional: overtime (true), homeShots, roadShots. Playoff games: add \"playoff\": true, and either the scores or \"winner\": \"Name\". The #/add page on the site builds a line for you to paste.",
+  "_how_to_add": "HOW TO ADD A GAME: copy the last line in the list below, paste it after it, and change the values. Put a comma at the end of every game line except the very last one. Required: date (YYYY-MM-DD), home, road (player short names exactly as in members.csv), homeScore, roadScore. Optional: overtime (true), homeShots, roadShots. Playoff games: add \"playoff\": true, either the scores or \"winner\": \"Name\", and a date or just a \"month\": \"2026-11\" if you do not know the day. The #/add page on the site builds a line for you to paste.",
   "playoffSeeds": {"2026-10": ["Connor", "Trotta", "Tommy", "Boban"]},
   "games": [
     { "date": "2026-10-05", "home": "Tommy", "road": "Connor", "homeScore": 4, "roadScore": 5, "homeShots": 14, "roadShots": 13 },
@@ -65,11 +65,11 @@
     { "date": "2026-10-28", "home": "Connor", "road": "Trotta", "homeScore": 8, "roadScore": 0, "homeShots": 10, "roadShots": 8 },
     { "date": "2026-10-28", "home": "Tommy", "road": "Trotta", "homeScore": 4, "roadScore": 3, "homeShots": 16, "roadShots": 14 },
     { "date": "2026-10-28", "home": "Tommy", "road": "Connor", "homeScore": 4, "roadScore": 6, "homeShots": 14, "roadShots": 11 },
-    { "date": "2026-10-29", "home": "Connor", "road": "Boban", "winner": "Connor", "playoff": true },
-    { "date": "2026-10-29", "home": "Trotta", "road": "Tommy", "winner": "Trotta", "playoff": true },
-    { "date": "2026-10-29", "home": "Boban", "road": "Tommy", "winner": "Tommy", "playoff": true },
-    { "date": "2026-10-29", "home": "Connor", "road": "Trotta", "winner": "Connor", "playoff": true },
-    { "date": "2026-10-30", "home": "Trotta", "road": "Tommy", "winner": "Tommy", "playoff": true },
-    { "date": "2026-10-30", "home": "Connor", "road": "Tommy", "winner": "Connor", "playoff": true }
+    { "month": "2026-10", "home": "Connor", "road": "Boban", "winner": "Connor", "playoff": true },
+    { "month": "2026-10", "home": "Trotta", "road": "Tommy", "winner": "Trotta", "playoff": true },
+    { "month": "2026-10", "home": "Boban", "road": "Tommy", "winner": "Tommy", "playoff": true },
+    { "month": "2026-10", "home": "Connor", "road": "Trotta", "winner": "Connor", "playoff": true },
+    { "month": "2026-10", "home": "Trotta", "road": "Tommy", "winner": "Tommy", "playoff": true },
+    { "month": "2026-10", "home": "Connor", "road": "Tommy", "winner": "Connor", "playoff": true }
   ]
 }

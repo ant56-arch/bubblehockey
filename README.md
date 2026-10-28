@@ -27,7 +27,7 @@ Easier: open the **Add Game** tab (`#/add`). Fill in the form and it builds the 
 If something is mistyped, the site shows a yellow box at the top saying what is wrong (a missing comma, a name that is not a member, a missing score) instead of breaking.
 
 ### Playoff games
-Add them to the same file with `"playoff": true` and either the scores or `"winner"`:
+Add them to the same file with `"playoff": true`, either the scores or `"winner"`, and a `date` (or just a `"month": "2026-11"` if you do not know the day; a playoff game without a date never shows on a schedule day):
 ```json
 { "date": "2026-11-26", "home": "Connor", "road": "Boban", "homeScore": 4, "roadScore": 1, "playoff": true }
 ```
@@ -40,6 +40,9 @@ GitHub Pages republishes whenever `main` changes, about a minute after you commi
 
 Reload the site (close and reopen the tab if your phone shows an old copy).
 
+## If you change the site's code
+Data edits (games, members, text) show up on their own. If you edit a `.js` or `.css` file, also bump the `?v=` number on the script and stylesheet lines in `index.html`; otherwise phones can keep showing an older copy of that file for several minutes.
+
 ## Run it locally
 ```
 python3 -m http.server 8000   # then open http://localhost:8000
@@ -51,7 +54,7 @@ The **Schedule** tab builds the matchups from the date; there is nothing to ente
 
 The schedule gives these days off automatically: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday on a weekend is observed on the nearest weekday (Saturday becomes Friday, Sunday becomes Monday).
 
-Playoffs take 2 game days, placed just before the month's last game day, which is kept open as a makeup day. Optional settings in `data/config.json`:
+Playoffs take 2 game days, placed just before the month's last game day, which is kept open as a makeup day. Playoff days are never placed on a day that already has regular games logged, so if regular games run into the planned playoff days the playoffs move later in the month. Optional settings in `data/config.json`:
 ```
 "schedule": { "roundsPerDay": 0, "skipDates": ["2026-12-24"], "holidays": true, "playoffDays": 2, "makeupDay": true,
               "playoffDates": { "2026-10": ["2026-10-29", "2026-10-30"] } }
