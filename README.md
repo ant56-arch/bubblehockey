@@ -32,6 +32,8 @@ If something is mistyped, the site shows a yellow box at the top saying what is 
 ```
 It appears in the Game Log and on the Schedule marked **DNP** (and in the player's "Did not play" count), and does not count in any record.
 
+**Automatic DNP (from November 2026):** with `"autoDnpFrom": "2026-11-01"` in the `schedule` settings of `data/config.json`, any scheduled regular game on a *past* day that was never logged is shown as DNP automatically (shown on the Schedule, in the Game Log and in the "Did not play" count; never counted in the standings). It only applies on days where at least one game was logged (a day with nothing logged is simply left out), never to today or the future, and never before that date. Change the date, or remove the setting, to turn it off. It assumes the schedule is what you follow, so a game logged between the same two players on that day cancels the DNP whichever side was home.
+
 ### Playoff games
 A playoff game is a normal game with `"playoff": true`. **It still counts in the standings and everyone's records** (the Game Log tags it "Playoff"):
 ```json
