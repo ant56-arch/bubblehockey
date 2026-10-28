@@ -133,7 +133,7 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .match.skipped { opacity: .45; }
 .champ { font-size: 1.15rem; margin: 6px 0 12px; }
 
-/* Entry forms */
+/* Admin forms */
 .form { display: grid; gap: 16px; }
 .f { display: grid; gap: 7px; font-weight: 600; font-size: .88rem; }
 .f input, .f select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; font: inherit; font-size: 16px; font-weight: 400; min-height: 48px; }
@@ -182,3 +182,8 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
   .mlogo { width: 72px; height: 72px; }
   .row2 { gap: 10px; }
 }
+
+.sess { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.glist { display: grid; gap: 8px; }
+.grow { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border-radius: 16px; padding: 10px 14px; }
+.grow .btn { min-height: 38px; padding: 6px 16px; font-size: .85rem; }
