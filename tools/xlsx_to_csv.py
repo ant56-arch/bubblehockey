@@ -16,8 +16,12 @@ wb = load_workbook(sys.argv[1], data_only=True)
 out = pathlib.Path(__file__).resolve().parent.parent / "data"
 iso = lambda d: d.date().isoformat() if isinstance(d, datetime.datetime) else str(d)
 
+def scrub(t):
+    """The league name is shown without the company prefix."""
+    return re.sub(r"\bUWM\s+", "", t.replace("UWM's", "our"))
+
 def text_cells(ws):
-    return [str(c.value).strip() for row in ws.iter_rows() for c in row if isinstance(c.value, str) and c.value.strip()]
+    return [scrub(str(c.value).strip()) for row in ws.iter_rows() for c in row if isinstance(c.value, str) and c.value.strip()]
 
 # --- home / rules as simple text: "# title", "## heading", "• bullet", plain paragraphs
 cells = text_cells(wb["Home"])
@@ -43,16 +47,17 @@ for ws in wb.worksheets:
             games.append([iso(date), home, road, hg, rg, hs or "", rs or "", "yes" if r[9] == "Overtime" else "no"])
 games.sort(key=lambda g: g[0])
 
-# --- members (emails and logos are intentionally left out; this is a public page).
+# --- members (emails are intentionally left out; this is a public page). Logo paths are kept from the existing file.
 # short_name = the name used in the game log: first name, or last name if that's what the log uses.
 used = {n for g in games for n in (g[1], g[2])}
+old = {r["short_name"]: r for r in csv.DictReader(open(out / "members.csv"))} if (out / "members.csv").exists() else {}
 with open(out / "members.csv", "w", newline="") as f:
-    w = csv.writer(f); w.writerow(["name", "short_name", "team_name", "established"])
+    w = csv.writer(f); w.writerow(["name", "short_name", "team_name", "established", "logo", "alt_logo"])
     for r in wb["Members"].iter_rows(min_row=2, values_only=True):
         if r[0]:
             parts = r[0].split()
             short = next((p for p in parts if p in used), parts[0])
-            w.writerow([r[0], short, r[1] or "", iso(r[2]) if r[2] else ""])
+            w.writerow([r[0], short, r[1] or "", iso(r[2]) if r[2] else "", old.get(short, {}).get("logo", ""), old.get(short, {}).get("alt_logo", "")])
 
 with open(out / "games.csv", "w", newline="") as f:
     w = csv.writer(f); w.writerow(["game_id", "date", "home", "road", "home_goals", "road_goals", "home_shots", "road_shots", "overtime"])
