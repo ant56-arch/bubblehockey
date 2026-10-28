@@ -1,11 +1,36 @@
-/* Commissioner-only data entry. Saves straight to the repo (data/*.csv) through the GitHub API,
-   using a fine-grained token that is kept only in this browser. Nobody without the token can change anything. */
+/* Password-protected data entry. Saves straight to the repo (data/*.csv) through the GitHub API.
+   The GitHub token is stored in data/auth.json encrypted with the league password (PBKDF2 + AES-GCM),
+   so the right password unlocks it in the browser; without the password the file is unreadable. */
 PAGES.push(['enter', 'Enter']);
 
+/* The unlocked token lives in sessionStorage (cleared when the tab closes), or localStorage if "keep me signed in" is ticked. */
 const tokenStore = {
-  get() { try { return localStorage.getItem('bhl_token') || ''; } catch { return ''; } },
-  set(v) { try { v ? localStorage.setItem('bhl_token', v) : localStorage.removeItem('bhl_token'); } catch { } },
+  get() { try { return sessionStorage.getItem('bhl_token') || localStorage.getItem('bhl_token') || ''; } catch { return ''; } },
+  set(v, keep) { try { sessionStorage.removeItem('bhl_token'); localStorage.removeItem('bhl_token'); if (v) (keep ? localStorage : sessionStorage).setItem('bhl_token', v); } catch { } },
 };
+
+/* Password -> key -> encrypt/decrypt the token. */
+const bytesToB64 = u => { let b = ''; u.forEach(x => b += String.fromCharCode(x)); return btoa(b); };
+const b64ToBytes = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function pwKey(password, salt, iter) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function lockToken(token, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 600000;
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await pwKey(password, salt, iter), new TextEncoder().encode(token));
+  return { v: 1, iter, salt: bytesToB64(salt), iv: bytesToB64(iv), ct: bytesToB64(new Uint8Array(ct)) };
+}
+async function unlockToken(auth, password) {
+  try {
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(auth.iv) }, await pwKey(password, b64ToBytes(auth.salt), auth.iter), b64ToBytes(auth.ct));
+    return new TextDecoder().decode(pt);
+  } catch { throw new Error('Wrong password.'); }
+}
+/* undefined = still loading, null = no password set up yet */
+let AUTH;
+let SHOW_SETUP = false;
+fetch('data/auth.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null).then(j => { AUTH = j; if ((location.hash || '').includes('enter') && typeof route === 'function' && D.config) route(true); });
 const b64enc = s => { let bin = ''; new TextEncoder().encode(s).forEach(x => bin += String.fromCharCode(x)); return btoa(bin); };
 const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), c => c.charCodeAt(0)));
 const csvLine = vals => vals.map(v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v)).join(',');
@@ -16,9 +41,17 @@ async function gh(path, opts = {}) {
     ...opts, cache: 'no-store',
     headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + tokenStore.get(), ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
   });
-  if (r.status === 401 || r.status === 403 || r.status === 404) throw new Error('GitHub rejected the token. It needs "Contents: Read and write" access to this repository. Sign out and paste a new one.');
+  if (opts.allow404 && r.status === 404) return r;
+  if (r.status === 401 || r.status === 403 || r.status === 404) throw new Error('GitHub rejected the token. It needs "Contents: Read and write" access to this repository. Set the password up again with a new token.');
   if (!r.ok && r.status !== 409 && r.status !== 422) throw new Error('GitHub error ' + r.status);
   return r;
+}
+/* Create or overwrite a whole file. */
+async function writeFile(path, text, message) {
+  const cur = await gh(path, { allow404: true });
+  const sha = cur.ok ? (await cur.json()).sha : undefined;
+  const r = await gh(path, { method: 'PUT', body: JSON.stringify({ message, content: b64enc(text), sha, branch: D.config.branch || 'main' }) });
+  if (!r.ok) throw new Error('Could not save. Please try again.');
 }
 /* Read a file, let `transform` change its text, save it. Retries if someone else saved in between. */
 async function updateFile(path, transform, message) {
@@ -78,14 +111,23 @@ function playoffCard() {
 
 view.enter = function () {
   if (!tokenStore.get()) {
-    return `<h1>Enter</h1><p class="lead">Commissioner tools. Sign in once on this device to add games and playoff results.</p>
+    if (AUTH === undefined) return '<h1>Enter</h1><p class="muted">Loading…</p>';
+    if (AUTH && !SHOW_SETUP) return `<h1>Enter</h1><p class="lead">Enter the league password to add games, members and playoff results.</p>
+      <div class="card"><form id="login-form" class="form"><label class="f">Password<input id="pw" type="password" autocomplete="current-password" required></label>
+      <label class="check"><input id="keep" type="checkbox"> Keep me signed in on this device</label>
+      <button class="btn" type="submit">Unlock</button><p id="login-note" class="form-note"></p></form>
+      <p class="muted" style="margin:16px 0 0">Forgot the password or the token expired? <button class="link" id="show-setup" type="button">Set up a new one</button></p></div>`;
+    return `<h1>Enter</h1><p class="lead">${AUTH ? 'Set up a new password.' : 'First-time setup. Pick a league password so you never have to handle the GitHub token again.'}</p>
       <div class="card"><ol class="steps">
         <li>On GitHub open <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</b>.</li>
         <li>Repository access: <b>Only select repositories</b> → ${esc(D.config.repo || 'ant56-arch/bubblehockey')}.</li>
-        <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Pick a long expiry.</li>
-        <li>Copy the token and paste it here. It stays on this device only and is never saved to the website.</li></ol>
-        <form id="token-form" class="form"><label class="f">Token<input id="token" type="password" autocomplete="off" placeholder="github_pat_…" required></label>
-        <button class="btn" type="submit">Sign in</button></form></div>`;
+        <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Choose the longest expiry.</li>
+        <li>Paste the token below and choose a password (8 or more characters). The token is locked with the password and saved with the site; the password is never stored.</li></ol>
+        <form id="setup-form" class="form"><label class="f">GitHub token<input id="token" type="password" autocomplete="off" placeholder="github_pat_…" required></label>
+        <label class="f">League password<input id="pw1" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label class="f">Repeat password<input id="pw2" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="btn" type="submit">Save password</button><p id="setup-note" class="form-note"></p></form>
+        ${AUTH ? '<p class="muted" style="margin:16px 0 0"><button class="link" id="hide-setup" type="button">Back to password sign-in</button></p>' : ''}</div>`;
   }
   if (!PO.month) loadPlayoffDraft(cur());
   const recent = [...D.games].sort(cmpNew).slice(0, 5);
@@ -115,17 +157,38 @@ view.enter = function () {
     <h2>Start a new month</h2><div class="card"><form id="month-form" class="form">
       <p class="muted">The Game Log and Standings show this month. The previous month moves into the history tabs.</p>
       <label class="f">Current month<input id="m-month" type="month" value="${esc(cur())}" required></label>
-      <button class="btn" type="submit">Save month</button><p id="month-note" class="form-note"></p></form></div>`;
+      <button class="btn" type="submit">Save month</button><p id="month-note" class="form-note"></p></form></div>
+    <h2>Change the password</h2><div class="card"><form id="pw-form" class="form">
+      <label class="f">New password<input id="npw1" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="f">Repeat new password<input id="npw2" type="password" autocomplete="new-password" minlength="8" required></label>
+      <button class="btn" type="submit">Change password</button><p id="pw-note" class="form-note"></p></form></div>`;
 };
 
 const rerender = () => { if ((location.hash || '').includes('enter')) route(); };
 
 document.addEventListener('submit', async e => {
-  const id = e.target.id; if (!['token-form', 'game-form', 'po-form', 'month-form', 'member-form'].includes(id)) return;
+  const id = e.target.id; if (!['login-form', 'setup-form', 'pw-form', 'game-form', 'po-form', 'month-form', 'member-form'].includes(id)) return;
   e.preventDefault();
   const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
   try {
-    if (id === 'token-form') { tokenStore.set(document.getElementById('token').value.trim()); route(); return; }
+    if (id === 'login-form') {
+      const token = await unlockToken(AUTH, document.getElementById('pw').value);
+      tokenStore.set(token, document.getElementById('keep').checked); route(); return;
+    }
+    if (id === 'setup-form' || id === 'pw-form') {
+      const [a, b] = id === 'setup-form' ? ['pw1', 'pw2'] : ['npw1', 'npw2'];
+      const pw = document.getElementById(a).value;
+      if (pw !== document.getElementById(b).value) throw new Error('The two passwords do not match.');
+      if (pw.length < 8) throw new Error('Use at least 8 characters.');
+      const token = id === 'setup-form' ? document.getElementById('token').value.trim() : tokenStore.get();
+      const prev = tokenStore.get(); tokenStore.set(token, false);
+      try { await writeFile('data/auth.json', JSON.stringify(await lockToken(token, pw)) + '\n', 'Set league password'); }
+      catch (err) { tokenStore.set(prev, false); throw err; }
+      AUTH = await lockToken(token, pw);
+      if (id === 'setup-form') { SHOW_SETUP = false; route(); }
+      else note('pw-note', 'Password changed. Use the new one next time you sign in.', true);
+      return;
+    }
     if (id === 'game-form') {
       const v = k => document.getElementById('g-' + k).value;
       const g = { date: v('date'), home: v('home'), road: v('road'), hg: +v('hg'), rg: +v('rg'), hs: v('hs') || 0, rs: v('rs') || 0, ot: document.getElementById('g-ot').checked };
@@ -185,7 +248,7 @@ document.addEventListener('submit', async e => {
       note('month-note', `Saved. The site now treats ${monthLabel(m)} as the current month.`, true);
     }
   } catch (err) {
-    note({ 'game-form': 'game-note', 'po-form': 'po-note', 'month-form': 'month-note', 'member-form': 'member-note' }[id] || 'game-note', err.message, false);
+    note({ 'login-form': 'login-note', 'setup-form': 'setup-note', 'pw-form': 'pw-note', 'game-form': 'game-note', 'po-form': 'po-note', 'month-form': 'month-note', 'member-form': 'member-note' }[id] || 'game-note', err.message, false);
   } finally { btn.disabled = false; }
 });
 
@@ -206,6 +269,8 @@ document.addEventListener('change', e => {
 
 document.addEventListener('click', async e => {
   if (e.target.id === 'sign-out') { tokenStore.set(''); route(); }
+  if (e.target.id === 'show-setup') { SHOW_SETUP = true; route(true); }
+  if (e.target.id === 'hide-setup') { SHOW_SETUP = false; route(true); }
   if (e.target.id === 'undo-game') {
     const last = D.games.length ? [...D.games].sort(cmpNew)[0] : null;
     if (!last || !confirm(`Delete the last line of games.csv?\n(Latest by date shown: ${last.home} ${last.hg}-${last.rg} ${last.road})`)) return;
