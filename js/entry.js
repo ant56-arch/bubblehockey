@@ -122,10 +122,10 @@ view.enter = function () {
         <li>On GitHub open <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</b>.</li>
         <li>Repository access: <b>Only select repositories</b> → ${esc(D.config.repo || 'ant56-arch/bubblehockey')}.</li>
         <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Choose the longest expiry.</li>
-        <li>Paste the token below and choose a password (12+ characters; a few random words works well). The token is locked with the password and saved with the site; the password is never stored.</li></ol>
+        <li>Paste the token below and choose a password (8 or more characters). The token is locked with the password and saved with the site; the password is never stored.</li></ol>
         <form id="setup-form" class="form"><label class="f">GitHub token<input id="token" type="password" autocomplete="off" placeholder="github_pat_…" required></label>
-        <label class="f">League password<input id="pw1" type="password" autocomplete="new-password" minlength="12" required></label>
-        <label class="f">Repeat password<input id="pw2" type="password" autocomplete="new-password" minlength="12" required></label>
+        <label class="f">League password<input id="pw1" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label class="f">Repeat password<input id="pw2" type="password" autocomplete="new-password" minlength="8" required></label>
         <button class="btn" type="submit">Save password</button><p id="setup-note" class="form-note"></p></form>
         ${AUTH ? '<p class="muted" style="margin:16px 0 0"><button class="link" id="hide-setup" type="button">Back to password sign-in</button></p>' : ''}</div>`;
   }
@@ -159,8 +159,8 @@ view.enter = function () {
       <label class="f">Current month<input id="m-month" type="month" value="${esc(cur())}" required></label>
       <button class="btn" type="submit">Save month</button><p id="month-note" class="form-note"></p></form></div>
     <h2>Change the password</h2><div class="card"><form id="pw-form" class="form">
-      <label class="f">New password<input id="npw1" type="password" autocomplete="new-password" minlength="12" required></label>
-      <label class="f">Repeat new password<input id="npw2" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label class="f">New password<input id="npw1" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="f">Repeat new password<input id="npw2" type="password" autocomplete="new-password" minlength="8" required></label>
       <button class="btn" type="submit">Change password</button><p id="pw-note" class="form-note"></p></form></div>`;
 };
 
@@ -179,7 +179,7 @@ document.addEventListener('submit', async e => {
       const [a, b] = id === 'setup-form' ? ['pw1', 'pw2'] : ['npw1', 'npw2'];
       const pw = document.getElementById(a).value;
       if (pw !== document.getElementById(b).value) throw new Error('The two passwords do not match.');
-      if (pw.length < 12) throw new Error('Use at least 12 characters.');
+      if (pw.length < 8) throw new Error('Use at least 8 characters.');
       const token = id === 'setup-form' ? document.getElementById('token').value.trim() : tokenStore.get();
       const prev = tokenStore.get(); tokenStore.set(token, false);
       try { await writeFile('data/auth.json', JSON.stringify(await lockToken(token, pw)) + '\n', 'Set league password'); }
