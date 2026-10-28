@@ -23,12 +23,28 @@ This rewrites everything in `data/` from the workbook's Home, Rules, Members, `<
 | `data/home.txt`, `data/rules.txt` | page text: `# title`, `## heading`, `• bullet`, otherwise a paragraph |
 | `data/config.json` | league name, tagline, `currentMonth`, points per result |
 
-## Entering data from the website (password protected)
-Open the **Enter** tab. The first time, you do a one-time setup: create a GitHub fine-grained token limited to this repository with **Contents: Read and write**, paste it in, and choose a league password (8+ characters). The token is locked with the password (AES-256, key derived with PBKDF2) and saved as `data/auth.json`; the password itself is never stored. After that, anyone who knows the password can unlock the page, add games, add or edit members and teams (with logo uploads), save playoff results, and set the current month. Each save commits to `data/` and the live site updates in about a minute.
+## Admin login setup (one time, about 10 minutes)
+The **Admin** tab signs in with a username and password and saves to a free Firebase project (Google). Nothing expires and there are no tokens.
 
-Notes: use a reasonably long password, because the locked file is public and could be guessed at offline. The token only has access to this repository, and every change is in the git history so it can be undone. If the token expires, use **Set up a new one** on the Enter page. **Change the password** is at the bottom of the Enter page once you are signed in.
+1. Go to https://console.firebase.google.com, **Create a project** (any name; turn off Google Analytics).
+2. **Build → Authentication → Get started → Email/Password → Enable → Save.**
+3. Authentication → **Users → Add user.** For the email enter `yourusername@league.local` (the part before `@` is your login username; it does not need to be a real email) and choose a password.
+4. **Build → Firestore Database → Create database** → production mode → pick the closest location → Enable. Stay on the free (Spark) plan.
+5. Firestore → **Rules** tab → paste the contents of `firestore.rules` (with your username filled in) → **Publish.**
+6. **Project settings (gear) → General → Your apps → Web (`</>`)** → register an app (no hosting). Copy `apiKey` and `projectId`.
+7. Put them in `data/firebase.json`: `{"apiKey": "...", "projectId": "..."}` (the API key is not a secret). Commit it.
+8. Open the site → **Admin**, sign in, and click **Move my data in** once. After that the site reads from the database and everything you enter shows up right away.
 
-Pick one source of truth: if you enter games on the website, don't re-run `xlsx_to_csv.py` from an older spreadsheet, or it will overwrite them.
+To add another admin, create another user in Authentication and add their `@league.local` address to the list in the rules. To change a password, use the Admin page (or reset it in the Firebase console).
+
+Without `data/firebase.json` the site simply reads the CSV files in `data/` and the Admin tab says it isn't connected. Those files can also be edited directly on github.com.
+
+## Schedule
+The **Schedule** tab builds the matchups itself from the date; there is nothing to enter. Every game day (Monday to Friday) is a full round robin: each player plays every other player once, and the home/road sides flip every game day, so after any two game days everyone has had the same number of games at home and on the road. Games already in the game log are filled in with their scores. Optional settings in `data/config.json`:
+```
+"schedule": { "roundsPerDay": 0, "skipDates": ["2026-11-26"] }
+```
+`skipDates` are holidays with no games. `roundsPerDay` limits a day to that many rounds (each round is everyone playing once); `0` means the full round robin every day.
 
 ## Logos
 Team logos live in `images/teams/` and are referenced by the `logo` and `alt_logo` columns of `data/members.csv`. The league logo is `images/league-logo.webp`.

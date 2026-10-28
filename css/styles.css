@@ -133,7 +133,7 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .match.skipped { opacity: .45; }
 .champ { font-size: 1.15rem; margin: 6px 0 12px; }
 
-/* Entry forms */
+/* Admin forms */
 .form { display: grid; gap: 16px; }
 .f { display: grid; gap: 7px; font-weight: 600; font-size: .88rem; }
 .f input, .f select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; font: inherit; font-size: 16px; font-weight: 400; min-height: 48px; }
@@ -148,6 +148,21 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .form-note { margin: 0; min-height: 1.2em; font-size: .95rem; } .form-note.ok { color: var(--win); } .form-note.err { color: var(--err); }
 .steps { padding-left: 20px; } .steps li { margin-bottom: 8px; }
 .more-stats { display: none; margin-top: 10px; width: 100%; padding: 12px; background: var(--surface-2); color: var(--text); border: 0; border-radius: 999px; font: inherit; font-weight: 600; }
+
+/* Schedule */
+.days { display: grid; gap: 14px; margin-bottom: 8px; }
+.day.today { outline: 2px solid var(--ink); }
+.dayhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.dayhead .muted { margin-left: auto; font-size: .85rem; }
+.mhead, .mrow { display: grid; grid-template-columns: 24px 1fr 76px 1fr; align-items: center; gap: 8px; }
+.mhead { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 0 0 4px; }
+.mrow { padding: 10px 0; border-top: 1px solid var(--line); }
+.mrow .gno { color: var(--muted); font-size: .8rem; }
+.mrow .vs { text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mrow .vs b { color: var(--text); }
+.mhead .r, .mrow .side.r { justify-content: flex-end; text-align: right; }
+.mrow .side { display: flex; align-items: center; min-width: 0; }
+@media (max-width: 640px) { .mhead, .mrow { grid-template-columns: 18px 1fr 56px 1fr; gap: 4px; font-size: .9rem; } .mrow .who { gap: 5px; } .mrow .tlogo { width: 22px !important; height: 22px !important; } }
 
 /* Motion: content eases in; cards lift on hover. Disabled for people who prefer less motion. */
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -182,3 +197,8 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
   .mlogo { width: 72px; height: 72px; }
   .row2 { gap: 10px; }
 }
+
+.sess { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.glist { display: grid; gap: 8px; }
+.grow { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border-radius: 16px; padding: 10px 14px; }
+.grow .btn { min-height: 38px; padding: 6px 16px; font-size: .85rem; }

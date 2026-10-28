@@ -1,6 +1,6 @@
 /* Bubble Hockey League site. All data lives in /data (see README). */
 const PAGES = [
-  ['home', 'Home'], ['rules', 'Rules'], ['members', 'Members'],
+  ['home', 'Home'], ['rules', 'Rules'], ['members', 'Members'], ['schedule', 'Schedule'],
   ['gamelog', 'Game Log'], ['gamelog-history', 'Game Log History'],
   ['standings', 'Standings'], ['standings-history', 'Standings History'],
   ['playoffs', 'Playoff Bracket'], ['playoffs-history', 'Playoff History'],
@@ -32,13 +32,39 @@ function parseCSV(text) {
 }
 
 const D = {};
+/* If data/firebase.json exists, the league data comes from Firestore (editable in the Admin tab);
+   otherwise it comes from the CSV files in /data. Each Firestore document holds one JSON string. */
+const FS = fb => `https://firestore.googleapis.com/v1/projects/${fb.projectId}/databases/(default)/documents`;
+async function fsList(col) {
+  const out = []; let tok = '';
+  do {
+    const r = await fetch(`${FS(D.fb)}/${col}?pageSize=300&key=${D.fb.apiKey}${tok ? '&pageToken=' + tok : ''}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error('Firestore ' + r.status);
+    const j = await r.json(); out.push(...(j.documents || [])); tok = j.nextPageToken || '';
+  } while (tok);
+  return Object.fromEntries(out.map(d => [d.name.split('/').pop(), JSON.parse(d.fields?.json?.stringValue || 'null')]));
+}
+async function loadRemote() {
+  if (!D.fb) return null;
+  try {
+    const [league, months] = await Promise.all([fsList('league'), fsList('games')]);
+    if (!league.config) return null;
+    return { config: league.config, members: league.members || [], playoffs: league.playoffs || [], games: Object.values(months).flat() };
+  } catch { return null; }
+}
+
 async function load() {
   const get = async (f, kind) => {
     try { const r = await fetch('data/' + f, { cache: 'no-cache' }); if (!r.ok) throw 0; return kind === 'json' ? r.json() : kind === 'text' ? r.text() : parseCSV(await r.text()); }
     catch { return kind === 'json' ? {} : kind === 'text' ? '' : []; }
   };
-  const [config, members, games, playoffs, home, rules] = await Promise.all([
-    get('config.json', 'json'), get('members.csv'), get('games.csv'), get('playoffs.csv'), get('home.txt', 'text'), get('rules.txt', 'text')]);
+  const fb = await get('firebase.json', 'json');
+  D.fb = fb.apiKey && fb.projectId ? fb : null;
+  const remote = await loadRemote();
+  D.source = remote ? 'firestore' : 'files';
+  const [fConfig, fMembers, fGames, fPlayoffs, home, rules] = await Promise.all([
+    remote ? null : get('config.json', 'json'), remote ? null : get('members.csv'), remote ? null : get('games.csv'), remote ? null : get('playoffs.csv'), get('home.txt', 'text'), get('rules.txt', 'text')]);
+  const config = remote ? remote.config : fConfig, members = remote ? remote.members : fMembers, games = remote ? remote.games : fGames, playoffs = remote ? remote.playoffs : fPlayoffs;
   D.config = { leagueName: 'Bubble Hockey League', tagline: '', currentMonth: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
   D.members = members.map(m => ({ ...m, short_name: m.short_name || m.name }));
   D.games = games.map(g => ({ ...g, id: +g.game_id || 0, hg: +g.home_goals, rg: +g.road_goals, hs: +g.home_shots || 0, rs: +g.road_shots || 0, ot: /^(y|yes|true|1|overtime|ot)$/i.test(g.overtime || ''), month: (g.date || '').slice(0, 7) }))
@@ -180,6 +206,7 @@ const view = {
         <div class="card stat"><div class="num">${D.members.length}</div><div class="label">Players</div></div>
         <div class="card stat"><div class="num">${esc(lastChamp || '—')}</div><div class="label">Last champion</div></div>
       </div>
+      ${typeof todayCard === 'function' ? todayCard() : ''}
       <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4)}
       <h2>Latest games</h2>${gamesTable([...D.games].sort(cmpNew).slice(0, 5))}
       ${t.html.includes('<h2>') ? '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') : ''}`;
@@ -238,7 +265,7 @@ function route(keepScroll) {
 (async () => {
   await load();
   document.getElementById('league-name').textContent = D.config.leagueName;
-  document.getElementById('nav').innerHTML = PAGES.map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
+  document.getElementById('nav').innerHTML = PAGES.filter(p => p[0] !== 'admin' || D.fb).map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
   document.querySelector('.menu-toggle').onclick = e => {
     const open = document.getElementById('nav').classList.toggle('open');
     e.currentTarget.setAttribute('aria-expanded', open);
