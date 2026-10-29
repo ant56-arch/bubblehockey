@@ -84,12 +84,24 @@ async function loadAdmin() {
 }
 const rerender = () => { if ((location.hash || '').includes('add')) route(true); };
 
+const rawList = () => (ADM.loaded ? ADM.raw : D.rawGames || []);
+const tokenLink = () => {
+  const { owner } = repoInfo();
+  return 'https://github.com/settings/personal-access-tokens/new?' + new URLSearchParams({ name: 'Bubble Hockey League site', description: 'Lets the league site save games', target_name: owner || '', expires_in: '365', contents: 'write' });
+};
+/* Saving needs the one-time connection: point at the steps instead of failing quietly. */
+function needConnect() {
+  const card = document.getElementById('connect-card');
+  note('To save, connect to GitHub first (one time). The steps are at the top of this page.', false);
+  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 1600); }
+}
+
 /* ---------- the form ---------- */
 const val = id => document.getElementById(id).value, chk = id => document.getElementById(id).checked;
 function readForm() {
   const o = { date: val('a-date'), home: val('a-home'), road: val('a-road') }, problems = [];
   const dnp = chk('a-dnp'), po = chk('a-po'), hs = val('a-hs'), rs = val('a-rs');
-  const orig = ADM.editing !== null ? ADM.raw[ADM.editing] : null;
+  const orig = ADM.editing !== null ? rawList()[ADM.editing] : null;
   document.getElementById('a-win-wrap').hidden = !po || dnp;
   const w = document.getElementById('a-win'), want = [o.home, o.road].filter(Boolean);
   if (w.options.length !== want.length + 1 || [...w.options].slice(1).some((x, i) => x.value !== want[i])) { const keep = w.value; w.innerHTML = '<option value=""></option>' + want.map(n => `<option>${esc(n)}</option>`).join(''); if (want.includes(keep)) w.value = keep; }
@@ -127,11 +139,12 @@ const gameLine = o => o.dnp ? `${o.home} vs ${o.road} (DNP)` : o.homeScore !== u
 /* ---------- the page ---------- */
 const entryMonth = e => (e.date || e.month || '').slice(0, 7);
 function gamesList() {
-  if (!ADM.raw.length) return '<p class="muted">No games in the file yet.</p>';
-  const months = [...new Set(ADM.raw.map(entryMonth))].filter(Boolean).sort().reverse();
-  const c = chipsFor('add', months, m => ADM.raw.filter(e => entryMonth(e) === m).length);
+  const list = rawList();
+  if (!list.length) return '<p class="muted">No games in the file yet.</p>';
+  const months = [...new Set(list.map(entryMonth))].filter(Boolean).sort().reverse();
+  const c = chipsFor('add', months, m => list.filter(e => entryMonth(e) === m).length);
   const valid = new Set(D.games.map(g => g.seq));
-  const rows = ADM.raw.map((e, i) => ({ e, i })).filter(x => entryMonth(x.e) === c.sel).sort((a, b) => (b.e.date || '').localeCompare(a.e.date || '') || b.i - a.i);
+  const rows = list.map((e, i) => ({ e, i })).filter(x => entryMonth(x.e) === c.sel).sort((a, b) => (b.e.date || '').localeCompare(a.e.date || '') || b.i - a.i);
   return `<h2>Edit or delete a game</h2>${c.html}<div class="glist">${rows.map(({ e, i }) => `<div class="grow${ADM.editing === i ? ' editing' : ''}">
       <div class="ginfo"><span class="muted">${e.date ? dateShort(e.date) : esc(e.month || '')}</span> <b>${esc(gameLine(e))}</b>${e.playoff ? ' <span class="tag">Playoff</span>' : ''}${e.overtime ? ' <span class="tag">OT</span>' : ''}${e.dnp ? ' <span class="tag dnp">DNP</span>' : ''}${valid.has(i) ? '' : ' <span class="tag warn">Needs fixing</span>'}</div>
       <div class="gbtns"><button class="btn small" type="button" data-edit="${i}">Edit</button><button class="btn small ghost" type="button" data-del="${i}">Delete</button></div></div>`).join('')}</div>`;
@@ -145,17 +158,20 @@ view.add = function () {
   const editing = ADM.editing !== null;
   const { owner, repo } = repoInfo();
   const connect = connected ? `<p class="muted" style="margin:0 0 14px">${ADM.loading ? 'Connecting to GitHub…' : ADM.error || ADM.layoutError ? '' : 'Connected to GitHub. Changes save straight to the site.'} <button class="link" id="a-disconnect" type="button">Disconnect</button></p>${ADM.error || ADM.layoutError ? `<p class="form-note err">${esc(ADM.error || ADM.layoutError)} You can still use the form to copy a line.</p>` : ''}`
-    : `<h2>Save from this page</h2><div class="card"><ol class="steps">
-        <li>On GitHub open <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</b>.</li>
-        <li>Repository access: <b>Only select repositories</b> → <b>${esc(owner || '')}/${esc(repo || '')}</b>. Under Permissions set <b>Contents</b> to <b>Read and write</b>. Pick the longest expiry (1 year).</li>
-        <li>Copy the token and paste it here. It stays only in this browser. (A classic token set to never expire also works.)</li></ol>
-        <form id="tok-form" class="form"><label class="f">GitHub token<input id="a-token" type="password" autocomplete="off" placeholder="github_pat_…" required></label>
-        <button class="btn" type="submit">Connect</button><p id="tok-note" class="form-note"></p></form></div>
-      <p class="muted">Or skip this: fill in the game below, tap Copy, and paste the line into <code>data/games.json</code> on GitHub.</p>`;
+    : `<div class="card" id="connect-card"><b>Connect once to save changes</b>
+        <p class="muted" style="margin:6px 0 10px">You can look around and fill things in now. To actually save, GitHub has to give this site permission once. It takes about two minutes.</p>
+        <ol class="steps">
+          <li><a class="btn small" href="${esc(tokenLink())}" target="_blank" rel="noopener">Open GitHub</a> and sign in if it asks.</li>
+          <li>Under <b>Repository access</b> pick <b>Only select repositories</b>, then choose <b>${esc(owner || '')}/${esc(repo || '')}</b>. Leave everything else as it is.</li>
+          <li>Tap <b>Generate token</b> at the bottom, then <b>copy</b> the token (it starts with <code>github_pat_</code>).</li>
+          <li>Come back here, tap <b>Paste</b>, then <b>Connect</b>.</li></ol>
+        <form id="tok-form" class="form"><label class="f">Token<input id="a-token" type="password" autocomplete="off" placeholder="github_pat_…" required></label>
+        <div class="btnrow"><button class="btn ghost" id="a-paste" type="button">Paste</button><button class="btn" type="submit">Connect</button></div><p id="tok-note" class="form-note"></p></form>
+        <p class="muted" style="margin:10px 0 0">The token stays only in this browser. You renew it once a year.</p></div>`;
   const live = connected && ADM.loaded && !ADM.layoutError;
-  setTimeout(() => { if (!document.getElementById('add-form')) return; if (editing && ADM.raw[ADM.editing]) setForm(ADM.raw[ADM.editing]); else showOut(); }, 0);
+  setTimeout(() => { if (!document.getElementById('add-form')) return; if (editing && rawList()[ADM.editing]) setForm(rawList()[ADM.editing]); else showOut(); }, 0);
   return `<h1>Add / edit games</h1>${connect}
-    <h2>${editing ? 'Edit this game' : 'Add a game'}</h2><div class="card"><form id="add-form" class="form" onsubmit="return false">
+    <h2 id="form-h">${editing ? 'Edit this game' : 'Add a game'}</h2><div class="card"><form id="add-form" class="form" onsubmit="return false">
       <label class="f">Date<input id="a-date" type="date" value="${today}"></label>
       <div class="row2">${pick('a-home', 'Home player')}${pick('a-road', 'Road player')}</div>
       <div class="row2">${num('a-hs', 'Home score')}${num('a-rs', 'Road score')}</div>
@@ -164,11 +180,11 @@ view.add = function () {
       <label class="check"><input id="a-dnp" type="checkbox"><span>Did not play (DNP) <span class="muted">· no effect on the standings</span></span></label>
       <label class="check"><input id="a-po" type="checkbox"><span>Playoff game <span class="muted">· still counts in the standings</span></span></label>
       <label class="f" id="a-win-wrap" hidden>Winner <span class="muted">(only if you are not entering scores)</span><select id="a-win"><option value=""></option></select></label>
-      ${live ? `<div class="btnrow"><button class="btn" id="a-save" type="button">${editing ? 'Save changes' : 'Save game'}</button>${editing ? '<button class="btn ghost" id="a-cancel" type="button">Cancel</button>' : ''}</div>` : ''}
+      ${live || !connected ? `<div class="btnrow"><button class="btn" id="a-save" type="button">${editing ? 'Save changes' : 'Save game'}</button>${editing ? '<button class="btn ghost" id="a-cancel" type="button">Cancel</button>' : ''}</div>` : ''}
       <p id="a-note" class="form-note"></p>
     </form></div>
     <div id="a-out"></div>
-    ${live ? gamesList() : ''}
+    ${connected && !live ? '' : gamesList()}
     ${connected ? '' : `<h2>How to add it</h2><div class="card"><ol class="steps">
       <li>Fill in the form above, then tap <b>Copy</b>.</li>
       <li>On GitHub open <b>data/games.json</b> and tap the pencil (Edit).</li>
@@ -183,7 +199,7 @@ document.addEventListener('submit', async e => {
   if (e.target.id !== 'tok-form') return;
   e.preventDefault(); const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
   const prev = tok.get(); tok.set(document.getElementById('a-token').value.trim());
-  try { await readFile(); ADM.loaded = false; ADM.editing = null; route(); }
+  try { await readFile(); ADM.loaded = false; route(); }
   catch (err) { tok.set(prev); const n = document.getElementById('tok-note'); n.className = 'form-note err'; n.textContent = /did not accept/.test(err.message) ? err.message : 'Could not connect: ' + err.message; btn.disabled = false; }
 });
 document.addEventListener('click', async e => {
@@ -193,9 +209,13 @@ document.addEventListener('click', async e => {
     try { await navigator.clipboard.writeText(text); done(true); } catch { done(false); } return;
   }
   if (t.id === 'a-disconnect') { tok.set(''); Object.assign(ADM, { loaded: false, text: '', raw: [], editing: null, error: '' }); route(); return; }
+  if (t.id === 'a-paste') { try { document.getElementById('a-token').value = (await navigator.clipboard.readText()).trim(); } catch { const n = document.getElementById('tok-note'); n.className = 'form-note err'; n.textContent = 'Could not read the clipboard. Long-press in the box and choose Paste.'; } return; }
   if (t.id === 'a-cancel') { ADM.editing = null; route(true); return; }
   if (t.id === 'a-save') {
-    const { obj, problems, preview } = readForm(); if (problems.length) return;
+    const { obj, problems, preview } = readForm();
+    if (problems.length) { note(problems.join(' '), false); return; }
+    if (!tok.get()) return needConnect();
+    if (!ADM.loaded) { note('Still connecting to GitHub. Try again in a moment.', false); return; }
     t.disabled = true; note('Saving…', true);
     try {
       const editing = ADM.editing, seen = editing !== null ? ADM.raw[editing] : null;
@@ -206,9 +226,10 @@ document.addEventListener('click', async e => {
     } catch (err) { t.disabled = false; note(err.message, false); }
     return;
   }
-  if (t.dataset && t.dataset.edit !== undefined) { ADM.editing = +t.dataset.edit; route(true); setTimeout(() => document.getElementById('add-form').scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); return; }
+  if (t.dataset && t.dataset.edit !== undefined) { ADM.editing = +t.dataset.edit; route(true); setTimeout(() => document.getElementById('form-h').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
   if (t.dataset && t.dataset.del !== undefined) {
-    const i = +t.dataset.del, e0 = ADM.raw[i];
+    const i = +t.dataset.del, e0 = rawList()[i];
+    if (!tok.get()) return needConnect();
     if (!e0 || !confirm(`Delete this game?\n${e0.date || e0.month}: ${gameLine(e0)}`)) return;
     t.disabled = true;
     try { await saveChange('delete', i, null, e0, `Delete game: ${gameLine(e0)} (${e0.date || e0.month})`); if (ADM.editing === i) ADM.editing = null; rerender(); setTimeout(() => note(`Deleted: ${gameLine(e0)}. The public site updates in about a minute.`, true), 20); }

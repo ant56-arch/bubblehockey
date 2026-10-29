@@ -42,6 +42,7 @@ function applyGamesText(gamesText) {
   try { file = JSON.parse(gamesText || '{}'); }
   catch (e) { D.gameProblems.push(`data/games.json has a typo and could not be read (${e.message}). Check for a missing comma, bracket or quote near the last game you added.`); }
   D.seedsOverride = (!Array.isArray(file) && file.playoffSeeds) || {};
+  D.rawGames = Array.isArray(file) ? file : file.games || [];
   const known = new Set(D.members.map(m => m.short_name));
   const num = v => (v === '' || v == null ? NaN : +v);
   D.games = [];
