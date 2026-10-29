@@ -29,36 +29,25 @@ function parseCSV(text) {
   return body.map(r => Object.fromEntries(keys.map((k, i) => [k, (r[i] ?? '').trim()])));
 }
 
-const D = { problems: [] };
+const D = { baseProblems: [], gameProblems: [] };
+Object.defineProperty(D, 'problems', { get() { return [...this.baseProblems, ...this.gameProblems]; } });
 /* A game counts in the standings and records when it has two different scores (playoff games count too). */
 const isCounted = g => !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
 
 /* All the data is static files in /data: games.json (every game, including playoff games), members.csv, config.json and the page text. */
-async function load() {
-  const get = async (f, kind) => {
-    try { const r = await fetch('data/' + f, { cache: 'no-cache' }); if (!r.ok) throw 0; return kind === 'json' ? r.json() : kind === 'text' ? r.text() : parseCSV(await r.text()); }
-    catch { return kind === 'json' ? {} : kind === 'text' ? '' : []; }
-  };
-  const getGames = async () => {
-    try { const r = await fetch('data/games.json', { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.text(); }
-    catch (e) { D.problems.push(`data/games.json could not be loaded (${e.message}). If you opened index.html straight from your computer, use the published site or run a local web server (see the README).`); return ''; }
-  };
-  const [config, members, gamesText, home, rules] = await Promise.all([
-    get('config.json', 'json'), get('members.csv'), getGames(), get('home.txt', 'text'), get('rules.txt', 'text')]);
-  D.config = { leagueName: 'Bubble Hockey League', tagline: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
-  D.members = members.map(m => ({ ...m, short_name: m.short_name || m.name }));
-  D.home = home; D.rules = rules;
-
+/* Read the text of games.json into D.games (and the warnings). Also used after a save from the Add / Edit tab, so the site updates at once. */
+function applyGamesText(gamesText) {
+  D.gameProblems = [];
   let file = {};
   try { file = JSON.parse(gamesText || '{}'); }
-  catch (e) { D.problems.push(`data/games.json has a typo and could not be read (${e.message}). Check for a missing comma, bracket or quote near the last game you added.`); }
+  catch (e) { D.gameProblems.push(`data/games.json has a typo and could not be read (${e.message}). Check for a missing comma, bracket or quote near the last game you added.`); }
   D.seedsOverride = (!Array.isArray(file) && file.playoffSeeds) || {};
   const known = new Set(D.members.map(m => m.short_name));
   const num = v => (v === '' || v == null ? NaN : +v);
   D.games = [];
   (Array.isArray(file) ? file : file.games || []).forEach((g, i) => {
     const where = `Game ${i + 1} in games.json (${g.date || g.month || 'no date'}, ${g.home || '?'} vs ${g.road || '?'})`;
-    const bad = msg => D.problems.push(`${where} was skipped: ${msg}.`);
+    const bad = msg => D.gameProblems.push(`${where} was skipped: ${msg}.`);
     const date = g.date || '', month = date ? date.slice(0, 7) : g.month || '';      // a playoff game may have just a month
     if (date ? !/^\d{4}-\d{2}-\d{2}$/.test(date) : !(g.playoff && /^\d{4}-\d{2}$/.test(month))) return bad(g.playoff ? 'it needs a date (2026-11-03) or a month (2026-11)' : 'the date must look like 2026-11-03');
     if (!g.home || !g.road || g.home === g.road) return bad('it needs two different players');
@@ -83,7 +72,25 @@ async function load() {
   }
   for (const m of [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort())
     for (const g of buildBracket(m).unmatched) warn.push(`Playoff ${name(g)} does not fit the ${monthLabel(m)} bracket (wrong players for the next open game, or not needed). Playoff games must be entered in the order they were played.`);
-  D.problems.push(...warn.slice(0, 8), ...(warn.length > 8 ? [`...and ${warn.length - 8} more.`] : []));
+  D.gameProblems.push(...warn.slice(0, 8), ...(warn.length > 8 ? [`...and ${warn.length - 8} more.`] : []));
+}
+
+async function load() {
+  const get = async (f, kind) => {
+    try { const r = await fetch('data/' + f, { cache: 'no-cache' }); if (!r.ok) throw 0; return kind === 'json' ? r.json() : kind === 'text' ? r.text() : parseCSV(await r.text()); }
+    catch { return kind === 'json' ? {} : kind === 'text' ? '' : []; }
+  };
+  const getGames = async () => {
+    try { const r = await fetch('data/games.json', { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.text(); }
+    catch (e) { D.baseProblems.push(`data/games.json could not be loaded (${e.message}). If you opened index.html straight from your computer, use the published site or run a local web server (see the README).`); return ''; }
+  };
+  const [config, members, gamesText, home, rules] = await Promise.all([
+    get('config.json', 'json'), get('members.csv'), getGames(), get('home.txt', 'text'), get('rules.txt', 'text')]);
+  D.config = { leagueName: 'Bubble Hockey League', tagline: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
+  D.members = members.map(m => ({ ...m, short_name: m.short_name || m.name }));
+  D.home = home; D.rules = rules;
+
+  applyGamesText(gamesText);
 }
 
 /* ---------- helpers ---------- */
