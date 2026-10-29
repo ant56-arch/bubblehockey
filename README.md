@@ -4,9 +4,18 @@ A small static website (no build step, no login, no backend, nothing to pay for)
 
 Everything is calculated from one file, **`data/games.json`**: standings, the game log, per-player records for every month, the schedule's results and the playoff brackets. The current month is simply today's month, so the game log and standings reset by themselves on the 1st.
 
-## Adding a game
+## Adding, editing and deleting games
 
-Open `data/games.json` on GitHub, tap the pencil (Edit), copy the last game line, paste it below, and change the values. Every game line ends with a comma except the very last one.
+### From the website (the **Add / Edit** tab)
+Connect once, then add, edit and delete games right on the site.
+1. **Connect (once per device):** on GitHub create a *fine-grained* personal access token (Settings → Developer settings → Personal access tokens → Fine-grained tokens), limited to this repository, with **Contents: Read and write**. Pick the longest expiry (1 year). A classic token set to never expire also works. Paste it into the tab and tap **Connect**. It is kept only in that browser (tap **Disconnect** to remove it). When it expires the tab says so; make a new one and reconnect.
+2. **Add:** fill in the form and tap **Save game**. Tick **Did not play (DNP)** for a game that was not played, or **Playoff game** for a playoff game.
+3. **Edit or delete:** pick the month, then tap **Edit** (the game loads into the form; change it and tap **Save changes**) or **Delete** (asks first).
+
+Each save is a commit to `data/games.json`, so the public site updates about a minute later and GitHub's **History** keeps every earlier version. Saves change only the one line involved and leave the rest of the file untouched. If someone changed the file in between, the tab refuses and refreshes instead of hitting the wrong game. Without a token the form still works: it builds a line to copy (below).
+
+### By hand (the same file)
+Open `data/games.json` on GitHub, tap the pencil (Edit), copy the last game line, paste it below and change the values. Every game line ends with a comma except the very last one.
 
 ```json
 { "date": "2026-11-03", "home": "Tommy", "road": "Connor", "homeScore": 4, "roadScore": 2 }
@@ -20,18 +29,12 @@ Open `data/games.json` on GitHub, tap the pencil (Edit), copy the last game line
 | `overtime` | no | `true` if decided in overtime (changes points: 2 for an OT win, 1 for an OT loss) |
 | `homeShots`, `roadShots` | no | used for the shot stats |
 | `playoff` | no | `true` for a playoff game (see below) |
-| `winner` | no | for a playoff game with no scores |
+| `winner` | no | for a playoff game with no score |
+| `dnp` | no | `true` for a scheduled game that was **not played** (no scores): it shows as DNP in the Game Log and Schedule and never changes the standings |
 
-Easier: open the **Add Game** tab (`#/add`). Fill in the form and it builds the line for you. Tap **Copy**, edit `data/games.json`, tap at the end of the last game line (right after its `}`), paste, and commit. The page saves nothing itself.
+Without connecting, the Add / Edit tab builds the line for you: fill in the form, tap **Copy**, edit `data/games.json`, tap at the end of the last game line (right after its `}`), paste, and commit.
 
-### Editing or deleting a game
-Every game is one line in `data/games.json`, in date order.
-- **Edit:** open the file on GitHub, tap the pencil, change the numbers (or names) on that line, and commit.
-- **Delete:** delete the whole line. Every game line must end with a comma **except the last one**, so if you delete the last game, remove the comma at the end of the new last line.
-- **Undo a mistake:** on the file's page, tap **History** to see earlier versions; open one and copy the old text back.
-The Game Log's `#` is just a running count for the month and renumbers itself after a delete. Warning messages say "Game 12 in games.json", meaning the 12th game line in the file.
-
-If something is mistyped, the site shows a yellow box at the top saying what is wrong (a missing comma, a name that is not a member, a missing score) instead of breaking.
+**To edit or delete by hand:** change the numbers on that game's line, or delete the whole line (if you delete the last game, remove the comma from the end of the new last line). On the file's page, **History** shows earlier versions.
 
 ### Games that were not played (DNP)
 ```json
