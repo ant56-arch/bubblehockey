@@ -303,7 +303,7 @@ function route(keepScroll) {
   if (keepScroll !== true) window.scrollTo(0, 0);
 }
 
-(async () => {
+async function startApp() {
   await load();
   document.getElementById('league-name').textContent = D.config.leagueName;
   document.getElementById('nav').innerHTML = PAGES.filter(p => !p[2]).map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
@@ -319,4 +319,4 @@ function route(keepScroll) {
   };
   window.addEventListener('hashchange', () => route());
   route();
-})();
+}

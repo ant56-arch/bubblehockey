@@ -9,7 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <script>try { var t = localStorage.getItem('bhl_theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
-  <link rel="stylesheet" href="css/styles.css?v=20261029e">
 </head>
 <body>
   <header class="site-header">
@@ -22,9 +21,19 @@
   </header>
   <main class="wrap" id="app"><p class="muted">Loading…</p><noscript><p>This site needs JavaScript turned on to show the league data.</p></noscript></main>
   <footer class="wrap muted">Bubble Hockey League · Play fair, shoot straight.</footer>
-  <script src="js/app.js?v=20261029e"></script>
-  <script src="js/schedule.js?v=20261029e"></script>
-  <script src="js/members.js?v=20261029e"></script>
-  <script src="js/add.js?v=20261029e"></script>
+
+  <script>
+    /* Always load the newest code: version.txt is fetched fresh on every visit and added to the file names, so a phone that kept an old copy of this page still picks up new scripts and styles. */
+    (async () => {
+      let v = String(Date.now());
+      try { const r = await fetch('version.txt', { cache: 'no-store' }); if (r.ok) v = (await r.text()).trim() || v; } catch (e) {}
+      const fail = f => { document.getElementById('app').innerHTML = '<p>Could not load ' + f + '. Check your connection and reload the page.</p>'; };
+      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'css/styles.css?v=' + v; document.head.appendChild(css);
+      for (const name of ['app', 'schedule', 'members', 'add']) {
+        try { await new Promise((ok, bad) => { const s = document.createElement('script'); s.src = 'js/' + name + '.js?v=' + v; s.onload = ok; s.onerror = bad; document.body.appendChild(s); }); } catch (e) { return fail(name + '.js'); }
+      }
+      startApp();
+    })();
+  </script>
 </body>
 </html>
