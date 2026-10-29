@@ -183,14 +183,25 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .more::after { content: " ▾"; }
 .mcard[open] .more::after { content: " ▴"; }
 .mcard > .inner { padding: 0 20px 20px; }
-.msec { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
-.mcard .table-scroll { background: var(--bg); padding: 4px 8px; }
+.showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 14px 14px; border-radius: 22px; background: radial-gradient(circle at 25% 15%, #1d5aa3 0%, #0d3b6e 42%, #050b14 100%); }
+.showcase.one { grid-template-columns: minmax(0, 190px); justify-content: center; }
+.showcase figure { margin: 0; text-align: center; min-width: 0; }
+.showcase img { width: 100%; max-width: 180px; aspect-ratio: 1; object-fit: cover; border-radius: 18px; background: #000; box-shadow: 0 10px 28px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .12); }
+.showcase figcaption { color: #cfe0f5; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; margin-top: 9px; }
+.sub { background: var(--bg); border-radius: 16px; margin: 8px 0 0; }
+.sub > summary { padding: 13px 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.sub > summary .hint { font-weight: 400; color: var(--muted); font-size: .85rem; text-align: right; }
+.sub > .inner { padding: 0 14px 12px; }
+.mcard .table-scroll { background: transparent; padding: 0; }
 .kv { padding: 0 2px; }
 .kvr { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid var(--line); }
 .kvr:first-child { border-top: 0; }
 .kvr span { color: var(--muted); font-size: .92rem; flex: 0 0 auto; }
 .kvr b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 0; }
 @media (max-width: 640px) { .grid.members { grid-template-columns: 1fr; } .mcard > summary { padding: 16px; } .mcard > .inner { padding: 0 16px 16px; } .tile b { font-size: .86rem; letter-spacing: -0.03em; } .tile { padding: 8px 7px; } .tiles { gap: 6px; } }
+
+.flash { animation: flash 1.6s ease; }
+@keyframes flash { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 30% { box-shadow: 0 0 0 4px var(--ink); } }
 
 /* Add / Edit games list */
 .glist { display: grid; gap: 8px; }

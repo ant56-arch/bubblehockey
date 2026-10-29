@@ -8,9 +8,9 @@ Everything is calculated from one file, **`data/games.json`**: standings, the ga
 
 ### From the website (the **Add / Edit** tab)
 Connect once, then add, edit and delete games right on the site.
-1. **Connect (once per device):** on GitHub create a *fine-grained* personal access token (Settings → Developer settings → Personal access tokens → Fine-grained tokens), limited to this repository, with **Contents: Read and write**. Pick the longest expiry (1 year). A classic token set to never expire also works. Paste it into the tab and tap **Connect**. It is kept only in that browser (tap **Disconnect** to remove it). When it expires the tab says so; make a new one and reconnect.
+1. **Connect (once per device, about two minutes):** the tab has a "Connect once to save changes" card with the steps. Tap **Open GitHub** (it opens GitHub's new-token page with the name, owner, 1-year expiry and Contents permission already filled in), choose **Only select repositories** and pick this repo, tap **Generate token**, copy it, then come back, tap **Paste** and **Connect**. It is a *fine-grained* token limited to this one repository. It is kept only in that browser (**Disconnect** removes it), and you renew it once a year (the tab tells you when it stops working). A classic token set to never expire also works.
 2. **Add:** fill in the form and tap **Save game**. Tick **Did not play (DNP)** for a game that was not played, or **Playoff game** for a playoff game.
-3. **Edit or delete:** pick the month, then tap **Edit** (the game loads into the form; change it and tap **Save changes**) or **Delete** (asks first).
+3. **Edit or delete:** the games are listed on the tab by month (visible even before you connect). Tap **Edit** (the game loads into the form; change it and tap **Save changes**) or **Delete** (asks first). Saving before connecting just points you at the connect steps.
 
 Each save is a commit to `data/games.json`, so the public site updates about a minute later and GitHub's **History** keeps every earlier version. Saves change only the one line involved and leave the rest of the file untouched. If someone changed the file in between, the tab refuses and refreshes instead of hitting the wrong game. Without a token the form still works: it builds a line to copy (below).
 
