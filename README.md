@@ -24,6 +24,13 @@ Open `data/games.json` on GitHub, tap the pencil (Edit), copy the last game line
 
 Easier: open the **Add Game** tab (`#/add`). Fill in the form and it builds the line for you. Tap **Copy**, edit `data/games.json`, tap at the end of the last game line (right after its `}`), paste, and commit. The page saves nothing itself.
 
+### Editing or deleting a game
+Every game is one line in `data/games.json`, in date order.
+- **Edit:** open the file on GitHub, tap the pencil, change the numbers (or names) on that line, and commit.
+- **Delete:** delete the whole line. Every game line must end with a comma **except the last one**, so if you delete the last game, remove the comma at the end of the new last line.
+- **Undo a mistake:** on the file's page, tap **History** to see earlier versions; open one and copy the old text back.
+The Game Log's `#` is just a running count for the month and renumbers itself after a delete. Warning messages say "Game 12 in games.json", meaning the 12th game line in the file.
+
 If something is mistyped, the site shows a yellow box at the top saying what is wrong (a missing comma, a name that is not a member, a missing score) instead of breaking.
 
 ### Games that were not played (DNP)
