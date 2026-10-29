@@ -200,6 +200,9 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .kvr b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 0; }
 @media (max-width: 640px) { .grid.members { grid-template-columns: 1fr; } .mcard > summary { padding: 16px; } .mcard > .inner { padding: 0 16px 16px; } .tile b { font-size: .86rem; letter-spacing: -0.03em; } .tile { padding: 8px 7px; } .tiles { gap: 6px; } }
 
+.btn.wide { display: block; text-align: center; text-decoration: none; padding: 15px 20px; font-size: 1.05rem; }
+.stepno { margin: 0 0 6px; font-weight: 700; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+a.btn { text-decoration: none; }
 .flash { animation: flash 1.6s ease; }
 @keyframes flash { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 30% { box-shadow: 0 0 0 4px var(--ink); } }
 

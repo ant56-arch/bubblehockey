@@ -35,6 +35,24 @@ Object.defineProperty(D, 'problems', { get() { return [...this.baseProblems, ...
 const isCounted = g => !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
 
 /* All the data is static files in /data: games.json (every game, including playoff games), members.csv, config.json and the page text. */
+/* GitHub helpers shared by every page. The token (kept only in this browser by the Add / Edit tab) lets this device read games.json straight from GitHub,
+   so it shows a save at once instead of waiting for the public copy to update. Everyone else just reads the public copy. */
+function repoInfo() {
+  const h = location.hostname, seg = location.pathname.split('/')[1];
+  if (/\.github\.io$/.test(h) && seg) return { owner: h.split('.')[0], repo: seg, branch: D.config.branch || 'main' };
+  const [owner, repo] = (D.config.repo || '').split('/'); return { owner, repo, branch: D.config.branch || 'main' };
+}
+const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), c => c.charCodeAt(0)));
+const b64enc = s => { let bin = ''; new TextEncoder().encode(s).forEach(x => bin += String.fromCharCode(x)); return btoa(bin); };
+async function freshGamesText() {
+  let token = ''; try { token = localStorage.getItem('bhl_token') || ''; } catch { }
+  const { owner, repo, branch } = repoInfo(); if (!token || !owner || !repo) return null;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/games.json?ref=${branch}`, { cache: 'no-store', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token } });
+    return r.ok ? b64dec((await r.json()).content) : null;      // expired or rejected token: quietly use the public copy
+  } catch { return null; }
+}
+
 /* Read the text of games.json into D.games (and the warnings). Also used after a save from the Add / Edit tab, so the site updates at once. */
 function applyGamesText(gamesText) {
   D.gameProblems = [];
@@ -91,7 +109,7 @@ async function load() {
   D.members = members.map(m => ({ ...m, short_name: m.short_name || m.name }));
   D.home = home; D.rules = rules;
 
-  applyGamesText(gamesText);
+  applyGamesText((await freshGamesText()) ?? gamesText);
 }
 
 /* ---------- helpers ---------- */

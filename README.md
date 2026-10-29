@@ -12,7 +12,7 @@ Connect once, then add, edit and delete games right on the site.
 2. **Add:** fill in the form and tap **Save game**. Tick **Did not play (DNP)** for a game that was not played, or **Playoff game** for a playoff game.
 3. **Edit or delete:** the games are listed on the tab by month (visible even before you connect). Tap **Edit** (the game loads into the form; change it and tap **Save changes**) or **Delete** (asks first). Saving before connecting just points you at the connect steps.
 
-Each save is a commit to `data/games.json`, so the public site updates about a minute later and GitHub's **History** keeps every earlier version. Saves change only the one line involved and leave the rest of the file untouched. If someone changed the file in between, the tab refuses and refreshes instead of hitting the wrong game. Without a token the form still works: it builds a line to copy (below).
+Each save is a commit to `data/games.json`, so the public site updates about a minute later (a connected phone reads the newest data straight from GitHub, so it shows your save immediately everywhere on the site while everyone else catches up) and GitHub's **History** keeps every earlier version. Saves change only the one line involved and leave the rest of the file untouched. If someone changed the file in between, the tab refuses and refreshes instead of hitting the wrong game. Without a token the form still works: it builds a line to copy (below).
 
 ### By hand (the same file)
 Open `data/games.json` on GitHub, tap the pencil (Edit), copy the last game line, paste it below and change the values. Every game line ends with a comma except the very last one.
