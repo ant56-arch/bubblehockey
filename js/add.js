@@ -11,19 +11,13 @@ const tok = {
 const ADM = { text: '', sha: '', raw: [], loaded: false, loading: false, error: '', layoutError: '', editing: null };
 
 /* ---------- GitHub (data/games.json) ---------- */
-function repoInfo() {
-  const h = location.hostname, seg = location.pathname.split('/')[1];
-  if (/\.github\.io$/.test(h) && seg) return { owner: h.split('.')[0], repo: seg, branch: D.config.branch || 'main' };
-  const [owner, repo] = (D.config.repo || '').split('/'); return { owner, repo, branch: D.config.branch || 'main' };
-}
-const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), c => c.charCodeAt(0)));
-const b64enc = s => { let bin = ''; new TextEncoder().encode(s).forEach(x => bin += String.fromCharCode(x)); return btoa(bin); };
 async function ghGames(opts = {}) {
   const { owner, repo, branch } = repoInfo();
-  const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/games.json${opts.method === 'PUT' ? '' : '?ref=' + branch}`, {
+  let r;
+  try { r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/games.json${opts.method === 'PUT' ? '' : '?ref=' + branch}`, {
     ...opts, cache: 'no-store',
     headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + tok.get(), ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
-  });
+  }); } catch { throw new Error('Could not reach GitHub. Check your connection and try again. Nothing was saved.'); }
   if (r.status === 401 || r.status === 403 || r.status === 404) throw new Error('GitHub did not accept the token. Check that it has "Contents: Read and write" for this repository and has not expired, then reconnect.');
   return r;
 }
