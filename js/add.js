@@ -5,7 +5,7 @@ view.add = function () {
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const pick = (id, label) => `<label class="f">${label}<select id="${id}"><option value=""></option>${D.members.map(m => `<option>${esc(m.short_name)}</option>`).join('')}</select></label>`;
   const num = (id, label, min = 0) => `<label class="f">${label}<input id="${id}" type="number" inputmode="numeric" min="${min}" max="999"></label>`;
-  return `<h1>Add a game</h1><p class="lead">Fill this in, copy the result, and paste it into <code>data/games.json</code>. Nothing is saved from this page.</p>
+  return `<h1>Add a game</h1><p class="lead">Fill this in, copy the line, and paste it into <code>data/games.json</code>.</p>
     <div class="card"><form id="add-form" class="form" onsubmit="return false">
       <label class="f">Date<input id="a-date" type="date" value="${today}"></label>
       <div class="row2">${pick('a-home', 'Home player')}${pick('a-road', 'Road player')}</div>
