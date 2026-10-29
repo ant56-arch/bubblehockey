@@ -59,7 +59,7 @@ GitHub Pages republishes whenever `main` changes, about a minute after you commi
 Reload the site (close and reopen the tab if your phone shows an old copy).
 
 ## If you change the site's code
-Data edits (games, members, text) show up on their own. If you edit a `.js` or `.css` file, also bump the `?v=` number on the script and stylesheet lines in `index.html`; otherwise phones can keep showing an older copy of that file for several minutes.
+Data edits (games, members, text) show up on their own. If you edit a `.js` or `.css` file, also change the number in `version.txt` (any new value, e.g. today's date plus a letter). The page reads that file on every visit and adds it to the script and stylesheet names, so phones that kept an old copy of the page still load the new code right away.
 
 ## Run it locally
 ```
