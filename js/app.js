@@ -44,14 +44,15 @@ function repoInfo() {
 }
 const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), c => c.charCodeAt(0)));
 const b64enc = s => { let bin = ''; new TextEncoder().encode(s).forEach(x => bin += String.fromCharCode(x)); return btoa(bin); };
-async function freshGamesText() {
+async function freshText(path) {
   let token = ''; try { token = localStorage.getItem('bhl_token') || ''; } catch { }
   const { owner, repo, branch } = repoInfo(); if (!token || !owner || !repo) return null;
   try {
-    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/games.json?ref=${branch}`, { cache: 'no-store', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token } });
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { cache: 'no-store', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token } });
     return r.ok ? b64dec((await r.json()).content) : null;      // expired or rejected token: quietly use the public copy
   } catch { return null; }
 }
+const toMembers = rows => rows.map(m => ({ ...m, short_name: m.short_name || m.name }));
 
 /* Read the text of games.json into D.games (and the warnings). Also used after a save from the Add / Edit tab, so the site updates at once. */
 function applyGamesText(gamesText) {
@@ -106,10 +107,12 @@ async function load() {
   const [config, members, gamesText, home, rules] = await Promise.all([
     get('config.json', 'json'), get('members.csv'), getGames(), get('home.txt', 'text'), get('rules.txt', 'text')]);
   D.config = { leagueName: 'Bubble Hockey League', tagline: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
-  D.members = members.map(m => ({ ...m, short_name: m.short_name || m.name }));
+  D.members = toMembers(members);
   D.home = home; D.rules = rules;
 
-  applyGamesText((await freshGamesText()) ?? gamesText);
+  const [freshMembers, freshGames] = await Promise.all([freshText('data/members.csv'), freshText('data/games.json')]);
+  if (freshMembers && /^\s*name\s*,/i.test(freshMembers)) { const rows = toMembers(parseCSV(freshMembers)); if (rows.length) D.members = rows; }      // ignore anything that is not a members file
+  applyGamesText(freshGames ?? gamesText);
 }
 
 /* ---------- helpers ---------- */

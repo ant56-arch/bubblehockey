@@ -2,6 +2,7 @@
    - Playoffs take up to 2 game days ("schedule.playoffDays", default 2, max 2) and are placed just before the month's last game day,
      which is left open as a makeup day ("schedule.makeupDay": false turns that off). "schedule.playoffDates" can pin exact dates for a month. The regular round robin runs on the days before.
    - Every game day (Mon-Fri, minus the holidays below and any data/config.json "schedule.skipDates") is a full round robin: each player plays each other player once.
+   - A player is only scheduled from their "established" date on (data/members.csv), so adding a player never rewrites past days.
    - Home/road sides alternate every game day, so over any two game days each player has played the same number of games on each side.
    - Games are ordered so a player rests between games when possible.
    - "schedule.autoDnpFrom" (a date, optional): from that date on, a scheduled regular game on a past day that was never logged is shown as DNP
@@ -83,7 +84,7 @@ function orderGames(games) {
 }
 /* The regular-season matchups for one date, or null if it is not a regular game day. */
 function slateFor(date) {
-  const names = D.members.map(m => m.short_name), n = names.length;
+  const names = D.members.filter(m => !m.established || m.established <= date).map(m => m.short_name), n = names.length;      // a new player joins the schedule on their established date
   const k = monthPlan(date.slice(0, 7)).reg.indexOf(date);
   if (k < 0) return null;
   if (n < 2) return [];

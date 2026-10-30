@@ -8,21 +8,22 @@ const tok = {
   get() { try { return localStorage.getItem('bhl_token') || ''; } catch { return ''; } },
   set(v) { try { v ? localStorage.setItem('bhl_token', v) : localStorage.removeItem('bhl_token'); } catch { } },
 };
-const ADM = { text: '', sha: '', raw: [], loaded: false, loading: false, error: '', layoutError: '', editing: null };
+const ADM = { text: '', sha: '', raw: [], loaded: false, loading: false, tried: false, error: '', layoutError: '', editing: null };
 
 /* ---------- GitHub (data/games.json) ---------- */
-async function ghGames(opts = {}) {
+async function ghContents(path, opts = {}) {
   const { owner, repo, branch } = repoInfo();
   let r;
-  try { r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/games.json${opts.method === 'PUT' ? '' : '?ref=' + branch}`, {
+  try { r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}${opts.method === 'PUT' ? '' : '?ref=' + branch}`, {
     ...opts, cache: 'no-store',
     headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + tok.get(), ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
   }); } catch { throw new Error('Could not reach GitHub. Check your connection and try again. Nothing was saved.'); }
   if (r.status === 401 || r.status === 403 || r.status === 404) throw new Error('GitHub did not accept the token. Check that it has "Contents: Read and write" for this repository and has not expired, then reconnect.');
   return r;
 }
-async function readFile() {
-  const r = await ghGames(); if (!r.ok) throw new Error('GitHub error ' + r.status);
+const ghGames = opts => ghContents('data/games.json', opts);
+async function readFile(path = 'data/games.json') {
+  const r = await ghContents(path); if (!r.ok) throw new Error('GitHub error ' + r.status);
   const j = await r.json(); return { text: b64dec(j.content), sha: j.sha };
 }
 function adopt(text, sha) {
@@ -72,7 +73,7 @@ async function saveChange(kind, i, obj, seen, message) {
 }
 async function loadAdmin() {
   if (!tok.get() || ADM.loading) return;
-  ADM.loading = true; ADM.error = '';
+  ADM.loading = true; ADM.tried = true; ADM.error = '';
   try { const { text, sha } = await readFile(); adopt(text, sha); } catch (e) { ADM.error = e.message; }
   ADM.loading = false; rerender();
 }
@@ -84,9 +85,9 @@ const tokenLink = () => {
   return 'https://github.com/settings/personal-access-tokens/new?' + new URLSearchParams({ name: 'Bubble Hockey League site', description: 'Lets the league site save games', target_name: owner || '', expires_in: '365', contents: 'write' });
 };
 /* Saving needs the one-time connection: point at the steps instead of failing quietly. */
-function needConnect() {
+function needConnect(noteId) {
   const card = document.getElementById('connect-card');
-  note('To save, connect to GitHub first (one time). The steps are at the top of this page.', false);
+  note('To save, connect to GitHub first (one time). The steps are at the top of this page.', false, noteId);
   if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 1600); }
 }
 
@@ -127,8 +128,87 @@ function showOut() {
   out.innerHTML = `<h2>${esc(preview)}</h2><pre class="snip">${esc(text)}</pre><button class="btn" id="a-copy" type="button">Copy</button> <span id="a-copied" class="form-note ok"></span>`;
   out.dataset.text = text;
 }
-const note = (msg, ok) => { const el = document.getElementById('a-note'); if (el) { el.className = 'form-note ' + (ok ? 'ok' : 'err'); el.textContent = msg; } };
+const note = (msg, ok, id = 'a-note') => { const el = document.getElementById(id); if (el) { el.className = 'form-note ' + (ok ? 'ok' : 'err'); el.textContent = msg; } };
 const gameLine = o => o.dnp ? `${o.home} vs ${o.road} (DNP)` : o.homeScore !== undefined ? `${o.home} ${o.homeScore}-${o.roadScore} ${o.road}` : `${o.home} vs ${o.road}`;
+
+
+/* ---------- members & teams (data/members.csv) ---------- */
+const MEM = { editing: null };                                  // short_name being edited, or null when adding
+const csvField = v => { v = String(v ?? ''); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+const MEM_KEYS = ['name', 'short_name', 'team_name', 'established', 'logo', 'alt_logo'];
+
+function readMember() {
+  const v = id => document.getElementById(id).value.trim(), problems = [];
+  const rec = { name: v('m-name'), short_name: MEM.editing !== null ? MEM.editing : v('m-short'), team_name: v('m-team'), established: v('m-est') };
+  if (!rec.name) problems.push('Enter the full name.');
+  if (!rec.short_name) problems.push('Enter a short name.'); else if (!/^[\p{L}\p{N} .'-]{1,24}$/u.test(rec.short_name)) problems.push('The short name can use letters, numbers, spaces, dots, apostrophes and hyphens (up to 24 characters).');
+  if (!rec.team_name) problems.push('Enter the team name.');
+  for (const k of ['name', 'team_name']) if (/[<>\\\r\n]/.test(rec[k]) || rec[k].length > 60) problems.push('Names can be up to 60 characters and cannot contain < > or \\.');
+  if (MEM.editing === null && rec.short_name && D.members.some(m => m.short_name.toLowerCase() === rec.short_name.toLowerCase())) problems.push('Someone already uses that short name.');
+  if (rec.established && !/^\d{4}-\d{2}-\d{2}$/.test(rec.established)) problems.push('Pick a valid date.');
+  return { rec, problems: [...new Set(problems)] };
+}
+function setMemberForm(m) {
+  const set = (id, v) => { document.getElementById(id).value = v ?? ''; };
+  set('m-name', m.name); set('m-short', m.short_name); set('m-team', m.team_name); set('m-est', m.established);
+  document.getElementById('m-short').disabled = true;
+}
+/* Shrink a chosen picture to a 400px square (kept whole) and return it as bytes plus a preview. */
+async function logoBlob(file) {
+  const bmp = await createImageBitmap(file), size = 400, c = document.createElement('canvas'); c.width = c.height = size;
+  const k = Math.min(size / bmp.width, size / bmp.height), w = bmp.width * k, h = bmp.height * k;
+  c.getContext('2d').drawImage(bmp, (size - w) / 2, (size - h) / 2, w, h);
+  const blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.85)), bin = new Uint8Array(await blob.arrayBuffer()); let str = ''; bin.forEach(x => str += String.fromCharCode(x));
+  return { b64: btoa(str), ext: blob.type === 'image/webp' ? 'webp' : 'png', preview: c.toDataURL(blob.type) };
+}
+async function uploadLogo(file, slug) {
+  const { branch } = repoInfo(), { b64, ext, preview } = await logoBlob(file), path = `images/teams/${slug}.${ext}`;
+  const r = await ghContents(path, { method: 'PUT', body: JSON.stringify({ message: 'Add logo ' + slug, content: b64, branch }) });
+  if (!r.ok) throw new Error('Could not save the logo image (GitHub error ' + r.status + ').');
+  return { path, preview };
+}
+/* Add or update one member row in members.csv. Only that row changes; the file's line endings are kept. */
+async function saveMember(rec, files, isNew) {
+  const { branch } = repoInfo(), stamp = Date.now().toString(36), base = rec.short_name.toLowerCase().replace(/[^a-z0-9]+/g, '') || 'team', previews = {};
+  if (files.logo) { const u = await uploadLogo(files.logo, `${base}-${stamp}`); rec.logo = u.path; previews.logo = u.preview; }
+  if (files.alt_logo) { const u = await uploadLogo(files.alt_logo, `${base}-${stamp}-alt`); rec.alt_logo = u.path; previews.alt_logo = u.preview; }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { text, sha } = await readFile('data/members.csv'), eol = text.includes('\r\n') ? '\r\n' : '\n';
+    const head = text.split(/\r?\n/)[0].split(',').map(h => h.trim()), keys = head.map(h => h.toLowerCase().replace(/\s+/g, '_'));
+    const rows = parseCSV(text); if (!keys.includes('short_name')) throw new Error('members.csv is not laid out the way this page expects. Edit it on GitHub instead.');
+    const i = rows.findIndex(r => r.short_name === rec.short_name);
+    if (isNew && i >= 0) throw new Error('Someone already uses that short name.');
+    if (!isNew && i < 0) throw new Error('That member is no longer in the file. Reload the page.');
+    const row = i >= 0 ? { ...rows[i] } : {}; for (const k of MEM_KEYS) if (rec[k] !== undefined && (k in rec)) row[k] = rec[k];
+    if (i >= 0) rows[i] = row; else rows.push(row);
+    const next = [head.join(','), ...rows.map(r => keys.map(k => csvField(r[k])).join(','))].join(eol) + eol;
+    if (parseCSV(next).length !== rows.length) throw new Error('Something went wrong building the change, so nothing was saved.');      // never commit a broken file
+    const r = await ghContents('data/members.csv', { method: 'PUT', body: JSON.stringify({ message: `${isNew ? 'Add' : 'Update'} member: ${rec.name} (${rec.team_name})`, content: b64enc(next), sha, branch }) });
+    if (r.ok) { D.members = toMembers(parseCSV(next)); if (previews.logo || previews.alt_logo) D.members = D.members.map(m => m.short_name !== rec.short_name ? m : { ...m, logo: previews.logo || m.logo, alt_logo: previews.alt_logo || m.alt_logo }); return; }
+    if (r.status !== 409 && r.status !== 422) throw new Error('GitHub error ' + r.status);
+  }
+  throw new Error('The file changed while saving. Please try again.');
+}
+function membersSection() {
+  const editing = MEM.editing !== null ? D.members.find(m => m.short_name === MEM.editing) : null;
+  setTimeout(() => { if (!document.getElementById('mem-form')) return; if (editing) setMemberForm(editing); }, 0);
+  const thumb = m => m.logo ? `<img class="tlogo" style="width:38px;height:38px" src="${esc(m.logo)}" alt="" loading="lazy">` : '<span class="tlogo" style="width:38px;height:38px;background:var(--surface-2);display:inline-block"></span>';
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  return `<h2>Members &amp; teams</h2><div class="glist">${D.members.map(m => `<div class="grow${MEM.editing === m.short_name ? ' editing' : ''}">
+      <div class="ginfo" style="display:flex;gap:10px;align-items:center">${thumb(m)}<span><b>${esc(m.name)}</b> <span class="muted">· ${esc(m.short_name)}</span><br><span class="muted">${esc(m.team_name)}</span></span></div>
+      <div class="gbtns"><button class="btn small" type="button" data-medit="${esc(m.short_name)}">Edit</button></div></div>`).join('')}</div>
+    <h2 id="mem-h">${editing ? 'Edit this member' : 'Add a member'}</h2><div class="card"><form id="mem-form" class="form" onsubmit="return false">
+      <label class="f">Full name<input id="m-name" autocomplete="off"></label>
+      <label class="f">Short name <span class="muted">(how they show in the game log and standings${editing ? '; locked, because games use it' : ''})</span><input id="m-short" autocomplete="off"></label>
+      <label class="f">Team name<input id="m-team" autocomplete="off"></label>
+      <label class="f">Established <span class="muted">(the first day they are scheduled)</span><input id="m-est" type="date" value="${editing ? '' : today}"></label>
+      <label class="f">Team logo <span class="muted">${editing ? '(leave empty to keep the current one)' : '(optional)'}</span><input id="m-logo" type="file" accept="image/*"></label>
+      <label class="f">Alternate logo <span class="muted">${editing ? '(leave empty to keep the current one)' : '(optional)'}</span><input id="m-alt" type="file" accept="image/*"></label>
+      <div class="btnrow"><button class="btn" id="m-save" type="button">${editing ? 'Save changes' : 'Add member'}</button>${editing ? '<button class="btn ghost" id="m-cancel" type="button">Cancel</button>' : ''}</div>
+      <p id="m-note" class="form-note"></p>
+    </form></div>
+    ${editing ? '' : '<p class="muted">A new player joins the schedule on their established date. Days before that are not changed.</p>'}`;
+}
 
 /* ---------- the page ---------- */
 const entryMonth = e => (e.date || e.month || '').slice(0, 7);
@@ -145,13 +225,13 @@ function gamesList() {
 }
 view.add = function () {
   const connected = !!tok.get();
-  if (connected && !ADM.loaded && !ADM.loading) setTimeout(loadAdmin, 0);
+  if (connected && !ADM.loaded && !ADM.loading && !ADM.tried) setTimeout(loadAdmin, 0);      // one attempt per visit, so a bad token cannot loop
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const pick = (id, label) => `<label class="f">${label}<select id="${id}"><option value=""></option>${D.members.map(m => `<option>${esc(m.short_name)}</option>`).join('')}</select></label>`;
   const num = (id, label) => `<label class="f">${label}<input id="${id}" type="number" inputmode="numeric" min="0" max="999"></label>`;
   const editing = ADM.editing !== null;
   const { owner, repo } = repoInfo();
-  const connect = connected ? `<p class="muted" style="margin:0 0 14px">${ADM.loading ? 'Connecting to GitHub…' : ADM.error || ADM.layoutError ? '' : 'Connected to GitHub. Changes save straight to the site.'} <button class="link" id="a-disconnect" type="button">Disconnect</button></p>${ADM.error || ADM.layoutError ? `<p class="form-note err">${esc(ADM.error || ADM.layoutError)} You can still use the form to copy a line.</p>` : ''}`
+  const connect = connected ? `<p class="muted" style="margin:0 0 14px">${ADM.loading ? 'Connecting to GitHub…' : ADM.error || ADM.layoutError ? '' : 'Connected to GitHub. Changes save straight to the site.'} <button class="link" id="a-disconnect" type="button">Disconnect</button></p>${ADM.error || ADM.layoutError ? `<p class="form-note err">${esc(ADM.error || ADM.layoutError)} ${ADM.error ? '<button class="link" id="a-retry" type="button">Try again</button>' : 'You can still use the form to copy a line.'}</p>` : ''}`
     : `<div class="card" id="connect-card"><b>Connect once to save changes</b>
         <p class="muted" style="margin:6px 0 12px">You can look around and fill things in now. To actually save, GitHub has to give this site permission once. It takes about two minutes.</p>
         <p class="stepno">Step 1 · Get a token from GitHub</p>
@@ -163,7 +243,10 @@ view.add = function () {
         <p class="muted" style="margin:10px 0 0">The token stays only in this browser. You renew it once a year.</p></div>`;
   const live = connected && ADM.loaded && !ADM.layoutError;
   setTimeout(() => { if (!document.getElementById('add-form')) return; if (editing && rawList()[ADM.editing]) setForm(rawList()[ADM.editing]); else showOut(); }, 0);
-  return `<h1>Add / edit games</h1>${connect}
+  const sec = UI['add-sec'] === 'members' ? 'members' : 'games';
+  const secChips = `<div class="chips">${[['games', 'Games'], ['members', 'Members & teams']].map(([k, l]) => `<button type="button" class="chip ${sec === k ? 'on' : ''}" data-page="add-sec" data-m="${k}">${l}</button>`).join('')}</div>`;
+  if (sec === 'members') return `<h1>Add / edit</h1>${connect}${secChips}${membersSection()}`;
+  return `<h1>Add / edit games</h1>${connect}${secChips}
     <h2 id="form-h">${editing ? 'Edit this game' : 'Add a game'}</h2><div class="card"><form id="add-form" class="form" onsubmit="return false">
       <label class="f">Date<input id="a-date" type="date" value="${today}"></label>
       <div class="row2">${pick('a-home', 'Home player')}${pick('a-road', 'Road player')}</div>
@@ -197,7 +280,7 @@ document.addEventListener('submit', async e => {
   const typed = document.getElementById('a-token').value.trim();
   if (!typed) { const n = document.getElementById('tok-note'); n.className = 'form-note err'; n.textContent = 'Paste the token first. Step 1 above gets you one.'; return; }
   btn.disabled = true; const prev = tok.get(); tok.set(typed);
-  try { await readFile(); ADM.loaded = false; route(); }
+  try { await readFile(); ADM.loaded = false; ADM.tried = false; route(); }
   catch (err) { tok.set(prev); const n = document.getElementById('tok-note'); n.className = 'form-note err'; n.textContent = /did not accept/.test(err.message) ? err.message : 'Could not connect: ' + err.message; btn.disabled = false; }
 });
 document.addEventListener('click', async e => {
@@ -206,10 +289,26 @@ document.addEventListener('click', async e => {
     const text = document.getElementById('a-out').dataset.text, done = ok => { document.getElementById('a-copied').textContent = ok ? 'Copied.' : 'Select the text above and copy it.'; };
     try { await navigator.clipboard.writeText(text); done(true); } catch { done(false); } return;
   }
-  if (t.id === 'a-disconnect') { tok.set(''); Object.assign(ADM, { loaded: false, text: '', raw: [], editing: null, error: '' }); route(); return; }
+  if (t.id === 'a-disconnect') { tok.set(''); Object.assign(ADM, { loaded: false, tried: false, text: '', raw: [], editing: null, error: '' }); route(); return; }
+  if (t.id === 'a-retry') { ADM.tried = false; ADM.error = ''; route(true); return; }
   if (t.id === 'a-copylink') { const n = document.getElementById('tok-note'); try { await navigator.clipboard.writeText(tokenLink()); n.className = 'form-note ok'; n.textContent = 'Link copied. Paste it into your browser\'s address bar.'; } catch { n.className = 'form-note err'; n.textContent = 'Could not copy. Long-press the Open GitHub button and choose Copy Link.'; } return; }
   if (t.id === 'a-paste') { try { const box = document.getElementById('a-token'); box.value = (await navigator.clipboard.readText()).trim(); box.dispatchEvent(new Event('input', { bubbles: true })); } catch { const n = document.getElementById('tok-note'); n.className = 'form-note err'; n.textContent = 'Could not read the clipboard. Long-press in the box and choose Paste.'; } return; }
   if (t.id === 'a-cancel') { ADM.editing = null; route(true); return; }
+  if (t.id === 'm-cancel') { MEM.editing = null; route(true); return; }
+  if (t.dataset && t.dataset.medit !== undefined) { MEM.editing = t.dataset.medit; route(true); setTimeout(() => document.getElementById('mem-h').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
+  if (t.id === 'm-save') {
+    const { rec, problems } = readMember();
+    if (problems.length) { note(problems.join(' '), false, 'm-note'); return; }
+    if (!tok.get()) return needConnect('m-note');
+    t.disabled = true; note('Saving…', true, 'm-note');
+    try {
+      const isNew = MEM.editing === null, files = { logo: document.getElementById('m-logo').files[0], alt_logo: document.getElementById('m-alt').files[0] };
+      if (isNew && !confirm(`Add ${rec.name} (${rec.team_name})? They join the schedule on ${rec.established || 'day one'}.`)) { t.disabled = false; note('', true, 'm-note'); return; }
+      await saveMember(rec, files, isNew); MEM.editing = null; rerender();
+      setTimeout(() => note(`${isNew ? 'Added' : 'Saved'} ${rec.name}. The public site updates in about a minute (new logos can take a little longer).`, true, 'm-note'), 20);
+    } catch (err) { t.disabled = false; note(err.message, false, 'm-note'); }
+    return;
+  }
   if (t.id === 'a-save') {
     const { obj, problems, preview } = readForm();
     if (problems.length) { note(problems.join(' '), false); return; }
