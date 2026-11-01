@@ -114,7 +114,6 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .member:hover { transform: translateY(-3px); }
 .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; font-weight: 700; flex: none; }
 .mlogo { width: 88px; height: 88px; border-radius: 20px; object-fit: cover; background: #000; flex: none; }
-.alogo { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; background: #000; margin-left: auto; align-self: flex-start; flex: none; }
 .minfo { min-width: 0; } .member .team { font-weight: 600; color: var(--brand); } :root[data-theme="dark"] .member .team { color: var(--lime); }
 
 /* Logos */
@@ -142,7 +141,6 @@ ul.key { margin: 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 .f input, .f select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; font: inherit; font-size: 16px; font-weight: 400; min-height: 48px; }
 .f input:focus, .f select:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.row4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
 .check { display: flex; gap: 10px; align-items: center; min-height: 44px; } .check input { width: 22px; height: 22px; accent-color: var(--ink); }
 .btn { background: var(--ink); color: var(--on-ink); border: 0; border-radius: 999px; padding: 13px 24px; font: inherit; font-weight: 600; min-height: 48px; cursor: pointer; transition: transform .15s, opacity .15s; }
 .btn:hover { opacity: .88; } .btn:active { transform: scale(.97); } .btn:disabled { opacity: .5; }
