@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bubble Hockey League — Design Mockup</title>
+<style>
+:root{--navy:#0B1F44;--navy2:#13306B;--ink:#111827;--mut:#4B5563;--line:#E5E7EB;--alt:#F3F4F6;--blue:#1D4ED8;--win:#137A35}
+*{box-sizing:border-box;margin:0}
+body{font-family:Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#fff;color:var(--ink);font-size:14px;line-height:1.45}
+.nav{background:var(--navy);color:#fff}
+.nav .in{max-width:1200px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;gap:32px}
+.brand{font-weight:800;font-size:17px;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.brand i{width:28px;height:28px;border-radius:6px;background:#fff;display:inline-block}
+.nav a{color:#CBD5E1;text-decoration:none;font-weight:600;font-size:14px;padding:21px 0;border-bottom:3px solid transparent}
+.nav a.on,.nav a:hover{color:#fff;border-color:#fff}
+.nav .sp{flex:1}
+.btn{display:inline-block;background:var(--blue);color:#fff;font-weight:700;font-size:15px;padding:13px 26px;border-radius:6px;text-decoration:none;border:0}
+.nav .btn{padding:9px 16px;font-size:13px;background:#fff;color:var(--navy)}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.hero{border-bottom:1px solid var(--line)}
+.hero .wrap{display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:40px;padding-top:56px;padding-bottom:56px}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:52px;line-height:1.05;font-weight:800;letter-spacing:-.02em;margin:12px 0 16px;color:var(--navy)}
+.hero p{font-size:18px;color:var(--mut);max-width:480px;margin-bottom:28px}
+.stats{display:flex;gap:36px;margin-top:36px}
+.stats b{display:block;font-size:28px;font-weight:800;color:var(--navy)}.stats span{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.prod{background:var(--alt);border:1px solid var(--line);border-radius:6px;padding:20px}
+.prod svg{display:block;width:100%;height:auto}
+.prod small{display:block;text-align:center;color:var(--mut);font-size:12px;margin-top:8px}
+main{padding:32px 0 56px}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:24px}
+.col{display:grid;gap:24px;align-content:start}
+.card{background:#fff;border:1px solid var(--line);border-radius:6px}
+.card h2{font-size:15px;font-weight:800;padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;color:var(--navy);text-transform:uppercase;letter-spacing:.04em}
+.card h2 a{font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;text-transform:none;letter-spacing:0}
+table{width:100%;border-collapse:collapse}
+th,td{padding:11px 18px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);background:#fff}
+tbody tr:nth-child(even){background:var(--alt)}tbody tr:last-child td{border-bottom:0}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+td.pl .c{font-weight:700;display:flex;align-items:center;gap:10px}.c img{width:26px;height:26px;border-radius:4px;object-fit:cover;background:#000}
+.c small{display:block;font-weight:500;color:var(--mut);font-size:12px}
+.pts{font-weight:800}
+.row{display:grid;grid-template-columns:70px 1fr auto 1fr;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);align-items:center}
+.row:last-child{border-bottom:0}.row:nth-child(even){background:var(--alt)}
+.row .d{color:var(--mut);font-size:12px;font-weight:600}.row .t{font-weight:700}.row .t:last-child{text-align:right}
+.row .s{font-weight:800;font-variant-numeric:tabular-nums}.w{color:var(--win)}
+.tag{font-size:11px;font-weight:700;background:var(--navy);color:#fff;border-radius:4px;padding:2px 7px;margin-left:6px;vertical-align:1px}
+.feat{padding:18px}.feat .vs{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:center}
+.feat .vs div{flex:1;font-weight:800;color:var(--navy)}.feat .vs span{color:var(--mut);font-weight:700;font-size:12px}
+.feat .vs small{display:block;font-weight:500;color:var(--mut);font-size:12px}
+.feat hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+.kv{display:flex;justify-content:space-between;padding:6px 0;font-size:13px}.kv b{font-variant-numeric:tabular-nums}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:12px;padding:20px 0}
+@media(max-width:900px){.hero .wrap,.grid{grid-template-columns:1fr}h1{font-size:38px}.nav a:not(.on){display:none}}
+</style></head><body>
+<header class="nav"><div class="in">
+  <div class="brand"><i></i>Bubble Hockey League</div>
+  <a class="on" href="#">Home</a><a href="#">Schedule</a><a href="#">Standings</a><a href="#">Playoffs</a><a href="#">Members</a><a href="#">Rules</a>
+  <span class="sp"></span><a class="btn" href="#">Add / Edit</a>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div>
+    <div class="eyebrow">Season 1 · Playoffs complete</div>
+    <h1>Every game.<br>Every standing.<br>One league.</h1>
+    <p>Live standings, daily matchups and a double-elimination playoff for the whole office. Join the table.</p>
+    <a class="btn" href="#">Join the League</a>
+    <div class="stats"><div><b>63</b><span>Games played</span></div><div><b>4</b><span>Teams</span></div><div><b>1</b><span>Champion</span></div></div>
+  </div>
+  <div class="prod">
+    <svg viewBox="0 0 520 340" role="img" aria-label="Bubble hockey table (placeholder illustration)">
+      <rect width="520" height="340" fill="#F3F4F6"/>
+      <ellipse cx="260" cy="312" rx="190" ry="14" fill="#D1D5DB"/>
+      <rect x="70" y="150" width="380" height="150" rx="10" fill="#0B1F44"/>
+      <rect x="70" y="150" width="380" height="14" rx="6" fill="#13306B"/>
+      <rect x="90" y="70" width="340" height="100" rx="40" fill="#DBEAFE" stroke="#93C5FD" stroke-width="3"/>
+      <rect x="100" y="160" width="320" height="40" fill="#fff"/><rect x="100" y="160" width="320" height="4" fill="#1D4ED8"/>
+      <line x1="260" y1="160" x2="260" y2="200" stroke="#DC2626" stroke-width="3"/><circle cx="260" cy="180" r="12" fill="none" stroke="#DC2626" stroke-width="3"/>
+      <g stroke="#6B7280" stroke-width="4"><line x1="150" y1="60" x2="150" y2="190"/><line x1="210" y1="60" x2="210" y2="190"/><line x1="310" y1="60" x2="310" y2="190"/><line x1="370" y1="60" x2="370" y2="190"/></g>
+      <g fill="#DC2626"><rect x="143" y="100" width="14" height="22" rx="3"/><rect x="203" y="125" width="14" height="22" rx="3"/></g>
+      <g fill="#1D4ED8"><rect x="303" y="100" width="14" height="22" rx="3"/><rect x="363" y="125" width="14" height="22" rx="3"/></g>
+      <circle cx="260" cy="150" r="5" fill="#111827"/>
+      <g stroke="#9CA3AF" stroke-width="5" stroke-linecap="round"><line x1="100" y1="248" x2="100" y2="318"/><line x1="420" y1="248" x2="420" y2="318"/></g>
+      <g fill="#E5E7EB"><circle cx="96" cy="262" r="9"/><circle cx="424" cy="262" r="9"/></g>
+    </svg>
+    <small>Placeholder illustration — replace with a studio product photo cutout</small>
+  </div>
+</div></section>
+
+<main><div class="wrap grid">
+  <div class="col">
+    <section class="card"><h2>Standings <a href="#">Full table →</a></h2>
+      <table><thead><tr><th>Rank</th><th>Player</th><th class="n">W</th><th class="n">L</th><th class="n">Diff</th><th class="n">Pts</th></tr></thead><tbody>
+        <tr><td>1</td><td class="pl"><div class="c"><img src="../images/teams/connor.webp" alt=""><span>Connor<small>Bo-Buffalo Trouble Bubble</small></span></div></td><td class="n">24</td><td class="n">9</td><td class="n">+61</td><td class="n pts">72</td></tr>
+        <tr><td>2</td><td class="pl"><div class="c"><img src="../images/teams/tommy.webp" alt=""><span>Tommy<small>Flint River Bodydumpers</small></span></div></td><td class="n">20</td><td class="n">20</td><td class="n">−2</td><td class="n pts">60</td></tr>
+        <tr><td>3</td><td class="pl"><div class="c"><img src="../images/teams/trotta.webp" alt=""><span>Trotta<small>Pontiac Firebirds</small></span></div></td><td class="n">18</td><td class="n">14</td><td class="n">+3</td><td class="n pts">55</td></tr>
+        <tr><td>4</td><td class="pl"><div class="c"><img src="../images/teams/boban.webp" alt=""><span>Boban<small>Sweenland Kings</small></span></div></td><td class="n">1</td><td class="n">20</td><td class="n">−62</td><td class="n pts">2</td></tr>
+      </tbody></table></section>
+    <section class="card"><h2>Recent results <a href="#">Game log →</a></h2>
+      <div class="row"><span class="d">Oct 28</span><span class="t">Tommy</span><span class="s">4 – <span class="w">6</span></span><span class="t">Connor <span class="tag">Playoffs</span></span></div>
+      <div class="row"><span class="d">Oct 27</span><span class="t">Trotta</span><span class="s"><span class="w">5</span> – 2</span><span class="t">Boban</span></div>
+      <div class="row"><span class="d">Oct 26</span><span class="t">Connor</span><span class="s"><span class="w">7</span> – 3</span><span class="t">Tommy</span></div>
+    </section>
+  </div>
+  <div class="col">
+    <section class="card"><h2>Next matchup</h2><div class="feat">
+      <div class="vs"><div>Connor<small>24–9</small></div><span>VS</span><div>Trotta<small>18–14</small></div></div><hr>
+      <div class="kv"><span>Date</span><b>Mon, Nov 2</b></div><div class="kv"><span>Home</span><b>Connor</b></div><div class="kv"><span>Head to head</span><b>6–3 Connor</b></div></div></section>
+    <section class="card"><h2>Schedule <a href="#">Full →</a></h2>
+      <div class="row" style="grid-template-columns:60px 1fr auto"><span class="d">Nov 2</span><span class="t">Connor v Trotta</span><span class="d">Home</span></div>
+      <div class="row" style="grid-template-columns:60px 1fr auto"><span class="d">Nov 2</span><span class="t">Tommy v Boban</span><span class="d">Home</span></div>
+      <div class="row" style="grid-template-columns:60px 1fr auto"><span class="d">Nov 3</span><span class="t">Trotta v Tommy</span><span class="d">Home</span></div></section>
+    <section class="card"><h2>Champion</h2><div class="feat"><b style="font-size:20px;color:var(--navy)">Connor</b><div style="color:var(--mut)">October 2026 · Bo-Buffalo Trouble Bubble</div></div></section>
+  </div>
+</div></main>
+<footer><div class="wrap">Bubble Hockey League · Design mockup, not the live site</div></footer>
+</body></html>
