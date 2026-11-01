@@ -186,7 +186,7 @@ function standingsTable(rows, limit, month) {
   rows = limit ? rows.slice(0, limit) : rows;
   const n = (x, opt) => `<td class="n${opt ? ' opt' : ''}">${x}</td>`;
   const heads = [['GP'], ['W'], ['L'], ['OTW'], ['OTL'], ['PTS'], ...(showPtsPct(month) ? [['PTS%', 1]] : []), ['GF', 1], ['GA', 1], ['GD'], ['SF', 1], ['SA', 1], ['Shot%', 1], ['SV%', 1], ['SO', 1], ['Home', 1], ['Road', 1], ['Strk']];
-  return `<div class="stand"><div class="table-scroll"><table><thead><tr><th>#</th><th>Player</th>${heads.map(([h, o]) => `<th class="n${o ? ' opt' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
+  return `<div class="stand"><div class="table-scroll"><table><thead><tr><th>Rank</th><th>Player</th>${heads.map(([h, o]) => `<th class="n${o ? ' opt' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
     rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name)}</td>${n(r.gp)}${n(r.w)}${n(r.l)}${n(r.otw)}${n(r.otl)}<td class="n"><b>${r.pts}</b></td>${showPtsPct(month) ? n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 1) : ''}${n(r.gf, 1)}${n(r.ga, 1)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 1)}${n(r.sa, 1)}${n(r.sf ? pct(r.gf / r.sf) : '–', 1)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 1)}${n(r.so, 1)}${n(r.hw + '-' + r.hl, 1)}${n(r.rw + '-' + r.rl, 1)}${n(r.streak)}</tr>`).join('')
   }</tbody></table></div><button class="more-stats" type="button">Show all stats</button></div>`;
 }
