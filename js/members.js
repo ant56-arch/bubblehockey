@@ -7,13 +7,14 @@ const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 /* Playoff history for one player across all months that have playoff games. */
 function playoffRecord(name) {
   const out = { w: 0, l: 0, titles: [], finals: 0, runnerUps: 0 };
-  for (const m of [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort()) {
-    const { G, champion } = buildBracket(m);
-    for (const n of [1, 2, 3, 4, 5, 6, 7]) {
+  for (const mo of [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort()) {
+    const B = buildBracket(mo), { G, champion } = B; if (!B.S) continue;
+    for (const n of B.list) {
       const g = G[n]; if (g.skipped || !g.w || ![g.a, g.b].includes(name)) continue;
       g.w === name ? out.w++ : out.l++;
     }
-    if ([G[6].a, G[6].b].includes(name) && G[6].a && G[6].b) { out.finals++; if (champion === name) out.titles.push(m); else if (champion) out.runnerUps++; }
+    const gf = G[B.S.gf];
+    if ([gf.a, gf.b].includes(name) && gf.a && gf.b) { out.finals++; if (champion === name) out.titles.push(mo); else if (champion) out.runnerUps++; }
   }
   return out;
 }

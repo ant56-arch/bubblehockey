@@ -46,12 +46,20 @@ It appears in the Game Log and on the Schedule marked **DNP** (and in the player
 
 **Automatic DNP (from November 2026):** with `"autoDnpFrom": "2026-11-01"` in the `schedule` settings of `data/config.json`, any scheduled regular game on a *past* day that was never logged is shown as DNP automatically (shown on the Schedule, in the Game Log and in the "Did not play" count; never counted in the standings). It only applies on days where at least one game was logged (a day with nothing logged is simply left out), never to today or the future, and never before that date. Change the date, or remove the setting, to turn it off. It assumes the schedule is what you follow, so a game logged between the same two players on that day cancels the DNP whichever side was home.
 
-### Playoff games
-A playoff game is a normal game with `"playoff": true`. **It still counts in the standings and everyone's records** (the Game Log tags it "Playoff"):
+### Playoffs (any number of teams, up to 20)
+Every month all the teams (up to 20) are seeded by their regular-season standings into a **double-elimination bracket**, and the bracket sizes itself to the league: with 4 teams it is the 7-game format already in use, with 20 teams it is 38 games.
+- **Seeds and byes:** seed 1 plays the lowest seed, 2 the next lowest, and so on. If the number of teams is not a power of two, the top seeds skip round 1 (20 teams: seeds 1 to 12 get a bye and 8 teams play round 1).
+- **Losing once** drops you into the losers bracket; **losing twice** ends your run.
+- **Grand final:** the winners-bracket champion plays the losers-bracket champion. If the losers-bracket champion wins, both teams have one loss, so there is one more game (game 2 of the grand final). Otherwise that game is "not needed".
+- **Game numbers** follow the order games can be played (winners round 1, losers round 1, winners round 2, ...). Games whose teams are not known yet say where they come from ("Winner G25", "Loser G23").
+- **Smaller field:** in `data/config.json`, `"playoffs": { "teams": 8 }` keeps only the top 8. Without it, every team (up to 20) plays. Teams that joined after a month ended are not in that month's field.
+- **Days:** the schedule spreads the playoff games over the playoff days (`schedule.playoffDays`, default 2, up to 5; 20 teams is about 19 games a day on 2 days).
+
+Add playoff games to the same file with `"playoff": true`; they **still count in the standings and everyone's records** (the Game Log tags them "Playoff"):
 ```json
 { "date": "2026-11-25", "home": "Connor", "road": "Boban", "homeScore": 4, "roadScore": 1, "playoff": true }
 ```
-The Playoffs tab matches each playoff game to the next open game in the 7-game double-elimination bracket by its two players, so enter them in the order they were played. Seeds come from the standings of the month's non-playoff games. To force the seeds for a month, add `"playoffSeeds": { "2026-10": ["Connor", "Trotta", "Tommy", "Boban"] }` (as October has). If you only know who won, a playoff game can use `"winner": "Name"` and a `date` (or just `"month": "2026-11"`) instead of scores; those do not count in the standings.
+The Playoffs tab matches each playoff game to the next open bracket game with the same two players, so enter them in the order they were played (the Add / Edit tab has a **Playoff game** box). A playoff game that does not fit the bracket (wrong players for the next open game, or a game that was not needed) shows up in the yellow warning box. Seeds come from the standings of the month's non-playoff games. To force the seeds for a month, add `"playoffSeeds": { "2026-10": ["Connor", "Trotta", "Tommy", "Boban"] }` (as October has; any number of teams from 2 to 20, in seed order). If you only know who won, a playoff game can use `"winner": "Name"` and a `date` (or just `"month": "2026-11"`) instead of scores; those do not count in the standings.
 
 ## Publishing the update
 GitHub Pages republishes whenever `main` changes, about a minute after you commit.
