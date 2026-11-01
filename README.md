@@ -53,7 +53,8 @@ Every month all the teams (up to 20) are seeded by their regular-season standing
 - **Grand final:** the winners-bracket champion plays the losers-bracket champion. If the losers-bracket champion wins, both teams have one loss, so there is one more game (game 2 of the grand final). Otherwise that game is "not needed".
 - **Game numbers** follow the order games can be played (winners round 1, losers round 1, winners round 2, ...). Games whose teams are not known yet say where they come from ("Winner G25", "Loser G23").
 - **Smaller field:** in `data/config.json`, `"playoffs": { "teams": 8 }` keeps only the top 8. Without it, every team (up to 20) plays. Teams that joined after a month ended are not in that month's field.
-- **Days:** the schedule spreads the playoff games over the playoff days (`schedule.playoffDays`, default 2, up to 5; 20 teams is about 19 games a day on 2 days).
+- **Days:** the playoffs take **2 game days, or 3 days when 15 or more teams play** (20 teams is about 13 games a day over 3 days), and the schedule spreads the games over them. To force a number, set `schedule.playoffDays` (0 to 5) in `data/config.json`; leave it out for the automatic rule.
+- **Ties in the standings** (which decide the seeds) are broken by points, then goal difference, then goals for. If teams are still level after that, they are ordered alphabetically; to seed such teams differently, use `playoffSeeds` below.
 
 Add playoff games to the same file with `"playoff": true`; they **still count in the standings and everyone's records** (the Game Log tags them "Playoff"):
 ```json
@@ -82,9 +83,9 @@ The **Schedule** tab builds the matchups from the date; there is nothing to ente
 
 The schedule gives these days off automatically: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday on a weekend is observed on the nearest weekday (Saturday becomes Friday, Sunday becomes Monday).
 
-Playoffs take up to 2 game days, planned for just before the month's last game day, which is kept open as a makeup day. Once playoff games are logged, the days they were actually played become the playoff days (October's were all on Oct 28), and the days after are open. A planned playoff day is never placed on a day that already has regular games logged. Optional settings in `data/config.json`:
+Playoffs take 2 game days (3 when 15 or more teams play), planned for just before the month's last game day, which is kept open as a makeup day. Once playoff games are logged, the days they were actually played become the playoff days (October's were all on Oct 28), and the days after are open. A planned playoff day is never placed on a day that already has regular games logged. Optional settings in `data/config.json`:
 ```
-"schedule": { "roundsPerDay": 0, "skipDates": ["2026-12-24"], "holidays": true, "playoffDays": 2, "makeupDay": true,
+"schedule": { "roundsPerDay": 0, "skipDates": ["2026-12-24"], "holidays": true, "playoffDays": "auto", "makeupDay": true,
               "playoffDates": { "2026-10": ["2026-10-29", "2026-10-30"] } }
 ```
 `skipDates` are extra days with no games, `holidays: false` turns the holiday list off, `makeupDay: false` uses the last day for games, `roundsPerDay` limits a day to that many rounds (0 = the full round robin), and `playoffDates` pins a month's playoff dates.

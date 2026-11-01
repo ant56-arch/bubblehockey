@@ -1,5 +1,5 @@
 /* Schedule: automatic daily matchups, worked out from the date alone (nothing to enter).
-   - Playoffs take up to 2 game days ("schedule.playoffDays", default 2, max 2) and are placed just before the month's last game day,
+   - Playoffs take 2 game days (3 days when 15 or more teams play), or "schedule.playoffDays" if set (0 to 5), and are placed just before the month's last game day,
      which is left open as a makeup day ("schedule.makeupDay": false turns that off). "schedule.playoffDates" can pin exact dates for a month. The regular round robin runs on the days before.
    - Every game day (Mon-Fri, minus the holidays below and any data/config.json "schedule.skipDates") is a full round robin: each player plays each other player once.
    - A player is only scheduled from their "established" date on (data/members.csv), so adding a player never rewrites past days.
@@ -9,7 +9,7 @@
      (only on days where at least one game or DNP was logged; never counted in any record).
    - "schedule.roundsPerDay" (optional) limits a day to that many rounds (each round = everyone plays once); the rounds then continue on the next day. */
 
-const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 2, playoffDates: {}, makeupDay: true, autoDnpFrom: '', ...(D.config.schedule || {}) });
+const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 'auto', playoffDates: {}, makeupDay: true, autoDnpFrom: '', ...(D.config.schedule || {}) });
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseYmd = s => { const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d); };
 /* Days off: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday that
@@ -45,7 +45,9 @@ function gameDaysIn(month) {
 function monthPlan(month) {
   const all = gameDaysIn(month), fixed = (SCHED().playoffDates || {})[month];       // optional: pin a month's playoff dates in config.json
   if (Array.isArray(fixed) && fixed.length) return { reg: all.filter(d => d < fixed[0]), po: fixed, spare: all.filter(d => d > fixed[fixed.length - 1]) };
-  const n = Math.min(5, Math.max(0, +SCHED().playoffDays || 0), all.length);
+  const teams = (() => { try { return seedsFor(month).seeds.length; } catch { return 0; } })();      // how many teams are in this month's playoffs
+  const cfg = SCHED().playoffDays, auto = teams >= 15 ? 3 : 2;                                       // 2 days, or 3 when 15 or more teams play
+  const n = Math.min(cfg === 'auto' || cfg == null || cfg === '' ? auto : Math.max(0, Math.min(5, +cfg || 0)), all.length);
   // Once playoff games are logged, the days they were played on are the playoff days (plus the next planned day if the final is still to come).
   const played = [...new Set(D.games.filter(g => g.playoff && g.month === month && g.date).map(g => g.date))].sort();
   if (played.length) {
