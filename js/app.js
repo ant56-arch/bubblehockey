@@ -88,6 +88,7 @@ function applyGamesText(gamesText) {
   for (const g of D.games) {
     if (g.date && g.date > today) warn.push(`${name(g)} is dated in the future. Check the year.`);
     const key = [g.date, g.month, g.home, g.road, g.hg, g.rg, g.hs, g.rs, g.ot, g.playoff, g.dnp, g.winner].join('|');
+    if (g.playoff) continue;                  // the same two teams can meet twice in a double-elimination bracket; a copied playoff game shows up as unmatched instead
     if (seen[key] !== undefined) warn.push(`${name(g)} looks identical to game ${seen[key] + 1}. Is it a duplicate?`); else seen[key] = g.seq;
   }
   for (const m of [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort())
@@ -214,27 +215,21 @@ function textBlocks(txt) {
   close(); return out;
 }
 
-/* ---------- playoffs: 4 players, double elimination, 7 games ---------- */
-/* Playoff games live in games.json with "playoff": true (they count in the standings like any game). Seeds come from the month's other games. Each one is matched to the next open bracket game with the same two players. */
+/* ---------- playoffs: double elimination for the whole league (see js/bracket.js) ---------- */
+/* Playoff games live in games.json with "playoff": true (they count in the standings like any game). Each one is matched to the next open bracket game with the same two players. */
+
+/* Who is in a month's playoff field: every member who had joined by the end of that month, best standing first, up to 20
+   (config.json "playoffs": { "teams": 8 } keeps only the top 8). Seeds come from the month's non-playoff games. */
 function seedsFor(month, asOf) {
   const override = D.seedsOverride[month];
   const po = D.games.filter(g => g.playoff && g.month === month);
   const shown = po.filter(g => !asOf || (g.date && g.date <= asOf));
-  if (override && override.length === 4) return { seeds: override, live: !shown.length };
-  const top = standingsFor(monthGames(month).filter(g => !g.playoff)).filter(r => r.gp).slice(0, 4).map(r => r.name);
-  return { seeds: [0, 1, 2, 3].map(i => top[i] || ''), live: !shown.length };
-}
-function bracketModel(seeds, data) {
-  const G = {};
-  const win = (n, a, b) => { const w = data['g' + n]; return w && (w === a || w === b) ? w : ''; };
-  const mk = (n, a, b, extra = {}) => { const w = a && b ? win(n, a, b) : ''; G[n] = { n, a, b, w, l: w ? (w === a ? b : a) : '', ...extra }; };
-  mk(1, seeds[0], seeds[3], { sa: 1, sb: 4 }); mk(2, seeds[1], seeds[2], { sa: 2, sb: 3 });
-  mk(3, G[1].l, G[2].l); mk(4, G[1].w, G[2].w);
-  mk(5, G[4].l, G[3].w); mk(6, G[4].w, G[5].w);
-  const needG7 = !(G[6].w && G[6].w === G[4].w);
-  mk(7, G[6].w, G[6].l); if (!needG7) G[7].skipped = true;
-  const champion = G[6].w && !needG7 ? G[6].w : (G[7].w || '');
-  return { G, champion, seeds };
+  if (override && override.length >= 2) return { seeds: override, live: !shown.length };
+  const [y, m] = month.split('-'), end = `${y}-${m}-${String(new Date(+y, +m, 0).getDate()).padStart(2, '0')}`;
+  const field = new Set(D.members.filter(x => !x.established || x.established <= end).map(x => x.short_name));
+  const cap = Math.min(20, +(D.config.playoffs || {}).teams || 20);
+  const ranked = standingsFor(monthGames(month).filter(g => !g.playoff)).map(r => r.name).filter(n => field.has(n)).slice(0, cap);
+  return { seeds: ranked.length >= 2 ? ranked : [], live: !shown.length };
 }
 /* With asOf (a date), only playoff games dated on or before it count, so a future playoff day does not show results. */
 function buildBracket(month, asOf) {
@@ -245,7 +240,7 @@ function buildBracket(month, asOf) {
     progress = false; const next = [];
     for (const g of pending) {
       const m = bracketModel(seeds, data);
-      const n = [1, 2, 3, 4, 5, 6, 7].find(k => { const x = m.G[k]; return x.a && x.b && !x.w && !x.skipped && [x.a, x.b].includes(g.home) && [x.a, x.b].includes(g.road); });
+      const n = m.list.find(k => { const x = m.G[k]; return x.a && x.b && !x.w && !x.skipped && [x.a, x.b].includes(g.home) && [x.a, x.b].includes(g.road); });
       if (!n) { next.push(g); continue; }
       const hasScores = !isNaN(g.hg) && !isNaN(g.rg) && g.hg !== g.rg;
       data['g' + n] = hasScores ? (g.hg > g.rg ? g.home : g.road) : g.winner;
@@ -259,16 +254,19 @@ function buildBracket(month, asOf) {
 function championOf(month) { return hasPlayoffs(month) ? buildBracket(month).champion : ''; }
 
 function bracketHTML(month) {
-  const { G, champion, live, scores } = buildBracket(month);
+  const B = buildBracket(month), { G, champion, live, scores } = B;
+  if (!B.S) return '<p class="muted">The playoffs need at least two teams.</p>';
   const card = g => {
     const side = (p, seed, won, ph) => `<div class="side ${won ? 'won' : ''}"><span>${seed ? `<span class="seed">${seed}</span>` : ''}${p ? who(p, 22) : `<span class="muted">${ph}</span>`}</span>${scores[g.n]?.[p] != null ? `<span>${scores[g.n][p]}</span>` : won ? '<span>✔</span>' : ''}</div>`;
-    return `<div class="match ${g.skipped ? 'skipped' : ''}"><div class="gname">Game ${g.n}${g.n === 7 ? ' · Championship' : ''}${g.skipped ? ' · not needed' : g.n === 7 ? ' · only if needed' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, 'TBD')}${side(g.b, g.sb, g.w && g.w === g.b, 'TBD')}</div>`;
+    const title = g.kind === 'GF' ? ' · Grand final' : g.kind === 'RESET' ? ' · Grand final, game 2' : '';
+    return `<div class="match ${g.skipped ? 'skipped' : ''}"><div class="gname">Game ${g.n}${title}${g.skipped ? ' · not needed' : g.kind === 'RESET' ? ' · only if needed' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, g.la)}${side(g.b, g.sb, g.w && g.w === g.b, g.lb)}</div>`;
   };
-  const col = (title, ns) => `<div class="round"><h3>${title}</h3><div class="matches">${ns.map(n => card(G[n])).join('')}</div></div>`;
-  return `${champion ? `<p class="champ">🏆 Champion: <b>${esc(champion)}</b></p>` : ''}${live ? '<p class="muted">Seeded from the current standings. Updates as playoff games are added.</p>' : ''}
-    <h2>Winners bracket</h2><div class="bracket">${col('Round 1', [1, 2])}${col('Round 2', [4])}${col('Round 3', [6])}</div>
-    <h2>Losers bracket</h2><div class="bracket">${col('Round 1', [3])}${col('Round 2', [5])}</div>
-    <h2>Championship</h2><div class="bracket">${col('Game 7', [7])}</div>`;
+  const col = r => `<div class="round"><h3>${r.label}</h3><div class="matches">${r.nums.map(n => card(G[n])).join('')}</div></div>`;
+  const rounds = k => B.rounds.filter(r => r.kind === k);
+  return `${champion ? `<p class="champ">🏆 Champion: <b>${esc(champion)}</b></p>` : ''}<p class="muted">${B.seeds.length} teams · ${B.list.length - 1} games, plus a second grand final game only if the losers-bracket champion wins the first${B.S.P > B.seeds.length ? ` · the top ${B.S.P - B.seeds.length} seeds get a first-round bye` : ''}.${live ? ' Seeded from the current standings; updates as playoff games are added.' : ''}</p>
+    <h2>Winners bracket</h2><div class="bracket">${rounds('W').map(col).join('')}</div>
+    ${rounds('L').length ? `<h2>Losers bracket</h2><div class="bracket">${rounds('L').map(col).join('')}</div>` : ''}
+    <h2>Grand final</h2><div class="bracket">${rounds('GF').map(col).join('')}</div>`;
 }
 
 /* ---------- pages ---------- */
@@ -309,7 +307,7 @@ const view = {
   playoffs() {
     const months = [cur(), ...pastMonths().filter(hasPlayoffs)];
     const c = chipsFor('playoffs', months, m => m === cur() ? 'current' : '');
-    return `<h1>Playoffs</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · every month the players are seeded by standings into a double-elimination bracket.' : ' · final bracket.'}</p>${c.html}${bracketHTML(c.sel)}`;
+    return `<h1>Playoffs</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · every month all the teams are seeded by standings into a double-elimination bracket.' : ' · final bracket.'}</p>${c.html}${bracketHTML(c.sel)}`;
   },
 };
 

@@ -223,6 +223,14 @@ function gamesList() {
       <div class="ginfo"><span class="muted">${e.date ? dateShort(e.date) : esc(e.month || '')}</span> <b>${esc(gameLine(e))}</b>${e.playoff ? ' <span class="tag">Playoff</span>' : ''}${e.overtime ? ' <span class="tag">OT</span>' : ''}${e.dnp ? ' <span class="tag dnp">DNP</span>' : ''}${valid.has(i) ? '' : ' <span class="tag warn">Needs fixing</span>'}</div>
       <div class="gbtns"><button class="btn small" type="button" data-edit="${i}">Edit</button><button class="btn small ghost" type="button" data-del="${i}">Delete</button></div></div>`).join('')}</div>`;
 }
+/* Playoff games that are ready to be played (both teams known), so the right two teams can be filled in with one tap. */
+function nextPlayoffGames() {
+  const month = cur(); if (!hasPlayoffs(month) && !(typeof dayKind === 'function' && dayKind(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)) === 'playoff')) return '';
+  const B = buildBracket(month); if (!B.S || B.champion) return '';
+  const open = B.list.map(n => B.G[n]).filter(g => g.a && g.b && !g.w && !g.skipped).slice(0, 8);
+  if (!open.length) return '';
+  return `<h2>Next playoff games</h2><p class="muted" style="margin:0 0 8px">Tap one to fill in the form with the right two teams. Enter playoff games in the order they are played.</p><div class="glist">${open.map(g => `<div class="grow"><div class="ginfo"><span class="muted">Game ${g.n}${g.kind === 'GF' ? ' · Grand final' : g.kind === 'RESET' ? ' · Grand final, game 2' : ''}</span> <b>${esc(g.a)} vs ${esc(g.b)}</b></div><div class="gbtns"><button class="btn small" type="button" data-pog="${g.n}">Use</button></div></div>`).join('')}</div>`;
+}
 view.add = function () {
   const connected = !!tok.get();
   if (connected && !ADM.loaded && !ADM.loading && !ADM.tried) setTimeout(loadAdmin, 0);      // one attempt per visit, so a bad token cannot loop
@@ -246,7 +254,7 @@ view.add = function () {
   const sec = UI['add-sec'] === 'members' ? 'members' : 'games';
   const secChips = `<div class="chips">${[['games', 'Games'], ['members', 'Members & teams']].map(([k, l]) => `<button type="button" class="chip ${sec === k ? 'on' : ''}" data-page="add-sec" data-m="${k}">${l}</button>`).join('')}</div>`;
   if (sec === 'members') return `<h1>Add / edit</h1>${connect}${secChips}${membersSection()}`;
-  return `<h1>Add / edit games</h1>${connect}${secChips}
+  return `<h1>Add / edit games</h1>${connect}${secChips}${editing ? '' : nextPlayoffGames()}
     <h2 id="form-h">${editing ? 'Edit this game' : 'Add a game'}</h2><div class="card"><form id="add-form" class="form" onsubmit="return false">
       <label class="f">Date<input id="a-date" type="date" value="${today}"></label>
       <div class="row2">${pick('a-home', 'Home player')}${pick('a-road', 'Road player')}</div>
@@ -293,6 +301,11 @@ document.addEventListener('click', async e => {
   if (t.id === 'a-retry') { ADM.tried = false; ADM.error = ''; route(true); return; }
   if (t.id === 'a-copylink') { const n = document.getElementById('tok-note'); try { await navigator.clipboard.writeText(tokenLink()); n.className = 'form-note ok'; n.textContent = 'Link copied. Paste it into your browser\'s address bar.'; } catch { n.className = 'form-note err'; n.textContent = 'Could not copy. Long-press the Open GitHub button and choose Copy Link.'; } return; }
   if (t.id === 'a-paste') { try { const box = document.getElementById('a-token'); box.value = (await navigator.clipboard.readText()).trim(); box.dispatchEvent(new Event('input', { bubbles: true })); } catch { const n = document.getElementById('tok-note'); n.className = 'form-note err'; n.textContent = 'Could not read the clipboard. Long-press in the box and choose Paste.'; } return; }
+  if (t.dataset && t.dataset.pog !== undefined) {
+    const g = buildBracket(cur()).G[+t.dataset.pog]; if (!g) return;
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    setForm({ date: today, home: g.a, road: g.b, playoff: true }); showOut(); document.getElementById('form-h').scrollIntoView({ behavior: 'smooth', block: 'start' }); note(`Game ${g.n}: ${g.a} vs ${g.b}. Enter the scores and tap Save game.`, true); return;
+  }
   if (t.id === 'a-cancel') { ADM.editing = null; route(true); return; }
   if (t.id === 'm-cancel') { MEM.editing = null; route(true); return; }
   if (t.dataset && t.dataset.medit !== undefined) { MEM.editing = t.dataset.medit; route(true); setTimeout(() => document.getElementById('mem-h').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
