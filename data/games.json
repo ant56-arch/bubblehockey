@@ -77,6 +77,7 @@
     { "date": "2026-10-28", "home": "Tommy", "road": "Boban", "homeScore": 5, "roadScore": 0, "homeShots": 18, "roadShots": 3, "playoff": true },
     { "date": "2026-10-28", "home": "Connor", "road": "Trotta", "homeScore": 8, "roadScore": 0, "homeShots": 10, "roadShots": 8, "playoff": true },
     { "date": "2026-10-28", "home": "Tommy", "road": "Trotta", "homeScore": 4, "roadScore": 3, "homeShots": 16, "roadShots": 14, "playoff": true },
-    { "date": "2026-10-28", "home": "Tommy", "road": "Connor", "homeScore": 4, "roadScore": 6, "homeShots": 14, "roadShots": 11, "playoff": true }
+    { "date": "2026-10-28", "home": "Tommy", "road": "Connor", "homeScore": 4, "roadScore": 6, "homeShots": 14, "roadShots": 11, "playoff": true },
+    { "date": "2026-11-02", "home": "Connor", "road": "Tommy", "homeScore": 6, "roadScore": 1, "homeShots": 10, "roadShots": 13 }
   ]
 }
