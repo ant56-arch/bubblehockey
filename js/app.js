@@ -278,13 +278,11 @@ const view = {
     const useNow = now.some(r => r.gp), board = useNow ? now : standingsFor(monthGames(prev || ''));
     const lastChamp = [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort().reverse().map(mm => ({ m: mm, c: championOf(mm) })).find(x => x.c);
     const [head, ...tail] = (t.title || D.config.leagueName).split(':');
-    return `<div class="hero"><div class="hero-text"><span class="eyebrow">${m ? monthLabel(m) : 'Season'}</span><h1>${esc(head)}${tail.length ? `<span class="sub">${esc(tail.join(':').trim())}</span>` : ''}</h1>${t.html.split('<h2>')[0]}</div><img class="hero-logo" src="images/league-logo.webp" alt="${esc(D.config.leagueName)} logo"></div>
-      <div class="grid">
-        <div class="card stat"><div class="num">${esc(board[0]?.gp ? board[0].name : '—')}</div><div class="label">${useNow ? 'Current leader' : (prev ? monthLabel(prev) + ' leader' : 'Leader')}</div></div>
-        <div class="card stat"><div class="num">${monthGames(m).length}</div><div class="label">Games in ${m ? monthLabel(m) : 'this month'}</div></div>
-        <div class="card stat"><div class="num">${D.members.length}</div><div class="label">Players</div></div>
-        <div class="card stat"><div class="num">${esc(lastChamp ? lastChamp.c : '—')}</div><div class="label">${lastChamp ? 'Last champion · ' + monthLabel(lastChamp.m) : 'Last champion'}</div></div>
-      </div>
+    const stat = (num, label) => `<div><b>${esc(String(num))}</b><span>${label}</span></div>`;
+    return `<section class="hero"><div class="hero-text"><span class="eyebrow">${m ? monthLabel(m) : 'Season'}</span><h1>${esc(head)}${tail.length ? `<span class="sub">${esc(tail.join(':').trim())}</span>` : ''}</h1>${t.html.split('<h2>')[0]}
+        <div class="hero-cta"><a class="btn" href="#/rules">Join the League</a><a class="btn ghost" href="#/standings">View standings</a></div>
+        <div class="hero-stats">${stat(board[0]?.gp ? board[0].name : '—', useNow ? 'Current leader' : (prev ? monthLabel(prev) + ' leader' : 'Leader'))}${stat(monthGames(m).length, 'Games in ' + (m ? monthLabel(m) : 'this month'))}${stat(D.members.length, 'Players')}${stat(lastChamp ? lastChamp.c : '—', lastChamp ? 'Last champion · ' + monthLabel(lastChamp.m) : 'Last champion')}</div></div>
+        <div class="hero-art"><img src="images/league-logo.webp" alt="${esc(D.config.leagueName)} logo"></div></section>
       ${typeof todayCard === 'function' ? todayCard() : ''}
       <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4, useNow ? m : prev)}
       <h2>Latest games</h2>${gamesTable(D.games.filter(isCounted).sort(cmpNew).slice(0, 5))}
