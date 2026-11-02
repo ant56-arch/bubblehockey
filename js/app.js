@@ -272,21 +272,35 @@ function bracketHTML(month) {
 /* ---------- pages ---------- */
 const view = {
   home() {
-    const t = textBlocks(D.home), m = cur();
+    const t = textBlocks(D.home), m = cur(), cfg = D.config.home || {};
     const now = standingsFor(monthGames(m));
     const prev = pastMonths().find(x => monthGames(x).length);
     const useNow = now.some(r => r.gp), board = useNow ? now : standingsFor(monthGames(prev || ''));
-    const lastChamp = [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort().reverse().map(mm => ({ m: mm, c: championOf(mm) })).find(x => x.c);
-    const [head, ...tail] = (t.title || D.config.leagueName).split(':');
-    const stat = (num, label) => `<div><b>${esc(String(num))}</b><span>${label}</span></div>`;
-    return `<section class="hero"><div class="hero-text"><span class="eyebrow">${m ? monthLabel(m) : 'Season'}</span><h1>${esc(head)}${tail.length ? `<span class="sub">${esc(tail.join(':').trim())}</span>` : ''}</h1>${t.html.split('<h2>')[0]}
-        <div class="hero-cta"><a class="btn" href="#/rules">Join the League</a><a class="btn ghost" href="#/standings">View standings</a></div>
-        <div class="hero-stats">${stat(board[0]?.gp ? board[0].name : '—', useNow ? 'Current leader' : (prev ? monthLabel(prev) + ' leader' : 'Leader'))}${stat(monthGames(m).length, 'Games in ' + (m ? monthLabel(m) : 'this month'))}${stat(D.members.length, 'Players')}${stat(lastChamp ? lastChamp.c : '—', lastChamp ? 'Last champion · ' + monthLabel(lastChamp.m) : 'Last champion')}</div></div>
-        <div class="hero-art"><img src="images/league-logo.webp" alt="${esc(D.config.leagueName)} logo"></div></section>
-      ${typeof todayCard === 'function' ? todayCard() : ''}
-      <h2>${useNow ? 'Standings' : (prev ? monthLabel(prev) + ' final standings' : 'Standings')}</h2>${standingsTable(board, 4, useNow ? m : prev)}
-      <h2>Latest games</h2>${gamesTable(D.games.filter(isCounted).sort(cmpNew).slice(0, 5))}
-      ${t.html.includes('<h2>') ? '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') : ''}`;
+    const champs = [...new Set(D.games.filter(g => g.playoff).map(g => g.month))].sort().reverse().map(mm => ({ m: mm, c: championOf(mm) })).filter(x => x.c);
+    const lastChamp = champs[0], counted = D.games.filter(isCounted), team = n => (member(n)?.team_name || '').replace(/^The /, '');
+    const rec = n => { const r = standingsFor(counted).find(x => x.name === n); return r ? `${r.w + r.otw}–${r.l + r.otl}` : '0–0'; };
+    const card = (title, link, body) => `<section class="card pc"><h2>${title}${link ? `<a href="${link[1]}">${link[0]}</a>` : ''}</h2>${body}</section>`;
+    const sign = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
+    const stand = `<div class="table-scroll"><table class="ptable"><thead><tr><th>Rank</th><th>Player</th><th class="n">W</th><th class="n">L</th><th class="n">Diff</th><th class="n">Pts</th></tr></thead><tbody>${
+      board.map((r, i) => `<tr><td>${i + 1}</td><td><div class="pl">${member(r.name)?.logo ? `<img class="tlogo sq" src="${esc(member(r.name).logo)}" alt="" loading="lazy">` : ''}<span><b>${esc(r.name)}</b><small>${esc(team(r.name))}</small></span></div></td><td class="n">${r.w + r.otw}</td><td class="n">${r.l + r.otl}</td><td class="n">${sign(r.gf - r.ga)}</td><td class="n"><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`;
+    const recent = counted.sort(cmpNew).slice(0, 3).map(g => `<div class="rrow"><span class="d">${dateShort(g.date)}</span><span class="t">${esc(g.home)}</span><span class="s">${g.hg > g.rg ? `<b class="win">${g.hg}</b> – ${g.rg}` : `${g.hg} – <b class="win">${g.rg}</b>`}</span><span class="t r">${esc(g.road)}${g.playoff ? ' <span class="tag">Playoffs</span>' : ''}</span></div>`).join('');
+    const days = typeof upcomingDays === 'function' && D.members.length > 1 ? upcomingDays(3).map(d => dayView(d)).filter(Boolean) : [];
+    const games = days.flatMap(v => v.playoff ? [] : v.rows.filter(r => !r.result).map(r => ({ ...r, date: v.date })));
+    const nx = games[0], h2h = nx ? counted.filter(g => [g.home, g.road].includes(nx.home) && [g.home, g.road].includes(nx.road)) : [], hw = nx ? h2h.filter(g => (g.hg > g.rg ? g.home : g.road) === nx.home).length : 0;
+    const next = nx ? `<div class="feat"><div class="vs"><div>${esc(nx.home)}<small>${rec(nx.home)}</small></div><span>VS</span><div>${esc(nx.road)}<small>${rec(nx.road)}</small></div></div><hr>
+      <div class="kv2"><span>Date</span><b>${dayLabel(nx.date)}</b></div><div class="kv2"><span>Home</span><b>${esc(nx.home)}</b></div><div class="kv2"><span>Head to head</span><b>${h2h.length ? `${hw}–${h2h.length - hw} ${esc(nx.home)}` : 'No games yet'}</b></div></div>`
+      : '<div class="feat muted">No games scheduled right now.</div>';
+    const sched = games.slice(0, 3).map(r => `<div class="rrow s3"><span class="d">${dateShort(r.date)}</span><span class="t">${esc(r.home)} v ${esc(r.road)}</span><span class="d r">Home: ${esc(r.home)}</span></div>`).join('') || '<div class="feat muted">Nothing scheduled.</div>';
+    const champ = lastChamp ? `<div class="feat"><b class="big">${esc(lastChamp.c)}</b><div class="muted">${monthLabel(lastChamp.m)} · ${esc(team(lastChamp.c))}</div></div>` : '<div class="feat muted">No champion yet.</div>';
+    const [head] = (cfg.headline || 'Every game. Every standing. One league.').split('|');
+    return `<section class="band"><div class="hero"><div class="hero-text"><span class="eyebrow">${esc(cfg.eyebrow || (m ? monthLabel(m) : 'Season'))}</span>
+        <h1>${esc(head).replace(/\. /g, '.<br>')}</h1><p>${esc(cfg.text || 'Live standings, daily matchups and a double-elimination playoff for the whole office. Join the table.')}</p>
+        <a class="btn" href="#/rules">Join the League</a>
+        <div class="hero-stats"><div><b>${counted.length}</b><span>Games played</span></div><div><b>${D.members.length}</b><span>Teams</span></div><div><b>${champs.length}</b><span>Champions crowned</span></div></div></div>
+      <div class="hero-art"><img src="images/table.svg" alt="Bubble hockey table"></div></div></section>
+      <div class="pgrid"><div class="pcol">${card(useNow ? 'Standings' : (prev ? monthLabel(prev) + ' standings' : 'Standings'), ['Full table →', '#/standings'], stand)}${card('Recent results', ['Game log →', '#/gamelog'], recent || '<div class="feat muted">No games yet.</div>')}</div>
+        <div class="pcol">${card('Next matchup', null, next)}${card('Schedule', ['Full →', '#/schedule'], sched)}${card('Champion', null, champ)}</div></div>
+      ${t.html.includes('<h2>') ? '<div class="more-text">' + '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') + '</div>' : ''}`;
   },
   rules() {
     const t = textBlocks(D.rules);
