@@ -326,7 +326,7 @@ const view = {
 /* ---------- router ---------- */
 function route(keepScroll) {
   const OLD = { 'gamelog-history': 'gamelog', 'standings-history': 'standings', 'playoffs-history': 'playoffs', enter: 'add', admin: 'add' };
-  let id = location.hash.replace(/^#\/?/, '') || 'home'; id = OLD[id] || id;
+  let id = location.hash.replace(/^#\/?/, '') || 'home'; id = OLD[id.split('?')[0]] || id.split('?')[0];
   const page = view[id] ? id : 'home';
   document.getElementById('app').innerHTML = (D.problems.length ? `<div class="alert"><b>Heads up, the data file needs attention:</b><ul>${D.problems.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : '') + view[page]();
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));

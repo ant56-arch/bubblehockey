@@ -317,6 +317,9 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 6px; font-
 .sg-end { max-width: 560px; }
 :root[data-theme="dark"] .sg-num { color: var(--text); }
 @media (max-width: 640px) { .sg-picks { gap: 8px; } .sg-pick { padding: 12px 6px; } }
-.sg-cv { display: block; width: 100%; height: auto; aspect-ratio: 480 / 300; cursor: pointer; background: #0f172a; }
+.sg-cv { display: block; width: 100%; height: auto; aspect-ratio: 480 / 340; cursor: pointer; background: #0f172a; }
 .sg-snd { margin-top: 14px; font-size: .85rem; color: var(--muted); }
 .sg-wait { margin: 8px 0 0; font-size: .85rem; }
+.tiny { font-size: .78rem; color: var(--muted); }
+.sg-code { font-size: 2.6rem; font-weight: 900; letter-spacing: .28em; color: var(--navy); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--radius); text-align: center; padding: 18px 8px; margin: 14px 0; user-select: all; }
+:root[data-theme="dark"] .sg-code { color: var(--text); }
