@@ -194,14 +194,14 @@ function sgFrame(now) {
   for (let i = 0; i <= 16; i++) { const x = gx - W / 2 + i * W / 16, d = Math.max(0, 1 - Math.abs(x - (gx + bx)) / (W * 0.35)) * bulge; c.beginPath(); c.moveTo(x, gy - Hn); c.lineTo(x + d * 0.4, gy); c.stroke(); }
   for (let i = 0; i <= 8; i++) { const y = gy - Hn + i * Hn / 8; c.beginPath(); c.moveTo(gx - W / 2, y); for (let x = 0; x <= W; x += 8) { const d = Math.max(0, 1 - Math.abs(gx - W / 2 + x - (gx + bx)) / (W * 0.35)) * bulge; c.lineTo(gx - W / 2 + x, y + d * 0.6); } c.stroke(); }
   // goalie
-  const dv = P ? sgEase(sgClamp(pt, 1.25, 1.7)) : 0, sway = P ? 0 : Math.sin(T * 1.8) * 5 * gs, gxp = gx + diveX * 64 * gs * dv + sway;
-  sgDrawGoalie(c, gxp, gy - 2 * gs - dv * 5 * gs, gs * 0.7, diveX * 0.8 * dv, dv, diveX, goaliePal, sgLogo(sgName(1 - sh)), T);
+  const dv = P ? sgEase(sgClamp(pt, 1.25, 1.7)) : 0, sway = P ? 0 : Math.sin(T * 1.8) * 5 * gs, gxp = gx + diveX * 46 * gs * dv + sway;
+  sgDrawGoalie(c, gxp, gy - 2 * gs, gs * 0.64, diveX * 0.8 * dv, dv, diveX, goaliePal, sgLogo(sgName(1 - sh)), T);
   // posts and goal light
   c.lineCap = 'round'; c.lineJoin = 'round'; for (const [lw, col] of [[8 * gs + 3, SG_INK], [8 * gs, '#d62828']]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(gx - W / 2, gy); c.lineTo(gx - W / 2, gy - Hn); c.lineTo(gx + W / 2, gy - Hn); c.lineTo(gx + W / 2, gy); c.stroke(); }
   const lit = P && P.goal && after > 0 && Math.floor(after * 6) % 2 === 0; if (lit) { c.fillStyle = '#ff2d2d'; c.beginPath(); c.arc(gx, gy - Hn - 14 * gs, 6 * gs, 0, 6.3); c.fill(); c.lineWidth = 1.5; c.strokeStyle = SG_INK; c.stroke(); c.fillStyle = 'rgba(255,45,45,.25)'; c.beginPath(); c.arc(gx, gy - Hn - 14 * gs, 18 * gs, 0, 6.3); c.fill(); }
   // skater, then puck on top
   const strideT = P ? (pt < 1.0 ? pt : 0) : 0, bob = P && pt < 1.0 ? Math.abs(Math.sin(pt * 10)) * 2 : Math.sin(T * 2) * 0.8;
-  const skx = 240 + shootX * 24 * wind, SKS = 0.84, bl = { x: 50 + shootX * 6 * wind - shot * 6, y: -3 + wind * 8 - shot * 22 };       // blade tip, in the skater's own coordinates
+  const skx = 240 + shootX * 24 * wind, SKS = 0.84, bl = { x: 50 + (P && pt < 1.0 ? Math.sin(pt * 14) * 9 : P ? 0 : Math.sin(T * 1.5) * 3) + shootX * 6 * wind - shot * 6, y: -3 + wind * 8 - shot * 22 };       // blade tip, in the skater's own coordinates
   const bladeX = skx + (bl.x + 12) * SKS, bladeY = SG_FEET + bl.y * SKS;
   sgDrawSkater(c, skx, SG_FEET - bob, SKS, wind, shootX, shot, shotPal, sgName(sh), P ? strideT : 0, bl, P ? pt < 1.0 : false, T);
   const tx = gx + shootX * W * 0.3, ty = gy - Hn * 0.3 - (P && P.shoot === 'M' ? Hn * 0.18 : 0);
@@ -258,41 +258,81 @@ function sgArena(c, T, P, after, gs, gy, pt) {
   c.fillStyle = 'rgba(190,40,50,.85)'; c.beginPath(); c.arc(240 - 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.arc(240 + 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.fill();      // face-off dots
 }
 
-/* The goalie, facing the shooter: pads, pants, chest protector, big glove and blocker, caged mask. dv = how far into the dive (0 to 1). */
+/* The goalie, facing the shooter, drawn like real gear: big curved leg pads with knee rolls, bulky pants, a baggy jersey over a puffy chest protector,
+   a catching glove (trapper) on the right and the blocker plus stick on the left, and a painted mask with a cage. dv = how far into the save (0 to 1):
+   a shot down the middle gets a butterfly (drop to the knees, pads flared out), a shot to either side gets a sideways push with the lead pad stretched out. */
 function sgDrawGoalie(c, x, y, s, lean, dv, dir, pal, logo, T) {
-  c.save(); c.translate(x, y); c.scale(s, s); c.rotate(lean * 0.55);
-  c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(0, 3, 46, 8, 0, 0, 6.3); c.fill();
-  const spread = 14 + dv * 12;
-  for (const sx of [-1, 1]) {                                                                   // leg pads
-    const px = sx * spread, ext = sx === dir ? dv * 8 : 0;
-    sgRR(c, px - 11 + sx * ext, -56, 22, 56, 8); sgFS(c, sgGrad(c, px - 11, 0, px + 11, 0, '#d8dee8', '#ffffff', '#c3ccda'));
-    c.strokeStyle = pal.main; c.lineWidth = 3; for (const yy of [-44, -30, -16]) { c.beginPath(); c.moveTo(px - 10 + sx * ext, yy); c.lineTo(px + 10 + sx * ext, yy); c.stroke(); }
-    sgRR(c, px - 12 + sx * ext, -60, 24, 11, 5); sgFS(c, pal.main);
-    sgRR(c, px - 11 + sx * ext, -3, 22, 7, 3); sgFS(c, '#111827');
+  c.save(); c.translate(x, y); c.scale(s, s);
+  const fly = dir === 0, drop = (fly ? 44 : 38) * dv, breathe = Math.sin(T * 2.2) * 1.3 * (1 - dv);
+  c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(0, 3, 54 + dv * 24, 9, 0, 0, 6.3); c.fill();
+  c.rotate(lean * 0.45); c.translate(0, drop - breathe);
+  const iceY = 2 - drop + breathe;
+  sgRR(c, -29, -88, 58, 40, 16); sgFS(c, sgGrad(c, -29, 0, 29, 0, pal.dark, pal.main, pal.dark));                          // pants
+  const pad = (sx, th) => {                                                                        // leg pad, hanging from the hip
+    c.save(); c.translate(sx * 15, -60); c.rotate(th);
+    c.beginPath(); c.moveTo(-9, 60); c.bezierCurveTo(-15, 48, -16, 30, -14, 16); c.lineTo(-13, -2); c.quadraticCurveTo(0, -9, 13, -2); c.lineTo(14, 16); c.bezierCurveTo(16, 30, 15, 48, 9, 60); c.closePath();
+    sgFS(c, sgGrad(c, -15, 0, 15, 0, '#c9d1de', '#ffffff', '#b9c4d4'));
+    c.beginPath(); c.moveTo(-14.4, 13); c.quadraticCurveTo(0, 20, 14.4, 13); c.lineTo(15, 25); c.quadraticCurveTo(0, 32, -15, 25); c.closePath(); sgFS(c, pal.main, 1.6);      // knee roll
+    c.strokeStyle = 'rgba(11,20,38,.32)'; c.lineWidth = 1.2; for (const o of [-5, 5]) { c.beginPath(); c.moveTo(o, 32); c.quadraticCurveTo(o * 1.1, 46, o * .8, 57); c.stroke(); }
+    for (const yy of [38, 50]) { c.fillStyle = pal.dark; c.beginPath(); c.roundRect(-14, yy, 28, 4.5, 2); c.fill(); c.fillStyle = '#e2e8f0'; c.fillRect(-2, yy, 4, 4.5); }
+    c.beginPath(); c.ellipse(0, 61, 11, 5.5, 0, 0, 6.3); sgFS(c, '#111827', 1.6);                    // skate toe
+    c.restore();
+  };
+  pad(-1, fly ? dv * 1.2 : (dir === -1 ? 1.45 * dv : 0.45 * dv * (dir === 1 ? -1 : 1)));
+  pad(1, fly ? -dv * 1.2 : (dir === 1 ? -1.45 * dv : -0.45 * dv * (dir === -1 ? -1 : 1)));
+  // jersey: baggy, wider at the hem
+  c.beginPath(); c.moveTo(-24, -116); c.bezierCurveTo(-33, -104, -36, -86, -33, -66); c.lineTo(-31, -57); c.quadraticCurveTo(0, -50, 31, -57); c.lineTo(33, -66); c.bezierCurveTo(36, -86, 33, -104, 24, -116); c.quadraticCurveTo(0, -125, -24, -116); c.closePath();
+  sgFS(c, sgGrad(c, -34, -120, 34, -56, pal.light, pal.main, pal.dark));
+  c.fillStyle = pal.trim; c.beginPath(); c.moveTo(-32, -68); c.quadraticCurveTo(0, -61, 32, -68); c.lineTo(32.5, -63); c.quadraticCurveTo(0, -56, -32.5, -63); c.closePath(); c.fill();
+  c.fillStyle = pal.dark; c.beginPath(); c.moveTo(-31.5, -62); c.quadraticCurveTo(0, -55, 31.5, -62); c.lineTo(31, -58); c.quadraticCurveTo(0, -51, -31, -58); c.closePath(); c.fill();
+  if (logo) { c.save(); c.beginPath(); c.arc(0, -94, 11, 0, 6.3); c.clip(); c.drawImage(logo, -11, -105, 22, 22); c.restore(); c.beginPath(); c.arc(0, -94, 11, 0, 6.3); c.lineWidth = 1.6; c.strokeStyle = SG_INK; c.stroke(); }
+  // arms and hands
+  const hand = sx => {
+    let hx = sx * (58 + dv * 4), hy = -86 - dv * (fly ? 14 : 4);
+    if (!fly && sx === dir) { hx = dir * (60 + dv * 46); hy = -92 - dv * 30; }
+    return { x: hx, y: hy };
+  };
+  for (const sx of [-1, 1]) {
+    const h = hand(sx), ex = (sx * 27 + h.x) / 2 + sx * 4, ey = (-106 + h.y) / 2 + 12;
+    sgLimb(c, sx * 27, -106, ex, ey, 16, pal.main); sgLimb(c, ex, ey, h.x, h.y, 13, pal.main);
+    c.beginPath(); c.arc(ex, ey, 8, 0, 6.3); sgFS(c, pal.dark, 1.6);                                  // elbow pad
+    c.beginPath(); c.arc(sx * 27, -107, 11.5, 0, 6.3); sgFS(c, sgGrad(c, sx * 27 - 8, -118, sx * 27 + 8, -98, pal.light, pal.main), 1.8);        // shoulder cap
+    c.strokeStyle = pal.trim; c.lineWidth = 2.2; c.beginPath(); c.arc(sx * 27, -107, 8, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
   }
-  sgRR(c, -22, -72, 44, 22, 7); sgFS(c, sgGrad(c, -22, 0, 22, 0, pal.dark, pal.main, pal.dark));       // pants
-  const arm = 20 + dv * 18, hy = -92 - dv * 10;
-  for (const sx of [-1, 1]) sgLimb(c, sx * 20, -100, sx * (24 + arm), hy, 12, pal.main);        // arms
-  c.beginPath(); c.moveTo(-26, -72); c.lineTo(-20, -108); c.quadraticCurveTo(0, -116, 20, -108); c.lineTo(26, -72); c.closePath(); sgFS(c, sgGrad(c, -26, -110, 26, -72, pal.light, pal.main, pal.dark));       // chest protector
-  c.fillStyle = pal.trim; c.fillRect(-25, -80, 50, 4); c.fillRect(-22, -100, 4, 18); c.fillRect(18, -100, 4, 18);
-  if (logo) { c.save(); c.beginPath(); c.arc(0, -92, 9, 0, 6.3); c.clip(); c.drawImage(logo, -9, -101, 18, 18); c.restore(); c.beginPath(); c.arc(0, -92, 9, 0, 6.3); c.lineWidth = 1.5; c.strokeStyle = SG_INK; c.stroke(); }
-  const lx = -(24 + arm), rx = 24 + arm;
-  sgRR(c, lx - 15, hy - 18, 30, 34, 8); sgFS(c, sgGrad(c, lx, hy - 18, lx, hy + 16, '#fff7e0', '#f5b301'));        // catching glove with webbing
-  c.strokeStyle = 'rgba(11,20,38,.45)'; c.lineWidth = 1.2; for (const o of [-6, 0, 6]) { c.beginPath(); c.moveTo(lx + o, hy - 14); c.lineTo(lx + o, hy + 12); c.stroke(); }
-  sgRR(c, rx - 9, hy - 18, 18, 36, 5); sgFS(c, sgGrad(c, rx - 9, 0, rx + 9, 0, '#f1f5f9', '#cbd5e1')); sgRR(c, rx - 6, hy - 12, 12, 22, 3); sgFS(c, '#111827', 1.2);        // blocker
-  c.lineCap = 'round'; c.strokeStyle = SG_INK; c.lineWidth = 6.5; c.beginPath(); c.moveTo(rx + 2, hy + 14); c.lineTo(rx + 12, -2); c.stroke(); c.strokeStyle = '#7c4a1d'; c.lineWidth = 3.5; c.stroke();         // stick
-  sgRR(c, rx - 2, -6, 34, 7, 3); sgFS(c, '#1f2937', 1.6);
-  sgRR(c, -7, -122, 14, 12, 4); sgFS(c, '#e2c9a8');                                          // neck
-  c.beginPath(); c.arc(0, -127, 14, 0, 6.3); sgFS(c, sgGrad(c, -12, -140, 12, -114, '#ffffff', '#c3ccda'));       // mask
-  c.beginPath(); c.arc(0, -127, 14, Math.PI * 1.05, Math.PI * 1.95); c.lineTo(0, -127); c.closePath(); c.fillStyle = pal.main; c.fill();
-  sgRR(c, -9, -132, 18, 14, 4); c.fillStyle = 'rgba(11,20,38,.6)'; c.fill();
-  c.strokeStyle = '#e5e7eb'; c.lineWidth = 1.3; for (const o of [-6, -2, 2, 6]) { c.beginPath(); c.moveTo(o, -133); c.lineTo(o, -118); c.stroke(); } c.beginPath(); c.moveTo(-9, -125); c.lineTo(9, -125); c.stroke();
+  const bh = hand(-1), ch = hand(1);
+  // stick: in the blocker hand, shaft down to the ice, wide paddle, blade flat on the ice in front
+  const tipX = bh.x - 4, tipY = iceY;
+  c.lineCap = 'butt'; c.strokeStyle = SG_INK; c.lineWidth = 6.5; c.beginPath(); c.moveTo(bh.x, bh.y + 6); c.lineTo(tipX, tipY); c.stroke(); c.strokeStyle = '#a16a2e'; c.lineWidth = 3.4; c.stroke();
+  const mx = bh.x + (tipX - bh.x) * 0.5, my = bh.y + 6 + (tipY - bh.y - 6) * 0.5;
+  c.strokeStyle = SG_INK; c.lineWidth = 13; c.beginPath(); c.moveTo(mx, my); c.lineTo(tipX, tipY); c.stroke(); c.strokeStyle = '#c58b3d'; c.lineWidth = 9.5; c.stroke();         // paddle
+  sgRR(c, tipX - 6, tipY - 5, 44, 8, 3); sgFS(c, '#1f2937', 1.8); c.fillStyle = '#f8fafc'; c.fillRect(tipX + 4, tipY - 3.5, 20, 3);
+  sgRR(c, bh.x - 11, bh.y - 20, 22, 38, 5); sgFS(c, sgGrad(c, bh.x - 11, 0, bh.x + 11, 0, '#f1f5f9', '#cfd8e5'));           // blocker
+  c.strokeStyle = 'rgba(11,20,38,.4)'; c.lineWidth = 1.3; for (const o of [-10, -4, 2, 8]) { c.beginPath(); c.moveTo(bh.x - 9, bh.y + o); c.lineTo(bh.x + 9, bh.y + o); c.stroke(); }
+  sgRR(c, bh.x - 8, bh.y + 14, 16, 9, 3); sgFS(c, '#111827', 1.4);
+  // catching glove: rounded mitt with webbing and a cuff
+  c.beginPath(); c.moveTo(ch.x - 15, ch.y + 10); c.bezierCurveTo(ch.x - 19, ch.y - 12, ch.x - 14, ch.y - 30, ch.x + 2, ch.y - 31); c.bezierCurveTo(ch.x + 18, ch.y - 31, ch.x + 20, ch.y - 10, ch.x + 15, ch.y + 12); c.quadraticCurveTo(ch.x, ch.y + 19, ch.x - 15, ch.y + 10); c.closePath();
+  sgFS(c, sgGrad(c, ch.x, ch.y - 30, ch.x, ch.y + 16, '#fff3c8', '#e0a62b'));
+  c.save(); c.clip(); c.strokeStyle = 'rgba(11,20,38,.38)'; c.lineWidth = 1.1; for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(ch.x + i * 6 - 12, ch.y - 30); c.lineTo(ch.x + i * 6 + 12, ch.y + 14); c.stroke(); c.beginPath(); c.moveTo(ch.x + i * 6 + 12, ch.y - 30); c.lineTo(ch.x + i * 6 - 12, ch.y + 14); c.stroke(); } c.restore();
+  c.beginPath(); c.ellipse(ch.x - 14, ch.y - 10, 5, 10, -0.2, 0, 6.3); sgFS(c, '#e0a62b', 1.6);                         // thumb
+  sgRR(c, ch.x - 13, ch.y + 10, 27, 9, 4); sgFS(c, '#111827', 1.4);
+  // head: painted mask with a cage, a hanging throat guard
+  sgRR(c, -8, -126, 16, 12, 4); sgFS(c, '#eef2f7', 1.8);
+  c.beginPath(); c.ellipse(0, -136, 18, 20, 0, 0, 6.3); sgFS(c, sgGrad(c, -18, -150, 18, -118, '#ffffff', '#c9d1de'));
+  c.save(); c.beginPath(); c.ellipse(0, -136, 18, 20, 0, 0, 6.3); c.clip();
+  c.fillStyle = pal.main; c.beginPath(); c.moveTo(-20, -142); c.quadraticCurveTo(0, -166, 20, -142); c.lineTo(20, -156); c.lineTo(-20, -156); c.closePath(); c.fill();
+  c.fillStyle = pal.dark; c.beginPath(); c.moveTo(-20, -134); c.quadraticCurveTo(-12, -150, -2, -148); c.quadraticCurveTo(-12, -140, -14, -126); c.closePath(); c.fill(); c.beginPath(); c.moveTo(20, -134); c.quadraticCurveTo(12, -150, 2, -148); c.quadraticCurveTo(12, -140, 14, -126); c.closePath(); c.fill();
+  c.fillStyle = pal.trim; c.fillRect(-20, -143, 40, 2.2); c.restore();
+  c.beginPath(); c.ellipse(0, -136, 18, 20, 0, 0, 6.3); c.lineWidth = 2; c.strokeStyle = SG_INK; c.stroke();
+  sgRR(c, -11.5, -141, 23, 26, 9); c.fillStyle = 'rgba(10,18,32,.82)'; c.fill();
+  c.fillStyle = '#fff'; for (const ex of [-4.8, 4.8]) { c.beginPath(); c.ellipse(ex, -132, 2.6, 2.1, 0, 0, 6.3); c.fill(); } c.fillStyle = '#0b1426'; for (const ex of [-4.2, 5.4]) { c.beginPath(); c.arc(ex + (dir * 0.8), -132, 1.2, 0, 6.3); c.fill(); }
+  c.strokeStyle = '#d7dde7'; c.lineWidth = 1.4; for (const o of [-7, -3.5, 0, 3.5, 7]) { c.beginPath(); c.moveTo(o, -141); c.lineTo(o * .8, -115); c.stroke(); } for (const yy of [-134, -124]) { c.beginPath(); c.moveTo(-11, yy); c.lineTo(11, yy); c.stroke(); }
+  sgRR(c, -11.5, -141, 23, 26, 9); c.lineWidth = 2.2; c.strokeStyle = '#c3ccd9'; c.stroke();
   c.restore();
 }
 
 /* The shooter, seen from behind: skate stride on the way in, wind-up, then the swing. */
 function sgDrawSkater(c, x, y, s, wind, dir, shot, pal, name, stride, bl, skating, T) {
-  c.save(); c.translate(x, y); c.scale(s, s); c.rotate(dir * wind * 0.05 - dir * shot * 0.06);
+  c.save(); c.translate(x, y); c.scale(s, s); c.rotate(dir * wind * 0.05 - dir * shot * 0.06 + (skating ? Math.sin(stride * 11) * 0.03 : 0));
   c.fillStyle = 'rgba(15,23,42,.22)'; c.beginPath(); c.ellipse(0, 3, 38, 8, 0, 0, 6.3); c.fill();
   const ph = skating ? stride * 11 : 0;
   for (const sx of [-1, 1]) {                                                                   // legs: knees bent, feet apart, skates with blades
@@ -315,6 +355,7 @@ function sgDrawSkater(c, x, y, s, wind, dir, shot, pal, name, stride, bl, skatin
   sgLimb(c, 26, -94, 42, -76, 11, pal.main); sgLimb(c, 42, -76, L.x, L.y, 10, pal.main);           // lower hand arm
   for (const g of [H, L]) { c.beginPath(); c.arc(g.x, g.y, 6.2, 0, 6.3); sgFS(c, '#1f2937', 1.6); }      // gloves
   sgRR(c, -7, -108, 14, 12, 4); sgFS(c, '#e2c9a8');                                             // neck
+  c.fillStyle = '#4a2f1a'; c.beginPath(); c.ellipse(0, -107, 13, 7, 0, 0, 6.3); c.fill();      // hair at the back of the neck
   c.beginPath(); c.arc(0, -118, 14, 0, 6.3); sgFS(c, sgGrad(c, -12, -132, 12, -104, '#f8fafc', '#aeb9c9'));      // helmet
   c.beginPath(); c.arc(0, -118, 14, Math.PI * 1.1, Math.PI * 1.9); c.closePath(); c.fillStyle = pal.main; c.fill();
   c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(-5, -124, 4, 2.2, -.5, 0, 6.3); c.fill();
