@@ -201,15 +201,15 @@ function sgFrame(now) {
   const lit = P && P.goal && after > 0 && Math.floor(after * 6) % 2 === 0; if (lit) { c.fillStyle = '#ff2d2d'; c.beginPath(); c.arc(gx, gy - Hn - 14 * gs, 6 * gs, 0, 6.3); c.fill(); c.lineWidth = 1.5; c.strokeStyle = SG_INK; c.stroke(); c.fillStyle = 'rgba(255,45,45,.25)'; c.beginPath(); c.arc(gx, gy - Hn - 14 * gs, 18 * gs, 0, 6.3); c.fill(); }
   // skater, then puck on top
   const strideT = P ? (pt < 1.0 ? pt : 0) : 0, bob = P && pt < 1.0 ? Math.abs(Math.sin(pt * 10)) * 2 : Math.sin(T * 2) * 0.8;
-  const skx = 240 + shootX * 24 * wind, ang = -0.35 + wind * 0.45 - shot * 1.25 + shootX * 0.08;
-  const bladeX = skx + 20, bladeY = SG_FEET - 6;
-  sgDrawSkater(c, skx, SG_FEET - bob, 0.84, wind, shootX, shot, shotPal, sgName(sh), P ? strideT : 0, ang, P ? pt < 1.0 : false, T);
+  const skx = 240 + shootX * 24 * wind, SKS = 0.84, bl = { x: 50 + shootX * 6 * wind - shot * 6, y: -3 + wind * 8 - shot * 22 };       // blade tip, in the skater's own coordinates
+  const bladeX = skx + (bl.x + 12) * SKS, bladeY = SG_FEET + bl.y * SKS;
+  sgDrawSkater(c, skx, SG_FEET - bob, SKS, wind, shootX, shot, shotPal, sgName(sh), P ? strideT : 0, bl, P ? pt < 1.0 : false, T);
   const tx = gx + shootX * W * 0.3, ty = gy - Hn * 0.3 - (P && P.shoot === 'M' ? Hn * 0.18 : 0);
   let px = bladeX, py = bladeY, pr = 7, vis = true;
-  if (!P) { px = skx + 26; py = SG_FEET - 6; }
-  else if (pt < 1.3) { px = skx + 26 + Math.sin(pt * 9) * 3 * (1 - wind); py = SG_FEET - 6 + Math.abs(Math.sin(pt * 9)) * 2; }
+  if (!P) { px = bladeX; py = bladeY; }
+  else if (pt < 1.3) { px = bladeX + Math.sin(pt * 9) * 2 * (1 - wind); py = bladeY + Math.abs(Math.sin(pt * 9)) * 2; }
   else if (pt < 1.75) {
-    const u = sgOut(shot), sx0 = skx + 26, sy0 = SG_FEET - 6; px = sx0 + (tx - sx0) * u; py = sy0 + (ty - sy0) * u - Math.sin(u * Math.PI) * 18; pr = 7 - (7 - 4 * gs) * u;
+    const u = sgOut(shot), sx0 = bladeX, sy0 = bladeY; px = sx0 + (tx - sx0) * u; py = sy0 + (ty - sy0) * u - Math.sin(u * Math.PI) * 18; pr = 7 - (7 - 4 * gs) * u;
     if (u > .12) { const u2 = Math.max(0, u - .28); c.strokeStyle = 'rgba(15,23,42,.28)'; c.lineWidth = pr * 1.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx0 + (tx - sx0) * u2, sy0 + (ty - sy0) * u2 - Math.sin(u2 * Math.PI) * 18); c.lineTo(px, py); c.stroke(); }
   } else if (P.goal) { px = tx; py = ty + Math.min(0.5, after) * 22 * gs; pr = 4 * gs; }
   else { const u = after; px = tx + (diveX === 0 ? (shootX || 1) : -diveX) * u * 90 * (shootX === 0 ? 0.7 : 1); py = ty + 120 * u * u - u * 60; pr = 4 * gs + u * 3; vis = u < 1.1; }
@@ -291,26 +291,29 @@ function sgDrawGoalie(c, x, y, s, lean, dv, dir, pal, logo, T) {
 }
 
 /* The shooter, seen from behind: skate stride on the way in, wind-up, then the swing. */
-function sgDrawSkater(c, x, y, s, wind, dir, shot, pal, name, stride, ang, skating, T) {
+function sgDrawSkater(c, x, y, s, wind, dir, shot, pal, name, stride, bl, skating, T) {
   c.save(); c.translate(x, y); c.scale(s, s); c.rotate(dir * wind * 0.05 - dir * shot * 0.06);
   c.fillStyle = 'rgba(15,23,42,.22)'; c.beginPath(); c.ellipse(0, 3, 38, 8, 0, 0, 6.3); c.fill();
   const ph = skating ? stride * 11 : 0;
-  for (const sx of [-1, 1]) {                                                                   // legs and skates
-    const sw = skating ? Math.sin(ph + (sx > 0 ? 0 : Math.PI)) : 0, lift = Math.max(0, sw) * 6, off = sw * 4 + sx * 11;
-    sgRR(c, off - 9, -60 - lift * .3, 18, 42, 8); sgFS(c, sgGrad(c, off - 9, 0, off + 9, 0, pal.dark, pal.main, pal.dark));                // pants
-    sgRR(c, off - 8, -20 - lift * .5, 16, 18, 4); sgFS(c, '#f1f5f9'); c.fillStyle = pal.main; c.fillRect(off - 8, -14 - lift * .5, 16, 4);       // socks
-    sgRR(c, off - 10, -7 - lift, 20, 11, 5); sgFS(c, '#111827');                                                                                // boots
-    c.fillStyle = '#cbd5e1'; c.beginPath(); c.roundRect(off - 13, 3 - lift, 26, 3.5, 2); c.fill(); c.lineWidth = 1.3; c.strokeStyle = SG_INK; c.stroke();     // blades
+  for (const sx of [-1, 1]) {                                                                   // legs: knees bent, feet apart, skates with blades
+    const sw = skating ? Math.sin(ph + (sx > 0 ? 0 : Math.PI)) : 0, lift = Math.max(0, sw) * 6, ax = sx * 17 + sw * 4, ay = -9 - lift;
+    sgLimb(c, sx * 9, -58, sx * 22 + sw * 2, -34 - lift * .4, 17, pal.dark);          // thigh
+    sgLimb(c, sx * 22 + sw * 2, -34 - lift * .4, ax, ay - 3, 13, '#e8edf5');          // shin and sock
+    sgRR(c, ax - 10, ay - 6, 21, 12, 5); sgFS(c, '#111827');                          // boot
+    c.fillStyle = '#d5dde8'; c.beginPath(); c.roundRect(ax - 14, ay + 6, 29, 3.5, 2); c.fill(); c.lineWidth = 1.3; c.strokeStyle = SG_INK; c.stroke();      // blade
   }
   c.beginPath(); c.moveTo(-21, -52); c.lineTo(-27, -96); c.quadraticCurveTo(0, -108, 27, -96); c.lineTo(21, -52); c.closePath(); sgFS(c, sgGrad(c, -27, -100, 27, -52, pal.light, pal.main, pal.dark));       // jersey back
   c.fillStyle = pal.trim; c.fillRect(-21, -58, 42, 4); c.fillStyle = pal.dark; c.fillRect(-22, -64, 44, 3);
   c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 9px Inter, system-ui, sans-serif'; c.fillText(String(name || '').toUpperCase().slice(0, 9), 0, -90);
   c.font = '900 28px Inter, system-ui, sans-serif'; c.lineWidth = 3; c.strokeStyle = pal.dark; c.strokeText('7', 0, -73); c.fillText('7', 0, -73); c.textAlign = 'start';
-  const hx = 8, hy = -60;
-  sgLimb(c, 24, -94, 32, -74, 11, pal.main); sgLimb(c, 32, -74, hx + 8, hy, 10, pal.main); sgLimb(c, -24, -94, -30, -76, 11, pal.main); sgLimb(c, -30, -76, hx - 4, hy + 2, 10, pal.main);       // arms
-  c.save(); c.translate(hx + 4, hy); c.rotate(ang); c.lineCap = 'round'; c.strokeStyle = SG_INK; c.lineWidth = 6; c.beginPath(); c.moveTo(0, -8); c.lineTo(0, 66); c.stroke(); c.strokeStyle = '#cbd5e1'; c.lineWidth = 3; c.stroke();   // stick shaft
-  sgRR(c, -3, 60, 25, 7, 3); sgFS(c, '#1f2937', 1.6); c.fillStyle = '#f8fafc'; c.fillRect(3, 61, 14, 3); c.restore();
-  for (const [gx, gy] of [[hx + 8, hy], [hx - 4, hy + 2]]) { c.beginPath(); c.arc(gx, gy, 6, 0, 6.3); sgFS(c, '#1f2937', 1.6); }      // gloves
+  const H = { x: 12, y: -62 }, B = bl, L = { x: H.x + (B.x - H.x) * 0.45, y: H.y + (B.y - H.y) * 0.45 }, ex = H.x + (H.x - B.x) * 0.1, ey = H.y + (H.y - B.y) * 0.1;
+  sgLimb(c, -25, -94, -32, -72, 11, pal.main); sgLimb(c, -32, -72, H.x, H.y, 10, pal.main);       // top hand arm
+  c.lineCap = 'round'; c.strokeStyle = SG_INK; c.lineWidth = 7; c.beginPath(); c.moveTo(ex, ey); c.lineTo(B.x, B.y); c.stroke(); c.strokeStyle = '#2b3445'; c.lineWidth = 4.2; c.stroke(); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(ex - 1, ey); c.lineTo(B.x - 1, B.y); c.stroke();      // shaft
+  c.strokeStyle = '#f8fafc'; c.lineWidth = 5; c.beginPath(); c.moveTo(ex, ey); c.lineTo(H.x, H.y); c.stroke();      // tape on the butt end
+  c.beginPath(); c.moveTo(B.x - 6, B.y - 3); c.lineTo(B.x + 14, B.y - 9); c.quadraticCurveTo(B.x + 20, B.y - 9, B.x + 19, B.y - 3); c.lineTo(B.x - 1, B.y + 4); c.closePath(); sgFS(c, '#1f2937', 1.8);        // curved blade
+  c.fillStyle = '#f8fafc'; c.beginPath(); c.moveTo(B.x + 2, B.y - 3); c.lineTo(B.x + 14, B.y - 7); c.lineTo(B.x + 15, B.y - 4.5); c.lineTo(B.x + 4, B.y - 0.5); c.closePath(); c.fill();
+  sgLimb(c, 26, -94, 42, -76, 11, pal.main); sgLimb(c, 42, -76, L.x, L.y, 10, pal.main);           // lower hand arm
+  for (const g of [H, L]) { c.beginPath(); c.arc(g.x, g.y, 6.2, 0, 6.3); sgFS(c, '#1f2937', 1.6); }      // gloves
   sgRR(c, -7, -108, 14, 12, 4); sgFS(c, '#e2c9a8');                                             // neck
   c.beginPath(); c.arc(0, -118, 14, 0, 6.3); sgFS(c, sgGrad(c, -12, -132, 12, -104, '#f8fafc', '#aeb9c9'));      // helmet
   c.beginPath(); c.arc(0, -118, 14, Math.PI * 1.1, Math.PI * 1.9); c.closePath(); c.fillStyle = pal.main; c.fill();
