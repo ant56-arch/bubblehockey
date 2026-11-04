@@ -102,3 +102,6 @@ pip install openpyxl
 python3 tools/xlsx_to_csv.py BUBBLE_HOCKEY.xlsx
 ```
 This rewrites the regular-season games in `data/games.json` (keeping any playoff games and seeds already there), plus `members.csv` and the page text. Skip it if you are adding games directly to the JSON.
+
+## Mini games
+The **Mini games** tab (`js/games.js`) holds small games that have nothing to do with the standings. The first is a **Shootout**: the shooter picks left, middle or right and the goalie picks too; the same pick is a save, anything else is a goal. Five shots each, then sudden death. Play the computer, or two players on one screen (the goalie's turn is hidden behind a hand-over screen). Nothing is saved to the league data; only your win-loss record against the computer is kept in your own browser.
