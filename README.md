@@ -105,3 +105,5 @@ This rewrites the regular-season games in `data/games.json` (keeping any playoff
 
 ## Mini games
 The **Mini games** tab (`js/games.js`) holds small games that have nothing to do with the standings. The first is a **Shootout**: the shooter picks left, middle or right and the goalie picks too; the same pick is a save, anything else is a goal. Five shots each, then sudden death. Play the computer, or two players on one screen (the goalie's turn is hidden behind a hand-over screen). Nothing is saved to the league data; only your win-loss record against the computer is kept in your own browser.
+
+The tab is not in the top menu: it is the small **Mini games** link at the bottom of every page. **Play a friend online** works across two computers: one player creates a game and sends the 5-character invite code (or the invite link), the other enters it. The two browsers connect directly (WebRTC) through the free public PeerJS matchmaking server, using the bundled `js/vendor/peerjs.min.js` (PeerJS 1.5.4, MIT). Some strict work networks block this kind of connection; if so the game says it could not connect.
