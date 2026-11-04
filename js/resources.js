@@ -1,9 +1,9 @@
-/* Mini games (#/games, linked from the small text at the bottom of every page). The first game is a penalty shootout: the shooter picks left,
+/* Resources (#/resources, linked from the small text at the bottom of every page; the old #/games address still works). The first game is a penalty shootout: the shooter picks left,
    middle or right and the goalie does the same. Same pick = saved, different pick = goal. Five shots each, then sudden death.
    Play the computer, a friend on the same screen, or a friend on another computer with an invite code (browser to browser, using js/vendor/peerjs.min.js
    and the free public PeerJS matchmaking server, which only introduces the two browsers; the game itself goes straight between them).
    Nothing here is saved to the league data; only a win-loss record against the computer is kept in this browser. */
-PAGES.push(['games', 'Mini games', true]);      // true = not in the top menu
+PAGES.push(['resources', 'Resources', true]);      // true = not in the top menu
 
 const SG_DIRS = { L: 'Left', M: 'Middle', R: 'Right' }, SG_ROUNDS = 5, SG_CODE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SG = { screen: 'menu', mode: 'bot', names: ['', ''], score: [0, 0], log: [[], []], n: 0, phase: 'shooter', shot: null, res: null, winner: -1, done: true, mine: null, net: null, join: '', msg: '' };
@@ -375,7 +375,7 @@ function sgBoard() {
   return `<div class="sg-board">${[0, 1].map(i => `<div class="sg-side ${live && s === i ? 'on' : ''}"><b>${esc(sgName(i))}${sgMe() === i ? ' <span class="muted">(you)</span>' : ''}</b><span class="sg-num">${SG.score[i] - (sgHide() && i === s && SG.res && SG.res.goal ? 1 : 0)}</span><div class="sg-dots" aria-label="shots">${sgDots(i)}</div></div>`).join('')}</div>`;
 }
 const sgPicker = label => `<p class="sg-say">${label}</p><div class="sg-picks">${Object.entries(SG_DIRS).map(([k, v]) => `<button type="button" class="btn sg-pick" data-sg="pick" data-dir="${k}">${k === 'L' ? '◀ ' : ''}${v}${k === 'R' ? ' ▶' : ''}</button>`).join('')}</div>`;
-const sgInviteLink = () => location.href.split('#')[0] + '#/games?join=' + (SG.net ? SG.net.code : '');
+const sgInviteLink = () => location.href.split('#')[0] + '#/resources?join=' + (SG.net ? SG.net.code : '');
 
 function sgRender() {
   const root = document.getElementById('sg'); if (!root) return;
@@ -405,7 +405,7 @@ function sgRender() {
   }
   if (SG.screen === 'lobby') {
     const hosting = SG.net && SG.net.host;
-    root.innerHTML = hosting ? `<section class="card"><h2 style="margin-top:4px">Waiting for your friend</h2><p class="muted">Send them this code. They open the site, go to <b>Mini games</b> (small link at the bottom of any page), choose <b>Play a friend online</b>, and enter it. Keep this page open.</p>
+    root.innerHTML = hosting ? `<section class="card"><h2 style="margin-top:4px">Waiting for your friend</h2><p class="muted">Send them this code. They open the site, go to <b>Resources</b> (small link at the bottom of any page), choose <b>Play a friend online</b>, and enter it. Keep this page open.</p>
         <div class="sg-code" aria-label="Invite code">${esc(SG.net.code)}</div>
         <div class="btnrow"><button class="btn" data-sg="copycode" type="button">Copy code</button><button class="btn ghost" data-sg="copylink" type="button">Copy invite link</button><button class="btn ghost" data-sg="cancel" type="button">Cancel</button></div><p class="muted sg-copied" style="margin:10px 0 0"></p></section>`
       : `<section class="card"><h2 style="margin-top:4px">Connecting…</h2><p class="muted">Joining the game. This takes a few seconds.</p><div class="btnrow"><button class="btn ghost" data-sg="cancel" type="button">Cancel</button></div></section>`;
@@ -442,13 +442,13 @@ function sgRender() {
   if (reveal) sgRun({ shoot: SG.shot.shoot, dive: SG.shot.dive, goal: SG.res.goal, shooter: s }, sgShotDone);
 }
 
-view.games = function () {
+view.resources = function () {
   const q = (location.hash.split('?')[1] || '').match(/join=([A-Za-z0-9]{5})/);
   if (!document.getElementById('sg') && SG.screen !== 'menu' && SG.screen !== 'end') { sgNetEnd(); Object.assign(SG, { screen: 'menu' }); }      // leaving mid-game and coming back starts fresh
   if (q && SG.screen === 'menu') { SG.join = q[1].toUpperCase(); setTimeout(() => sgStart('online'), 0); } else setTimeout(sgRender, 0);
-  return `<h1>Mini games</h1><p class="lead">Take a break between matchups.</p><div id="sg" class="sg"></div>`;
+  return `<h1>Resources</h1><p class="lead">Extras for the league.</p><div id="sg" class="sg"></div>`;
 };
-window.addEventListener('hashchange', () => { if (!/^#\/games/.test(location.hash) && (SG.net || SG.screen !== 'menu')) { sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); } });
+window.addEventListener('hashchange', () => { if (!/^#\/(resources|games)/.test(location.hash) && (SG.net || SG.screen !== 'menu')) { sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); } });
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-sg]'); if (!b || !document.getElementById('sg')) return;
   const a = b.dataset.sg, flash = t => { const el = document.querySelector('.sg-copied'); if (el) el.textContent = t; };
