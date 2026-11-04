@@ -29,7 +29,7 @@
       try { const r = await fetch('version.txt', { cache: 'no-store' }); if (r.ok) v = (await r.text()).trim() || v; } catch (e) {}
       const fail = f => { document.getElementById('app').innerHTML = '<p>Could not load ' + f + '. Check your connection and reload the page.</p>'; };
       const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'css/styles.css?v=' + v; document.head.appendChild(css);
-      for (const name of ['app', 'bracket', 'schedule', 'members', 'add']) {
+      for (const name of ['app', 'bracket', 'schedule', 'members', 'games', 'add']) {
         try { await new Promise((ok, bad) => { const s = document.createElement('script'); s.src = 'js/' + name + '.js?v=' + v; s.onload = ok; s.onerror = bad; document.body.appendChild(s); }); } catch (e) { return fail(name + '.js'); }
       }
       startApp();
