@@ -93,6 +93,7 @@
     { "date": "2026-11-04", "home": "Trotta", "road": "Tommy", "homeScore": 1, "roadScore": 2, "homeShots": 8, "roadShots": 9 },
     { "date": "2026-11-04", "home": "Connor", "road": "Tommy", "homeScore": 3, "roadScore": 8, "homeShots": 10, "roadShots": 21 },
     { "date": "2026-11-04", "home": "Trotta", "road": "Connor", "homeScore": 1, "roadScore": 3, "homeShots": 8, "roadShots": 11 },
-    { "date": "2026-11-04", "home": "Boban", "road": "Trotta", "dnp": true }
+    { "date": "2026-11-04", "home": "Boban", "road": "Trotta", "dnp": true },
+    { "date": "2026-11-04", "home": "Tommy", "road": "Boban", "dnp": true }
   ]
 }
