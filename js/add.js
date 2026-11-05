@@ -239,7 +239,7 @@ view.add = function () {
   const num = (id, label) => `<label class="f">${label}<input id="${id}" type="number" inputmode="numeric" min="0" max="999"></label>`;
   const editing = ADM.editing !== null;
   const { owner, repo } = repoInfo();
-  const connect = connected ? `<p class="muted" style="margin:0 0 14px">${ADM.loading ? 'Connecting to GitHub…' : ADM.error || ADM.layoutError ? '' : 'Connected to GitHub. Changes save straight to the site.'} <button class="link" id="a-disconnect" type="button">Disconnect</button></p>${ADM.error || ADM.layoutError ? `<p class="form-note err">${esc(ADM.error || ADM.layoutError)} ${ADM.error ? '<button class="link" id="a-retry" type="button">Try again</button>' : 'You can still use the form to copy a line.'}</p>` : ''}`
+  const connect = connected ? `<p class="muted" style="margin:0 0 14px">${ADM.loading ? 'Connecting to GitHub…' : ADM.error || ADM.layoutError ? '' : 'Connected to GitHub. Changes save straight to the site.'} <button class="link" id="a-disconnect" type="button">Disconnect</button> · <button class="link" id="a-diag" type="button">Test connection</button></p><div id="diag-out"></div>${ADM.error || ADM.layoutError ? `<p class="form-note err">${esc(ADM.error || ADM.layoutError)} ${ADM.error ? '<button class="link" id="a-retry" type="button">Try again</button>' : 'You can still use the form to copy a line.'}</p>` : ''}`
     : `<div class="card" id="connect-card"><b>Connect once to save changes</b>
         <p class="muted" style="margin:6px 0 12px">You can look around and fill things in now. To actually save, GitHub has to give this site permission once. It takes about two minutes.</p>
         <p class="stepno">Step 1 · Get a token from GitHub</p>
@@ -248,7 +248,7 @@ view.add = function () {
         <p class="stepno" style="margin-top:18px">Step 2 · Come back here and paste it</p>
         <form id="tok-form" class="form" novalidate><label class="f">Token<input id="a-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
         <div class="btnrow"><button class="btn ghost" id="a-paste" type="button">Paste</button><button class="btn" id="a-connect" type="submit" disabled>Connect</button></div><p id="tok-note" class="form-note">Paste the token above, then tap Connect.</p></form>
-        <p class="muted" style="margin:10px 0 0">The token stays only in this browser. You renew it once a year.</p></div>`;
+        <p class="muted" style="margin:10px 0 0">The token stays only in this browser. You renew it once a year. Not working on this computer? <button class="link" id="a-diag" type="button">Test connection</button></p><div id="diag-out" style="margin-top:10px"></div></div>`;
   const live = connected && ADM.loaded && !ADM.layoutError;
   setTimeout(() => { if (!document.getElementById('add-form')) return; if (editing && rawList()[ADM.editing]) setForm(rawList()[ADM.editing]); else showOut(); }, 0);
   const sec = ['members', 'rules', 'schedule'].includes(UI['add-sec']) ? UI['add-sec'] : 'games';
@@ -423,10 +423,11 @@ function scheduleSection() {
   const gameRows = rows.map((r, i) => {
     const key = `${r.src.date}|${r.src.a}|${r.src.b}`, res = r.result && !r.result.dnp ? `${r.result.home} ${r.result.hg}–${r.result.rg} ${r.result.road}` : '', open = SCH.editing === key;
     return `<div class="grow${open ? ' editing' : ''}"><div class="ginfo"><span class="muted">${i + 1}.</span> <b>${esc(r.home)} vs ${esc(r.road)}</b> <span class="muted">(${esc(r.home)} at home)</span>${r.edited ? ' <span class="tag">Edited</span>' : ''}${r.src.date !== SCH.date ? ` <span class="muted">· moved from ${esc(dayLabel(r.src.date))}</span>` : ''}${res ? `<br><span class="muted">Played: ${esc(res)}</span>` : ''}</div>
-      <div class="gbtns"><button class="btn small" type="button" data-ssw="${i}">Swap sides</button><button class="btn small ghost" type="button" data-sed="${i}">Edit</button></div></div>
+      <div class="gbtns"><button class="btn small" type="button" data-ssw="${i}">Swap sides</button><button class="btn small ghost" type="button" data-sed="${i}">Edit</button>${res ? '' : `<button class="btn small ghost" type="button" data-sdelgame="${i}">Remove</button>`}</div></div>
       ${open ? `<div class="card" style="margin:-2px 0 8px"><form class="form" onsubmit="return false"><div class="row2"><label class="f">Home${pick('se-home', r.home)}</label><label class="f">Road${pick('se-road', r.road)}</label></div>
         <label class="f">Day<select id="se-date">${dayOpt(SCH.date)}</select></label><div class="btnrow"><button class="btn" type="button" data-ssave="${i}">Save</button>${r.edited ? `<button class="btn ghost" type="button" data-sreset="${i}">Back to automatic</button>` : ''}<button class="btn ghost" type="button" data-scancel>Cancel</button></div></form></div>` : ''}`;
   }).join('');
+  const removedHere = f.overrides.filter(o => o.removed && o.date === SCH.date && (baseSlateFor(o.date) || []).some(g => samePair(o, g)));
   const orphan = f.overrides.filter(o => !(baseSlateFor(o.date) || []).some(g => samePair(o, g)));
   // playoff days of the chosen month
   const mdays = gameDaysIn(month), plan = monthPlan(month), pinned = (f.playoffDates || {})[month];
@@ -434,7 +435,8 @@ function scheduleSection() {
   return `<h2>Games on a day</h2><p class="muted" style="margin:0 0 8px">Pick a day to swap home and road, change who plays, or move a game to another day. Everything else about the schedule stays automatic.</p>
     <div class="card"><label class="f">Day<select id="s-day">${dayOpt(SCH.date)}</select></label></div>
     <div class="glist" style="margin-top:10px">${gameRows || '<p class="muted">No regular games on this day.</p>'}</div>
-    ${rows.length ? `<div class="btnrow" style="margin-top:10px"><button class="btn small" type="button" data-sflipday>Swap sides for every game this day</button>${rows.some(r => r.edited) || f.overrides.some(o => o.toDate === SCH.date) ? '<button class="btn small ghost" type="button" data-sresetday>Reset this day to automatic</button>' : ''}</div>` : ''}
+    ${rows.length ? `<div class="btnrow" style="margin-top:10px"><button class="btn small" type="button" data-sflipday>Swap sides for every game this day</button>${rows.some(r => r.edited) || f.overrides.some(o => o.toDate === SCH.date || o.date === SCH.date) ? '<button class="btn small ghost" type="button" data-sresetday>Reset this day to automatic</button>' : ''}</div>` : ''}
+    ${removedHere.length ? `<p class="muted" style="margin:10px 0 0">Removed from this day: ${removedHere.map(o => `<b>${esc(o.a)} vs ${esc(o.b)}</b> <button class="link" type="button" data-sputback="${esc(o.a)}|${esc(o.b)}">put back</button>`).join(' · ')}</p>` : ''}
     ${orphan.length ? `<p class="muted">${orphan.length} saved change${orphan.length === 1 ? '' : 's'} no longer match the automatic schedule (for example after a player joined). <button class="link" type="button" data-sclean>Remove them</button></p>` : ''}
     <h2>Days off</h2><p class="muted" style="margin:0 0 8px">Holidays are already off automatically. Add any other day with no games.</p>
     <div class="glist">${daysOffList.length ? daysOffList.map(d => `<div class="grow"><div class="ginfo"><b>${esc(dayLabel(d.date))}</b> <span class="muted">· ${esc(d.name)}</span></div><div class="gbtns"><button class="btn small ghost" type="button" data-sdel="${esc(d.date)}">Remove</button></div></div>`).join('') : '<p class="muted">No extra days off.</p>'}</div>
@@ -461,6 +463,11 @@ document.addEventListener('click', async e => {
     const r = schRowAt(+d.ssw); if (!r) return; t.disabled = true; const date = SCH.date;
     await schSave(o => schSet(o, r.src, { toDate: date, home: r.road, road: r.home }), `Schedule: ${r.road} at home vs ${r.home} (${date})`, `${r.road} is now the home player against ${r.home}.`); return;
   }
+  if (d.sdelgame !== undefined) {                  // take a game off the schedule (it is not played and not marked DNP)
+    const r = schRowAt(+d.sdelgame); if (!r) return; if (!confirm(`Remove ${r.home} vs ${r.road} from the schedule?\nIt will not be played and will not show as DNP.`)) return; t.disabled = true;
+    await schSave(o => { o.overrides = o.overrides.filter(x => !schIsPair(x, r.src.date, r.src.a, r.src.b)); o.overrides.push({ date: r.src.date, a: r.src.a, b: r.src.b, removed: true }); }, `Schedule: remove ${r.src.a} vs ${r.src.b} (${r.src.date})`, `Removed ${r.home} vs ${r.road} from the schedule.`); return;
+  }
+  if (d.sputback !== undefined) { const [a, b] = d.sputback.split('|'), date = SCH.date; t.disabled = true; await schSave(o => { o.overrides = o.overrides.filter(x => !schIsPair(x, date, a, b)); }, `Schedule: put back ${a} vs ${b} (${date})`, `${a} vs ${b} is back on the schedule.`); return; }
   if (d.sed !== undefined) { const r = schRowAt(+d.sed); if (!r) return; SCH.editing = `${r.src.date}|${r.src.a}|${r.src.b}`; route(true); return; }
   if (d.scancel !== undefined) { SCH.editing = null; route(true); return; }
   if (d.ssave !== undefined) {
@@ -489,4 +496,36 @@ document.addEventListener('click', async e => {
     t.disabled = true; await schSave(o => { o.playoffDates[month] = picked; }, `Schedule: playoff days for ${month}`, `Playoffs for ${monthLabel(month)} are on ${picked.map(dayLabel).join(' and ')}.`); return;
   }
   if (d.spauto !== undefined) { const month = SCH.month || cur(); t.disabled = true; await schSave(o => { delete o.playoffDates[month]; }, `Schedule: automatic playoff days for ${month}`, 'Playoff days are back to automatic.'); return; }
+});
+
+/* ---------- "Test connection": says in plain words why saving does not work on this device ---------- */
+async function checkConnection() {
+  const out = [], add = (ok, label, hint = '') => out.push({ ok, label, hint }), { owner, repo, branch } = repoInfo(), token = tok.get();
+  let stored = false; try { localStorage.setItem('bhl_t', '1'); stored = localStorage.getItem('bhl_t') === '1'; localStorage.removeItem('bhl_t'); } catch { }
+  add(stored, stored ? 'This browser can remember the token' : 'This browser will not keep the token', stored ? '' : 'Private or incognito windows, and some privacy settings, block this. Open the site in a normal window.');
+  add(!!token, token ? 'A token is saved here' : 'No token is saved in this browser', token ? '' : 'Use Connect on this page and paste your token.');
+  let reach = false;
+  try { const r = await fetch('https://api.github.com/rate_limit', { cache: 'no-store' }); reach = r.ok || r.status < 500; } catch { }
+  add(reach, reach ? 'This computer can reach GitHub (api.github.com)' : 'This computer cannot reach api.github.com', reach ? '' : 'A work network, VPN, firewall or browser extension is blocking it. Saving only works where api.github.com is allowed. Edit from your phone (mobile data) or ask IT to allow api.github.com.');
+  if (reach && token) {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { cache: 'no-store', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token } });
+      if (r.status === 200) {
+        const j = await r.json(), push = j.permissions ? j.permissions.push : undefined;
+        add(true, `The token can see ${owner}/${repo}`);
+        if (push === false) add(false, 'The token can only read, not save', 'Make a new token and set Contents to Read and write.'); else if (push === true) add(true, 'The token is allowed to save changes');
+      } else if (r.status === 401) add(false, 'GitHub says this token is invalid or has expired', 'Make a new token (steps at the top of this page, after Disconnect) and paste it.');
+      else if (r.status === 403) add(false, 'GitHub refused this token (403)', 'If the repository belongs to an organization, an owner may need to approve the token. Or it may have expired.');
+      else add(false, `The token cannot see ${owner}/${repo}`, 'When making the token, under Repository access choose Only select repositories and pick this repository. Then paste the new token.');
+      if (r.status === 200) { const g = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/games.json?ref=${branch}`, { cache: 'no-store', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token } }); add(g.ok, g.ok ? 'The token can read the league files' : 'The token cannot read the league files', g.ok ? '' : 'Set Contents to Read and write when making the token.'); }
+    } catch { add(false, 'The connection dropped while testing', 'Try again.'); }
+  }
+  return out;
+}
+document.addEventListener('click', async e => {
+  if (e.target.id !== 'a-diag') return;
+  const box = document.getElementById('diag-out'); e.target.disabled = true; box.innerHTML = '<p class="muted">Testing…</p>';
+  const res = await checkConnection(), bad = res.filter(x => !x.ok);
+  box.innerHTML = `<div class="card" style="margin:0 0 14px"><b>${bad.length ? 'Found the problem' : 'Everything checks out'}</b><ul style="list-style:none;padding:0;margin:8px 0 0">${res.map(x => `<li style="margin:6px 0">${x.ok ? '<span class="win">✔</span>' : '<span style="color:var(--err)">✖</span>'} ${esc(x.label)}${x.hint ? `<div class="muted" style="margin-left:22px">${esc(x.hint)}</div>` : ''}</li>`).join('')}</ul>${bad.length ? '' : '<p class="muted" style="margin:8px 0 0">If saving still fails, tap Save and send me the exact message that appears under the button.</p>'}</div>`;
+  e.target.disabled = false;
 });
