@@ -111,3 +111,10 @@ The tab is not in the top menu: it is the small **Resources** link at the bottom
 ## Games per day and editing the rules
 - **Games per day:** `schedule.minGamesPerDay` in `data/config.json` (now `6`) gives every day just enough rounds to reach at least that many games. With 5 players that is exactly 6 games a day (each round has 2 games and one player rests); the rounds carry over to the next day, so everyone still plays everyone and home and road sides stay balanced. Set it to `0` (or remove it) to go back to a full round robin every day, or use `schedule.roundsPerDay` for a fixed number of rounds.
 - **Rules and Home text:** on the Add / Edit tab, choose **Rules & text**. Edit the text, check the preview, and tap **Save changes** (needs the one-time GitHub connection). Lines starting with `#` are the page title, `##` a section heading, `•` a bullet; anything else is a paragraph.
+
+## Editing the schedule from the site
+On the Add / Edit tab, **Schedule** (needs the one-time GitHub connection) saves to **`data/schedule.json`**, which adds to the rules in `config.json`:
+- **Games on a day:** pick a day, then **Swap sides** on a game (the other player is at home), **Edit** to change the home and road players or move the game to another game day, **Swap sides for every game this day**, or **Reset this day to automatic**. An edited game shows a small ✎ on the Schedule. A game you log with the same two players still pairs with its schedule row, either way round.
+- **Days off:** add any extra day with no games, with an optional reason. Holidays are still automatic.
+- **Playoff days:** tick 1 to 5 days for a month, or go back to automatic.
+Edits are stored as `overrides` (`date`, the automatic pair `a`/`b`, and the new `toDate`/`home`/`road`). If a player joining later makes an old edit stop matching the automatic schedule, the editor offers to remove it.
