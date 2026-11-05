@@ -251,9 +251,10 @@ view.add = function () {
         <p class="muted" style="margin:10px 0 0">The token stays only in this browser. You renew it once a year.</p></div>`;
   const live = connected && ADM.loaded && !ADM.layoutError;
   setTimeout(() => { if (!document.getElementById('add-form')) return; if (editing && rawList()[ADM.editing]) setForm(rawList()[ADM.editing]); else showOut(); }, 0);
-  const sec = UI['add-sec'] === 'members' ? 'members' : 'games';
-  const secChips = `<div class="chips">${[['games', 'Games'], ['members', 'Members & teams']].map(([k, l]) => `<button type="button" class="chip ${sec === k ? 'on' : ''}" data-page="add-sec" data-m="${k}">${l}</button>`).join('')}</div>`;
+  const sec = ['members', 'rules'].includes(UI['add-sec']) ? UI['add-sec'] : 'games';
+  const secChips = `<div class="chips">${[['games', 'Games'], ['members', 'Members & teams'], ['rules', 'Rules & text']].map(([k, l]) => `<button type="button" class="chip ${sec === k ? 'on' : ''}" data-page="add-sec" data-m="${k}">${l}</button>`).join('')}</div>`;
   if (sec === 'members') return `<h1>Add / edit</h1>${connect}${secChips}${membersSection()}`;
+  if (sec === 'rules') return `<h1>Add / edit</h1>${connect}${secChips}${textSection()}`;
   return `<h1>Add / edit games</h1>${connect}${secChips}${editing ? '' : nextPlayoffGames()}
     <h2 id="form-h">${editing ? 'Edit this game' : 'Add a game'}</h2><div class="card"><form id="add-form" class="form" onsubmit="return false">
       <label class="f">Date<input id="a-date" type="date" value="${today}"></label>
@@ -345,5 +346,44 @@ document.addEventListener('click', async e => {
     t.disabled = true;
     try { await saveChange('delete', i, null, e0, `Delete game: ${gameLine(e0)} (${e0.date || e0.month})`); if (ADM.editing === i) ADM.editing = null; rerender(); setTimeout(() => note(`Deleted: ${gameLine(e0)}. The public site updates in about a minute.`, true), 20); }
     catch (err) { t.disabled = false; note(err.message, false); }
+  }
+});
+
+/* ---------- editing the page text (Rules and Home) ---------- */
+const TXT = { file: 'rules', text: null };                       // which page's text is open, and what is typed so far
+const TXT_FILES = { rules: ['data/rules.txt', 'Rules', () => D.rules], home: ['data/home.txt', 'Home page text', () => D.home] };
+const textPreview = t => { const b = textBlocks(t); return `<h1 style="margin-top:6px">${esc(b.title || '')}</h1>${b.html}`; };
+function textSection() {
+  const [, label, get] = TXT_FILES[TXT.file]; if (TXT.text === null) TXT.text = get();
+  return `<h2>Edit the ${label.toLowerCase()}</h2>
+    <div class="chips">${Object.entries(TXT_FILES).map(([k, v]) => `<button type="button" class="chip ${TXT.file === k ? 'on' : ''}" data-txtfile="${k}">${v[1]}</button>`).join('')}</div>
+    <div class="card"><form class="form" onsubmit="return false">
+      <label class="f">Text <span class="muted">(a line starting with <code>#</code> is the page title, <code>##</code> a section heading, <code>•</code> a bullet; anything else is a paragraph)</span>
+        <textarea id="t-text" rows="18" spellcheck="true" style="width:100%;font:inherit;font-size:16px;line-height:1.45;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);resize:vertical">${esc(TXT.text)}</textarea></label>
+      <div class="btnrow"><button class="btn" id="t-save" type="button">Save changes</button><button class="btn ghost" id="t-reset" type="button">Undo my edits</button></div><p id="t-note" class="form-note"></p></form></div>
+    <h2>Preview</h2><div class="card rules" id="t-preview">${textPreview(TXT.text)}</div>`;
+}
+async function saveTextFile(path, text, message) {
+  const { branch } = repoInfo();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { sha } = await readFile(path);
+    const r = await ghContents(path, { method: 'PUT', body: JSON.stringify({ message, content: b64enc(text), sha, branch }) });
+    if (r.ok) return;
+    if (r.status !== 409 && r.status !== 422) throw new Error('GitHub error ' + r.status);
+  }
+  throw new Error('The file changed while saving. Please try again.');
+}
+document.addEventListener('input', e => { if (e.target.id === 't-text') { TXT.text = e.target.value; const pv = document.getElementById('t-preview'); if (pv) pv.innerHTML = textPreview(TXT.text); } });
+document.addEventListener('click', async e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.txtfile) { TXT.file = t.dataset.txtfile; TXT.text = null; route(true); return; }
+  if (t.id === 't-reset') { TXT.text = null; route(true); return; }
+  if (t.id === 't-save') {
+    const [path, label] = TXT_FILES[TXT.file], text = document.getElementById('t-text').value.replace(/\r\n/g, '\n').replace(/\s+$/, '') + '\n';
+    if (!text.trim()) { note('The text cannot be empty.', false, 't-note'); return; }
+    if (!tok.get()) return needConnect('t-note');
+    t.disabled = true; note('Saving…', true, 't-note');
+    try { await saveTextFile(path, text, `Edit ${label.toLowerCase()}`); if (TXT.file === 'rules') D.rules = text; else D.home = text; TXT.text = text; t.disabled = false; note(`Saved. The ${label.toLowerCase()} on the public site updates in about a minute.`, true, 't-note'); }
+    catch (err) { t.disabled = false; note(err.message, false, 't-note'); }
   }
 });

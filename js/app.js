@@ -111,7 +111,8 @@ async function load() {
   D.members = toMembers(members);
   D.home = home; D.rules = rules;
 
-  const [freshMembers, freshGames] = await Promise.all([freshText('data/members.csv'), freshText('data/games.json')]);
+  const [freshMembers, freshGames, freshRules, freshHome] = await Promise.all([freshText('data/members.csv'), freshText('data/games.json'), freshText('data/rules.txt'), freshText('data/home.txt')]);
+  if (freshRules && freshRules.trim()) D.rules = freshRules; if (freshHome && freshHome.trim()) D.home = freshHome;      // a connected device sees its own page-text edits at once
   if (freshMembers && /^\s*name\s*,/i.test(freshMembers)) { const rows = toMembers(parseCSV(freshMembers)); if (rows.length) D.members = rows; }      // ignore anything that is not a members file
   applyGamesText(freshGames ?? gamesText);
 }

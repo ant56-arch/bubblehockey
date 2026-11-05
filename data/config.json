@@ -8,7 +8,8 @@
     "loss": 0
   },
   "schedule": {
-    "autoDnpFrom": "2026-11-01"
+    "autoDnpFrom": "2026-11-01",
+    "minGamesPerDay": 6
   },
   "standings": {
     "ptsPercentThrough": "2026-10"

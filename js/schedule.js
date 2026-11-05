@@ -7,9 +7,10 @@
    - Games are ordered so a player rests between games when possible.
    - "schedule.autoDnpFrom" (a date, optional): from that date on, a scheduled regular game on a past day that was never logged is shown as DNP
      (only on days where at least one game or DNP was logged; never counted in any record).
+   - "schedule.minGamesPerDay" (optional, e.g. 6): each day gets just enough rounds to reach at least that many games; the rounds carry on the next day, so everyone still plays everyone and sides stay balanced over time.
    - "schedule.roundsPerDay" (optional) limits a day to that many rounds (each round = everyone plays once); the rounds then continue on the next day. */
 
-const SCHED = () => ({ roundsPerDay: 0, skipDates: [], holidays: true, playoffDays: 'auto', playoffDates: {}, makeupDay: true, autoDnpFrom: '', ...(D.config.schedule || {}) });
+const SCHED = () => ({ roundsPerDay: 0, minGamesPerDay: 0, skipDates: [], holidays: true, playoffDays: 'auto', playoffDates: {}, makeupDay: true, autoDnpFrom: '', ...(D.config.schedule || {}) });
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseYmd = s => { const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d); };
 /* Days off: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday that
@@ -91,7 +92,9 @@ function slateFor(date) {
   if (k < 0) return null;
   if (n < 2) return [];
   const t = [...Array(n).keys()]; if (n % 2) t.push(-1);          // -1 = a bye when the player count is odd
-  const M = t.length, rounds = M - 1, R = SCHED().roundsPerDay > 0 ? Math.min(+SCHED().roundsPerDay, rounds) : rounds;
+  const M = t.length, rounds = M - 1, perRound = Math.max(1, Math.floor(n / 2)), minG = +SCHED().minGamesPerDay || 0;
+  // Rounds per day: "roundsPerDay" if set; otherwise just enough rounds to reach "minGamesPerDay" games (a full round robin when that is 0 or the field is small).
+  const R = SCHED().roundsPerDay > 0 ? Math.min(+SCHED().roundsPerDay, rounds) : minG > 0 ? Math.min(rounds, Math.max(1, Math.ceil(minG / perRound))) : rounds;
   const games = [];
   for (let i = 0; i < R; i++) {
     const q = k * R + i, r = q % rounds, cycle = Math.floor(q / rounds);
