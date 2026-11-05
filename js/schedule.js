@@ -10,7 +10,22 @@
    - "schedule.minGamesPerDay" (optional, e.g. 6): each day gets just enough rounds to reach at least that many games; the rounds carry on the next day, so everyone still plays everyone and sides stay balanced over time.
    - "schedule.roundsPerDay" (optional) limits a day to that many rounds (each round = everyone plays once); the rounds then continue on the next day. */
 
-const SCHED = () => ({ roundsPerDay: 0, minGamesPerDay: 0, skipDates: [], holidays: true, playoffDays: 'auto', playoffDates: {}, makeupDay: true, autoDnpFrom: '', ...(D.config.schedule || {}) });
+/* data/schedule.json is written by the Add / Edit tab: { daysOff: [{date, name}], playoffDates: {"2026-11": [dates]}, overrides: [{date, a, b, toDate, home, road}] }.
+   It adds to whatever data/config.json says. */
+const SCHEDFILE = () => D.sched || { daysOff: [], playoffDates: {}, overrides: [] };
+const SCHED = () => {
+  const c = { roundsPerDay: 0, minGamesPerDay: 0, skipDates: [], holidays: true, playoffDays: 'auto', playoffDates: {}, makeupDay: true, autoDnpFrom: '', ...(D.config.schedule || {}) }, f = SCHEDFILE();
+  return { ...c, skipDates: [...(c.skipDates || []), ...f.daysOff.map(d => d.date)], playoffDates: { ...(c.playoffDates || {}), ...f.playoffDates } };
+};
+/* Clean up whatever was read from data/schedule.json so a typo in the file can never break the page. */
+function normalizeSched(x) {
+  const date = v => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''), known = n => D.members.some(m => m.short_name === n), name = v => String(v || '').replace(/[<>]/g, '').slice(0, 60);
+  x = x && typeof x === 'object' ? x : {};
+  const daysOff = (Array.isArray(x.daysOff) ? x.daysOff : []).map(d => ({ date: date(d && d.date), name: name(d && d.name) || 'No games' })).filter(d => d.date);
+  const playoffDates = {}; for (const [m, v] of Object.entries(x.playoffDates && typeof x.playoffDates === 'object' ? x.playoffDates : {})) { const list = (Array.isArray(v) ? v : []).map(date).filter(Boolean).sort(); if (/^\d{4}-\d{2}$/.test(m) && list.length) playoffDates[m] = list; }
+  const overrides = (Array.isArray(x.overrides) ? x.overrides : []).map(o => o && ({ date: date(o.date), a: o.a, b: o.b, toDate: date(o.toDate), home: o.home, road: o.road })).filter(o => o && o.date && o.toDate && [o.a, o.b, o.home, o.road].every(known) && o.home !== o.road && o.a !== o.b);
+  return { daysOff, playoffDates, overrides };
+}
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parseYmd = s => { const [y, m, d] = s.split('-'); return new Date(+y, +m - 1, +d); };
 /* Days off: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas. A fixed-date holiday that
@@ -32,7 +47,7 @@ function daysOffIn(month) {
   const [y, m] = month.split('-'), out = [];
   for (const d = new Date(+y, +m - 1, 1); d.getMonth() === +m - 1; d.setDate(d.getDate() + 1)) {
     const s = ymd(d), h = holidayOn(s), wd = d.getDay();
-    if (h) out.push({ date: s, name: h.name + (h.observed ? ' (observed)' : '') }); else if (wd >= 1 && wd <= 5 && SCHED().skipDates.includes(s)) out.push({ date: s, name: 'No games' });
+    if (h) out.push({ date: s, name: h.name + (h.observed ? ' (observed)' : '') }); else if (wd >= 1 && wd <= 5 && SCHED().skipDates.includes(s)) out.push({ date: s, name: (SCHEDFILE().daysOff.find(d => d.date === s) || {}).name || 'No games' });
   }
   return out;
 }
@@ -44,7 +59,7 @@ function gameDaysIn(month) {
 
 /* Regular-season days, playoff days and the makeup day for a month. */
 function monthPlan(month) {
-  const all = gameDaysIn(month), fixed = (SCHED().playoffDates || {})[month];       // optional: pin a month's playoff dates in config.json
+  const all = gameDaysIn(month), pin = (SCHED().playoffDates || {})[month], fixed = Array.isArray(pin) ? pin.filter(d => all.includes(d)).sort() : null;       // optional: pin a month's playoff dates (Add / Edit tab, or config.json)
   if (Array.isArray(fixed) && fixed.length) return { reg: all.filter(d => d < fixed[0]), po: fixed, spare: all.filter(d => d > fixed[fixed.length - 1]) };
   const teams = (() => { try { return seedsFor(month).seeds.length; } catch { return 0; } })();      // how many teams are in this month's playoffs
   const cfg = SCHED().playoffDays, auto = teams >= 15 ? 3 : 2;                                       // 2 days, or 3 when 15 or more teams play
@@ -85,8 +100,19 @@ function orderGames(games) {
   }
   return out;
 }
-/* The regular-season matchups for one date, or null if it is not a regular game day. */
+/* The matchups for one date with the commissioner's edits applied: a game can have its players or sides changed or be moved to another day.
+   Each game carries src = the automatic game it came from, so an edit can be changed or undone later. */
+const samePair = (o, g) => (o.a === g.home && o.b === g.road) || (o.a === g.road && o.b === g.home);
 function slateFor(date) {
+  const base = baseSlateFor(date); if (!base) return base;
+  const ovs = SCHEDFILE().overrides, own = base.map(g => ({ ...g, src: { date, a: g.home, b: g.road } }));
+  if (!ovs.length) return own;
+  const out = own.map(g => { const o = ovs.find(o => o.date === date && samePair(o, g)); return !o ? g : o.toDate === date ? { home: o.home, road: o.road, edited: true, src: { date, a: o.a, b: o.b } } : null; }).filter(Boolean);
+  for (const o of ovs) if (o.toDate === date && o.date !== date && (baseSlateFor(o.date) || []).some(g => samePair(o, g))) out.push({ home: o.home, road: o.road, edited: true, src: { date: o.date, a: o.a, b: o.b } });
+  return out;
+}
+/* The automatic regular-season matchups for one date, or null if it is not a regular game day. */
+function baseSlateFor(date) {
   const names = D.members.filter(m => !m.established || m.established <= date).map(m => m.short_name), n = names.length;      // a new player joins the schedule on their established date
   const k = monthPlan(date.slice(0, 7)).reg.indexOf(date);
   if (k < 0) return null;
@@ -176,8 +202,8 @@ function dayCard(v) {
   const today = v.date === todayStr(), past = v.date < todayStr();
   const row = (r, i) => {
     const g = r.result, winner = g && !g.dnp ? (g.hg > g.rg ? g.home : g.road) : '', hw = winner === r.home, rw = winner === r.road;      // the logged game may have the sides the other way round
-    if (g && g.dnp) return `<div class="mrow dnp"><span class="gno">${i + 1}</span><span class="side">${who(r.home, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(r.road, 26)}</span></div>`;
-    return `<div class="mrow"><span class="gno">${i + 1}</span><span class="side ${hw ? 'win' : ''}">${who(r.home, 26)}</span>
+    if (g && g.dnp) return `<div class="mrow dnp"><span class="gno">${i + 1}${r.edited ? '<sup title="Edited">✎</sup>' : ''}</span><span class="side">${who(r.home, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(r.road, 26)}</span></div>`;
+    return `<div class="mrow"><span class="gno">${i + 1}${r.edited ? '<sup title="Edited">✎</sup>' : ''}</span><span class="side ${hw ? 'win' : ''}">${who(r.home, 26)}</span>
       <span class="vs">${g ? `<b>${g.home === r.home ? scoreHTML(g.hg, g.rg) : scoreHTML(g.rg, g.hg)}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}` : 'vs'}</span>
       <span class="side r ${rw ? 'win' : ''}">${who(r.road, 26)}</span></div>`;
   };

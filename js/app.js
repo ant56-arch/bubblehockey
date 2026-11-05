@@ -105,15 +105,17 @@ async function load() {
     try { const r = await fetch('data/games.json', { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.text(); }
     catch (e) { D.baseProblems.push(`data/games.json could not be loaded (${e.message}). If you opened index.html straight from your computer, use the published site or run a local web server (see the README).`); return ''; }
   };
-  const [config, members, gamesText, home, rules] = await Promise.all([
-    get('config.json', 'json'), get('members.csv'), getGames(), get('home.txt', 'text'), get('rules.txt', 'text')]);
+  const [config, members, gamesText, home, rules, sched] = await Promise.all([
+    get('config.json', 'json'), get('members.csv'), getGames(), get('home.txt', 'text'), get('rules.txt', 'text'), get('schedule.json', 'json')]);
   D.config = { leagueName: 'Bubble Hockey League', tagline: '', ...config, points: { win: 3, overtimeWin: 2, overtimeLoss: 1, loss: 0, ...config.points } };
   D.members = toMembers(members);
-  D.home = home; D.rules = rules;
+  D.home = home; D.rules = rules; D.schedRaw = sched;
 
-  const [freshMembers, freshGames, freshRules, freshHome] = await Promise.all([freshText('data/members.csv'), freshText('data/games.json'), freshText('data/rules.txt'), freshText('data/home.txt')]);
+  const [freshMembers, freshGames, freshRules, freshHome, freshSched] = await Promise.all([freshText('data/members.csv'), freshText('data/games.json'), freshText('data/rules.txt'), freshText('data/home.txt'), freshText('data/schedule.json')]);
   if (freshRules && freshRules.trim()) D.rules = freshRules; if (freshHome && freshHome.trim()) D.home = freshHome;      // a connected device sees its own page-text edits at once
   if (freshMembers && /^\s*name\s*,/i.test(freshMembers)) { const rows = toMembers(parseCSV(freshMembers)); if (rows.length) D.members = rows; }      // ignore anything that is not a members file
+  try { D.schedRaw = freshSched ? JSON.parse(freshSched) : D.schedRaw; } catch { }
+  D.sched = typeof normalizeSched === 'function' ? normalizeSched(D.schedRaw) : null;
   applyGamesText(freshGames ?? gamesText);
 }
 

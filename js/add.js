@@ -251,9 +251,10 @@ view.add = function () {
         <p class="muted" style="margin:10px 0 0">The token stays only in this browser. You renew it once a year.</p></div>`;
   const live = connected && ADM.loaded && !ADM.layoutError;
   setTimeout(() => { if (!document.getElementById('add-form')) return; if (editing && rawList()[ADM.editing]) setForm(rawList()[ADM.editing]); else showOut(); }, 0);
-  const sec = ['members', 'rules'].includes(UI['add-sec']) ? UI['add-sec'] : 'games';
-  const secChips = `<div class="chips">${[['games', 'Games'], ['members', 'Members & teams'], ['rules', 'Rules & text']].map(([k, l]) => `<button type="button" class="chip ${sec === k ? 'on' : ''}" data-page="add-sec" data-m="${k}">${l}</button>`).join('')}</div>`;
+  const sec = ['members', 'rules', 'schedule'].includes(UI['add-sec']) ? UI['add-sec'] : 'games';
+  const secChips = `<div class="chips">${[['games', 'Games'], ['members', 'Members & teams'], ['schedule', 'Schedule'], ['rules', 'Rules & text']].map(([k, l]) => `<button type="button" class="chip ${sec === k ? 'on' : ''}" data-page="add-sec" data-m="${k}">${l}</button>`).join('')}</div>`;
   if (sec === 'members') return `<h1>Add / edit</h1>${connect}${secChips}${membersSection()}`;
+  if (sec === 'schedule') return `<h1>Add / edit</h1>${connect}${secChips}${scheduleSection()}`;
   if (sec === 'rules') return `<h1>Add / edit</h1>${connect}${secChips}${textSection()}`;
   return `<h1>Add / edit games</h1>${connect}${secChips}${editing ? '' : nextPlayoffGames()}
     <h2 id="form-h">${editing ? 'Edit this game' : 'Add a game'}</h2><div class="card"><form id="add-form" class="form" onsubmit="return false">
@@ -386,4 +387,106 @@ document.addEventListener('click', async e => {
     try { await saveTextFile(path, text, `Edit ${label.toLowerCase()}`); if (TXT.file === 'rules') D.rules = text; else D.home = text; TXT.text = text; t.disabled = false; note(`Saved. The ${label.toLowerCase()} on the public site updates in about a minute.`, true, 't-note'); }
     catch (err) { t.disabled = false; note(err.message, false, 't-note'); }
   }
+});
+
+/* ---------- editing the schedule: days off, playoff days, and each day's matchups (data/schedule.json) ---------- */
+const SCH = { date: '', editing: null, month: '' };
+const schToday = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const schNextMonth = m => { const [y, mo] = m.split('-').map(Number); return mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`; };
+const schMonths = () => { const a = cur(), b = schNextMonth(a), c = schNextMonth(b); return [a, b, c]; };
+const schRegularDays = () => schMonths().flatMap(m => (typeof gameDaysIn === 'function' ? gameDaysIn(m) : [])).filter(d => dayKind(d) === 'regular');
+async function mutateSched(fn, message) {
+  if (!tok.get()) throw Object.assign(new Error('connect'), { connect: true });
+  const { branch } = repoInfo();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { text, sha } = await readFile('data/schedule.json');
+    let obj; try { obj = normalizeSched(JSON.parse(text)); } catch { obj = normalizeSched({}); }
+    fn(obj);
+    const body = JSON.stringify(obj, null, 2) + '\n', r = await ghContents('data/schedule.json', { method: 'PUT', body: JSON.stringify({ message, content: b64enc(body), sha, branch }) });
+    if (r.ok) { D.sched = normalizeSched(obj); D.schedRaw = obj; return; }
+    if (r.status !== 409 && r.status !== 422) throw new Error('GitHub error ' + r.status);
+  }
+  throw new Error('The file changed while saving. Please try again.');
+}
+const schNote = (msg, ok) => note(msg, ok, 's-note');
+async function schSave(fn, message, done) {
+  try { await mutateSched(fn, message); SCH.editing = null; rerender(); setTimeout(() => schNote(done + ' The public site updates in about a minute.', true), 20); }
+  catch (err) { if (err.connect) needConnect('s-note'); else schNote(err.message, false); }
+}
+function scheduleSection() {
+  const days = schRegularDays(), f = SCHEDFILE(), month = SCH.month && schMonths().includes(SCH.month) ? SCH.month : cur();
+  if (!days.includes(SCH.date)) SCH.date = days.find(d => d >= schToday()) || days[0] || '';
+  const dayOpt = (sel, list = days) => list.map(d => `<option value="${d}" ${d === sel ? 'selected' : ''}>${esc(dayLabel(d))}</option>`).join('');
+  const names = D.members.map(m => m.short_name), pick = (id, sel) => `<select id="${id}">${names.map(n => `<option ${n === sel ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
+  const v = SCH.date ? dayView(SCH.date) : null, rows = v ? v.rows : [];
+  // matchups of the chosen day
+  const gameRows = rows.map((r, i) => {
+    const key = `${r.src.date}|${r.src.a}|${r.src.b}`, res = r.result && !r.result.dnp ? `${r.result.home} ${r.result.hg}–${r.result.rg} ${r.result.road}` : '', open = SCH.editing === key;
+    return `<div class="grow${open ? ' editing' : ''}"><div class="ginfo"><span class="muted">${i + 1}.</span> <b>${esc(r.home)} vs ${esc(r.road)}</b> <span class="muted">(${esc(r.home)} at home)</span>${r.edited ? ' <span class="tag">Edited</span>' : ''}${r.src.date !== SCH.date ? ` <span class="muted">· moved from ${esc(dayLabel(r.src.date))}</span>` : ''}${res ? `<br><span class="muted">Played: ${esc(res)}</span>` : ''}</div>
+      <div class="gbtns"><button class="btn small" type="button" data-ssw="${i}">Swap sides</button><button class="btn small ghost" type="button" data-sed="${i}">Edit</button></div></div>
+      ${open ? `<div class="card" style="margin:-2px 0 8px"><form class="form" onsubmit="return false"><div class="row2"><label class="f">Home${pick('se-home', r.home)}</label><label class="f">Road${pick('se-road', r.road)}</label></div>
+        <label class="f">Day<select id="se-date">${dayOpt(SCH.date)}</select></label><div class="btnrow"><button class="btn" type="button" data-ssave="${i}">Save</button>${r.edited ? `<button class="btn ghost" type="button" data-sreset="${i}">Back to automatic</button>` : ''}<button class="btn ghost" type="button" data-scancel>Cancel</button></div></form></div>` : ''}`;
+  }).join('');
+  const orphan = f.overrides.filter(o => !(baseSlateFor(o.date) || []).some(g => samePair(o, g)));
+  // playoff days of the chosen month
+  const mdays = gameDaysIn(month), plan = monthPlan(month), pinned = (f.playoffDates || {})[month];
+  const daysOffList = [...f.daysOff].sort((a, b) => a.date.localeCompare(b.date));
+  return `<h2>Games on a day</h2><p class="muted" style="margin:0 0 8px">Pick a day to swap home and road, change who plays, or move a game to another day. Everything else about the schedule stays automatic.</p>
+    <div class="card"><label class="f">Day<select id="s-day">${dayOpt(SCH.date)}</select></label></div>
+    <div class="glist" style="margin-top:10px">${gameRows || '<p class="muted">No regular games on this day.</p>'}</div>
+    ${rows.length ? `<div class="btnrow" style="margin-top:10px"><button class="btn small" type="button" data-sflipday>Swap sides for every game this day</button>${rows.some(r => r.edited) || f.overrides.some(o => o.toDate === SCH.date) ? '<button class="btn small ghost" type="button" data-sresetday>Reset this day to automatic</button>' : ''}</div>` : ''}
+    ${orphan.length ? `<p class="muted">${orphan.length} saved change${orphan.length === 1 ? '' : 's'} no longer match the automatic schedule (for example after a player joined). <button class="link" type="button" data-sclean>Remove them</button></p>` : ''}
+    <h2>Days off</h2><p class="muted" style="margin:0 0 8px">Holidays are already off automatically. Add any other day with no games.</p>
+    <div class="glist">${daysOffList.length ? daysOffList.map(d => `<div class="grow"><div class="ginfo"><b>${esc(dayLabel(d.date))}</b> <span class="muted">· ${esc(d.name)}</span></div><div class="gbtns"><button class="btn small ghost" type="button" data-sdel="${esc(d.date)}">Remove</button></div></div>`).join('') : '<p class="muted">No extra days off.</p>'}</div>
+    <div class="card" style="margin-top:10px"><form class="form" onsubmit="return false"><div class="row2"><label class="f">Date<input id="do-date" type="date" value="${esc(schToday())}"></label><label class="f">Reason <span class="muted">(optional)</span><input id="do-name" maxlength="40" placeholder="Office closed" autocomplete="off"></label></div>
+      <div class="btnrow"><button class="btn" type="button" data-sdoadd>Add day off</button></div></form></div>
+    <h2>Playoff days</h2><p class="muted" style="margin:0 0 8px">${pinned ? 'You picked these days.' : 'Automatic.'} Playoffs: <b>${plan.po.length ? esc(plan.po.map(d => dayLabel(d)).join(', ')) : 'none'}</b>${plan.spare.length ? ` · makeup day: ${esc(plan.spare.map(d => dayLabel(d)).join(', '))}` : ''}</p>
+    <div class="chips">${schMonths().map(m => `<button type="button" class="chip ${m === month ? 'on' : ''}" data-spmonth="${m}">${monthLabel(m)}</button>`).join('')}</div>
+    <div class="card"><form class="form" onsubmit="return false"><div class="muted" style="font-weight:600">Tick the playoff days for ${monthLabel(month)} (1 to 5):</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px">${mdays.map(d => `<label class="check"><input type="checkbox" data-spday="${d}" ${plan.po.includes(d) ? 'checked' : ''}><span>${esc(dayLabel(d))}</span></label>`).join('')}</div>
+      <div class="btnrow"><button class="btn" type="button" data-sppin>Save these days</button>${pinned ? '<button class="btn ghost" type="button" data-spauto>Back to automatic</button>' : ''}</div></form></div>
+    <p id="s-note" class="form-note"></p>`;
+}
+const schRowAt = i => { const v = SCH.date ? dayView(SCH.date) : null; return v && v.rows[i]; };
+const schIsPair = (o, date, a, b) => o.date === date && ((o.a === a && o.b === b) || (o.a === b && o.b === a));
+/* Record the change for one automatic game. If it ends up identical to the automatic game, the saved change is simply removed. */
+function schSet(obj, src, to) {
+  obj.overrides = obj.overrides.filter(o => !schIsPair(o, src.date, src.a, src.b));
+  if (!(to.toDate === src.date && to.home === src.a && to.road === src.b)) obj.overrides.push({ date: src.date, a: src.a, b: src.b, toDate: to.toDate, home: to.home, road: to.road });
+}
+document.addEventListener('change', e => { if (e.target.id === 's-day') { SCH.date = e.target.value; SCH.editing = null; route(true); } });
+document.addEventListener('click', async e => {
+  const t = e.target, d = t.dataset || {};
+  if (d.ssw !== undefined) {                       // swap home and road for one game
+    const r = schRowAt(+d.ssw); if (!r) return; t.disabled = true; const date = SCH.date;
+    await schSave(o => schSet(o, r.src, { toDate: date, home: r.road, road: r.home }), `Schedule: ${r.road} at home vs ${r.home} (${date})`, `${r.road} is now the home player against ${r.home}.`); return;
+  }
+  if (d.sed !== undefined) { const r = schRowAt(+d.sed); if (!r) return; SCH.editing = `${r.src.date}|${r.src.a}|${r.src.b}`; route(true); return; }
+  if (d.scancel !== undefined) { SCH.editing = null; route(true); return; }
+  if (d.ssave !== undefined) {
+    const r = schRowAt(+d.ssave); if (!r) return;
+    const home = document.getElementById('se-home').value, road = document.getElementById('se-road').value, toDate = document.getElementById('se-date').value;
+    if (home === road) { schNote('Pick two different players.', false); return; }
+    t.disabled = true; await schSave(o => schSet(o, r.src, { toDate, home, road }), `Schedule: ${home} vs ${road} on ${toDate}`, `Saved: ${home} (home) vs ${road} on ${dayLabel(toDate)}.`); return;
+  }
+  if (d.sreset !== undefined) { const r = schRowAt(+d.sreset); if (!r) return; t.disabled = true; await schSave(o => { o.overrides = o.overrides.filter(x => !schIsPair(x, r.src.date, r.src.a, r.src.b)); }, `Schedule: reset ${r.src.a} vs ${r.src.b} (${r.src.date})`, 'That game is back to the automatic schedule.'); return; }
+  if (d.sflipday !== undefined) {
+    const v = SCH.date && dayView(SCH.date), date = SCH.date; if (!v || !v.rows.length) return; const rows = v.rows.map(r => ({ src: r.src, home: r.home, road: r.road })); t.disabled = true;
+    await schSave(o => rows.forEach(r => schSet(o, r.src, { toDate: date, home: r.road, road: r.home })), `Schedule: swap sides for every game on ${date}`, 'Sides are swapped for every game that day.'); return;
+  }
+  if (d.sresetday !== undefined) { const date = SCH.date; t.disabled = true; await schSave(o => { o.overrides = o.overrides.filter(x => x.date !== date && x.toDate !== date); }, `Schedule: reset ${date} to automatic`, 'That day is back to the automatic schedule.'); return; }
+  if (d.sclean !== undefined) { t.disabled = true; await schSave(o => { o.overrides = o.overrides.filter(x => (baseSlateFor(x.date) || []).some(g => samePair(x, g))); }, 'Schedule: remove outdated changes', 'Removed.'); return; }
+  if (d.sdel !== undefined) { const date = d.sdel; t.disabled = true; await schSave(o => { o.daysOff = o.daysOff.filter(x => x.date !== date); }, `Schedule: remove day off ${date}`, 'Day off removed. Games are back on that day.'); return; }
+  if (d.sdoadd !== undefined) {
+    const date = document.getElementById('do-date').value, name = document.getElementById('do-name').value.trim().replace(/[<>]/g, '').slice(0, 40) || 'No games';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { schNote('Pick the date.', false); return; }
+    t.disabled = true; await schSave(o => { o.daysOff = o.daysOff.filter(x => x.date !== date).concat({ date, name }); }, `Schedule: day off ${date} (${name})`, `${dayLabel(date)} is now a day off.`); return;
+  }
+  if (d.spmonth) { SCH.month = d.spmonth; route(true); return; }
+  if (d.sppin !== undefined) {
+    const month = SCH.month || cur(), picked = [...document.querySelectorAll('[data-spday]:checked')].map(x => x.dataset.spday).sort();
+    if (picked.length < 1 || picked.length > 5) { schNote('Pick between 1 and 5 playoff days.', false); return; }
+    t.disabled = true; await schSave(o => { o.playoffDates[month] = picked; }, `Schedule: playoff days for ${month}`, `Playoffs for ${monthLabel(month)} are on ${picked.map(dayLabel).join(' and ')}.`); return;
+  }
+  if (d.spauto !== undefined) { const month = SCH.month || cur(); t.disabled = true; await schSave(o => { delete o.playoffDates[month]; }, `Schedule: automatic playoff days for ${month}`, 'Playoff days are back to automatic.'); return; }
 });
