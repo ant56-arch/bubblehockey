@@ -85,7 +85,7 @@ The schedule gives these days off automatically: New Year's Day, Memorial Day, I
 
 Playoffs take 2 game days (3 when 15 or more teams play), planned for just before the month's last game day, which is kept open as a makeup day. Once playoff games are logged, the days they were actually played become the playoff days (October's were all on Oct 28), and the days after are open. A planned playoff day is never placed on a day that already has regular games logged. Optional settings in `data/config.json`:
 ```
-"schedule": { "roundsPerDay": 0, "skipDates": ["2026-12-24"], "holidays": true, "playoffDays": "auto", "makeupDay": true,
+"schedule": { "roundsPerDay": 0, "skipDates": ["2026-12-24"], "holidays": true, "playoffDays": "auto", "minGamesPerDay": 6, "makeupDay": true,
               "playoffDates": { "2026-10": ["2026-10-29", "2026-10-30"] } }
 ```
 `skipDates` are extra days with no games, `holidays: false` turns the holiday list off, `makeupDay: false` uses the last day for games, `roundsPerDay` limits a day to that many rounds (0 = the full round robin), and `playoffDates` pins a month's playoff dates.
@@ -107,3 +107,7 @@ This rewrites the regular-season games in `data/games.json` (keeping any playoff
 The **Resources** page (`js/resources.js`, address `#/resources`, linked from small text in the footer) holds small games that have nothing to do with the standings. The first is a **Shootout**: the shooter picks left, middle or right and the goalie picks too; the same pick is a save, anything else is a goal. Five shots each, then sudden death. Play the computer, or two players on one screen (the goalie's turn is hidden behind a hand-over screen). Nothing is saved to the league data; only your win-loss record against the computer is kept in your own browser.
 
 The tab is not in the top menu: it is the small **Resources** link at the bottom of every page. **Play a friend online** works across two computers: one player creates a game and sends the 5-character invite code (or the invite link), the other enters it. The two browsers connect directly (WebRTC) through the free public PeerJS matchmaking server, using the bundled `js/vendor/peerjs.min.js` (PeerJS 1.5.4, MIT). Some strict work networks block this kind of connection; if so the game says it could not connect.
+
+## Games per day and editing the rules
+- **Games per day:** `schedule.minGamesPerDay` in `data/config.json` (now `6`) gives every day just enough rounds to reach at least that many games. With 5 players that is exactly 6 games a day (each round has 2 games and one player rests); the rounds carry over to the next day, so everyone still plays everyone and home and road sides stay balanced. Set it to `0` (or remove it) to go back to a full round robin every day, or use `schedule.roundsPerDay` for a fixed number of rounds.
+- **Rules and Home text:** on the Add / Edit tab, choose **Rules & text**. Edit the text, check the preview, and tap **Save changes** (needs the one-time GitHub connection). Lines starting with `#` are the page title, `##` a section heading, `•` a bullet; anything else is a paragraph.
