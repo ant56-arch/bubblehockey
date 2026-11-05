@@ -159,6 +159,14 @@ function dayView(date) {
     if (i >= 0) used.add(i);
     return { ...s, result: i >= 0 ? played[i] : null };
   });
+  // A game logged with a different matchup than scheduled takes the place of a scheduled game that was not played (preferring one that shares a player),
+  // so the day keeps its number of games instead of showing the extra game on top of unplayed ones.
+  played.forEach((g, j) => {
+    if (used.has(j) || g.dnp) return;
+    const open = rows.filter(r => !r.result); if (!open.length) return;
+    const share = r => [r.home, r.road].filter(n => n === g.home || n === g.road).length, r = open.reduce((best, x) => (share(x) > share(best) ? x : best), open[0]);
+    r.result = g; r.replaced = true; used.add(j);
+  });
   // Automatic DNP: on a past day that had any game or DNP logged, scheduled games that never appeared are DNP.
   if (played.length && autoDnpDay(date)) rows.forEach(r => { if (!r.result) r.result = { dnp: true, auto: true, home: r.home, road: r.road, date }; });
   return { date, rows, extra: played.filter((g, j) => !used.has(j) && !g.dnp) };
@@ -202,16 +210,17 @@ function dayCard(v) {
   if (v.spare) return spareDayCard(v);
   const today = v.date === todayStr(), past = v.date < todayStr();
   const row = (r, i) => {
-    const g = r.result, winner = g && !g.dnp ? (g.hg > g.rg ? g.home : g.road) : '', hw = winner === r.home, rw = winner === r.road;      // the logged game may have the sides the other way round
-    if (g && g.dnp) return `<div class="mrow dnp"><span class="gno">${i + 1}${r.edited ? '<sup title="Edited">✎</sup>' : ''}</span><span class="side">${who(r.home, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(r.road, 26)}</span></div>`;
-    return `<div class="mrow"><span class="gno">${i + 1}${r.edited ? '<sup title="Edited">✎</sup>' : ''}</span><span class="side ${hw ? 'win' : ''}">${who(r.home, 26)}</span>
-      <span class="vs">${g ? `<b>${g.home === r.home ? scoreHTML(g.hg, g.rg) : scoreHTML(g.rg, g.hg)}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}` : 'vs'}</span>
-      <span class="side r ${rw ? 'win' : ''}">${who(r.road, 26)}</span></div>`;
+    const g = r.result, H = r.replaced && g ? g.home : r.home, R = r.replaced && g ? g.road : r.road;      // a game played instead of the scheduled one shows who actually played
+    const winner = g && !g.dnp ? (g.hg > g.rg ? g.home : g.road) : '', hw = winner === H, rw = winner === R, mark = (r.edited ? '<sup title="Edited">✎</sup>' : '') + (r.replaced ? `<sup title="Played instead of ${esc(r.home)} vs ${esc(r.road)}">*</sup>` : '');
+    if (g && g.dnp) return `<div class="mrow dnp"><span class="gno">${i + 1}${mark}</span><span class="side">${who(H, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(R, 26)}</span></div>`;
+    return `<div class="mrow"><span class="gno">${i + 1}${mark}</span><span class="side ${hw ? 'win' : ''}">${who(H, 26)}</span>
+      <span class="vs">${g ? `<b>${g.home === H ? scoreHTML(g.hg, g.rg) : scoreHTML(g.rg, g.hg)}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}` : 'vs'}</span>
+      <span class="side r ${rw ? 'win' : ''}">${who(R, 26)}</span></div>`;
   };
   const done = v.rows.filter(r => r.result && !r.result.dnp).length, dnpCount = v.rows.filter(r => r.result && r.result.dnp).length;
   return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b>${today ? '<span class="tag">Today</span>' : ''}<span class="muted">${v.rows.length} games${done ? ` · ${done} played` : (past && !dnpCount ? ' · none played' : '')}${dnpCount ? ` · ${dnpCount} DNP` : ''}</span></div>
     <div class="mhead"><span></span><span>Home</span><span></span><span class="r">Road</span></div>${v.rows.map(row).join('')}
-    ${v.extra.length ? `<p class="muted" style="margin:10px 0 0">Also played: ${v.extra.map(g => `${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}`).join(', ')}</p>` : ''}</div>`;
+    ${v.extra.length ? `<p class="muted" style="margin:10px 0 0">Also played (beyond the scheduled games): ${v.extra.map(g => `${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}`).join(', ')}</p>` : ''}</div>`;
 }
 
 function upcomingDays(count = 5) {

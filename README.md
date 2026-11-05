@@ -121,3 +121,5 @@ Edits are stored as `overrides` (`date`, the automatic pair `a`/`b`, and the new
 
 **Removing a scheduled game:** in the Schedule section, **Remove** takes a game that will not be played off that day (it is not marked DNP); **put back** undoes it. Games that were already played cannot be removed.
 **Test connection:** on Add / Edit, this checks the browser, the network (api.github.com), the token and its permissions, and says in plain words what is wrong when saving does not work on a device.
+
+**Games played instead of the scheduled ones:** a game logged with a different matchup than scheduled takes the place of a scheduled game that was not played (preferring one that shares a player), so the day keeps its games count. Those rows show who actually played, with a small `*`. Scheduled games nobody replaced become DNP once the day has passed. Games beyond the day's scheduled count still appear under "Also played".
