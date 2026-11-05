@@ -43,7 +43,7 @@ view.members = function () {
   const now = standingsFor(monthGames(cur()));
   const titleCount = m => playoffRecord(m.short_name).titles.length;
   const cards = D.members.map(m => {
-    const n = m.short_name, c = career[n], p = playerProfile(n), po = p.po, wins = c.w + c.otw, pos = now.findIndex(r => r.name === n) + 1, played = c.gp > 0;
+    const n = m.short_name, c = career[n], p = playerProfile(n), po = p.po, wins = c.w + c.otw, pos = now.findIndex(r => r.name === n) + 1, played = c.gp > 0, mo = now.find(r => r.name === n);
     const trophy = po.titles.length
       ? `🏆 <b>${plural(po.titles.length, 'championship')}</b> <span class="muted">· ${po.titles.map(monthLabel).join(', ')}</span>`
       : '<span class="muted">🏆 No championships yet</span>';
@@ -56,17 +56,31 @@ view.members = function () {
       <div class="mtop">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}
         <div class="minfo"><b class="mname">${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>
           <div class="muted nowline">${po.titles.length ? `🏆 ${plural(po.titles.length, 'championship')} · ${po.titles.map(monthLabel).join(', ')}` : 'No championships yet'}</div></div></div>
+      <div class="mmonth">${monthLabel(cur())}${mo && mo.gp ? ` · ${mo.gp} game${mo.gp === 1 ? '' : 's'}` : ' · no games yet'}</div>
       <div class="tiles">
-        <div class="tile"><b>${wins}-${c.l}-${c.otl}</b><span>Record</span></div>
-        <div class="tile"><b>${played ? pct(wins / c.gp) : '–'}</b><span>Win %</span></div>
-        <div class="tile"><b>${c.pts}</b><span>Points</span></div>
-        <div class="tile"><b>${signed(c.gf - c.ga)}</b><span>Goal diff</span></div>
+        <div class="tile"><b>${mo && mo.gp ? `${mo.w + mo.otw}-${mo.l}-${mo.otl}` : '–'}</b><span>Record</span></div>
+        <div class="tile"><b>${mo && mo.gp ? pct((mo.w + mo.otw) / mo.gp) : '–'}</b><span>Win %</span></div>
+        <div class="tile"><b>${mo ? mo.pts : 0}</b><span>Points</span></div>
+        <div class="tile"><b>${mo && mo.gp ? signed(mo.gf - mo.ga) : '–'}</b><span>Goal diff</span></div>
       </div>
-      <span class="more">${cur() && now[pos - 1]?.gp ? `#${pos} in ${monthLabel(cur())} · ` : ''}Tap for the full profile</span></summary>
+      <span class="more">${cur() && now[pos - 1]?.gp ? `#${pos} in ${monthLabel(cur())} · ` : ''}Tap for career stats and more</span></summary>
       <div class="inner">
         ${showcase}
+        <div class="mcareer"><b>Career</b><span class="muted">all months, playoffs included</span></div>
+        <div class="tiles">
+          <div class="tile"><b>${played ? `${wins}-${c.l}-${c.otl}` : '–'}</b><span>Overall record</span></div>
+          <div class="tile"><b>${wins}</b><span>Total wins</span></div>
+          <div class="tile"><b>${c.pts}</b><span>Total points</span></div>
+          <div class="tile"><b>${played ? pct(wins / c.gp) : '–'}</b><span>Win %</span></div>
+        </div>
+        <div class="tiles">
+          <div class="tile"><b>${c.gp}</b><span>Games</span></div>
+          <div class="tile"><b>${c.gf}</b><span>Goals for</span></div>
+          <div class="tile"><b>${c.ga}</b><span>Goals against</span></div>
+          <div class="tile"><b>${played ? signed(c.gf - c.ga) : '–'}</b><span>Goal diff</span></div>
+        </div>
         <p class="muted" style="margin:10px 0 2px">${esc(m.team_name)}${m.established ? ` · established ${dateLabel(m.established)}` : ''}${played ? ` · ${(c.pts / c.gp).toFixed(2)} points per game` : ''}</p>
-        ${sub('Career stats', played ? `${c.gp} games` : 'no games yet', kv([
+        ${sub('More career stats', played ? `${c.gp} games` : 'no games yet', kv([
           ['Games played', c.gp], ['Wins (overtime wins)', `${wins} (${c.otw})`], ['Losses (overtime losses)', `${c.l + c.otl} (${c.otl})`],
           ['Goals for / against', `${c.gf} / ${c.ga}`], ['Shots for / against', c.sf || c.sa ? `${c.sf} / ${c.sa}` : '–'],
           ['Shooting %', c.sf ? pct(c.gf / c.sf) : '–'], ['Save %', c.sa ? pct(1 - c.ga / c.sa) : '–'], ['Shutouts', c.so],
@@ -81,5 +95,5 @@ view.members = function () {
       </div></details>`;
   });
   const champs = D.members.map(m => [m.short_name, titleCount(m)]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
-  return `<h1>Members</h1><p class="lead">${D.members.length} players${champs.length ? ` · most championships: ${champs.filter(x => x[1] === champs[0][1]).map(x => esc(x[0])).join(', ')} (${champs[0][1]})` : ''}. Tap a card for the full profile.</p><div class="grid members">${cards.join('')}</div>`;
+  return `<h1>Members</h1><p class="lead">${D.members.length} players${champs.length ? ` · most championships: ${champs.filter(x => x[1] === champs[0][1]).map(x => esc(x[0])).join(', ')} (${champs[0][1]})` : ''}. Each card shows this month's record. Tap a card for career stats and the full profile.</p><div class="grid members">${cards.join('')}</div>`;
 };
