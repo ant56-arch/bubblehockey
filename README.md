@@ -118,3 +118,6 @@ On the Add / Edit tab, **Schedule** (needs the one-time GitHub connection) saves
 - **Days off:** add any extra day with no games, with an optional reason. Holidays are still automatic.
 - **Playoff days:** tick 1 to 5 days for a month, or go back to automatic.
 Edits are stored as `overrides` (`date`, the automatic pair `a`/`b`, and the new `toDate`/`home`/`road`). If a player joining later makes an old edit stop matching the automatic schedule, the editor offers to remove it.
+
+**Removing a scheduled game:** in the Schedule section, **Remove** takes a game that will not be played off that day (it is not marked DNP); **put back** undoes it. Games that were already played cannot be removed.
+**Test connection:** on Add / Edit, this checks the browser, the network (api.github.com), the token and its permissions, and says in plain words what is wrong when saving does not work on a device.

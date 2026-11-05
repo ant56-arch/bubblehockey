@@ -23,7 +23,8 @@ function normalizeSched(x) {
   x = x && typeof x === 'object' ? x : {};
   const daysOff = (Array.isArray(x.daysOff) ? x.daysOff : []).map(d => ({ date: date(d && d.date), name: name(d && d.name) || 'No games' })).filter(d => d.date);
   const playoffDates = {}; for (const [m, v] of Object.entries(x.playoffDates && typeof x.playoffDates === 'object' ? x.playoffDates : {})) { const list = (Array.isArray(v) ? v : []).map(date).filter(Boolean).sort(); if (/^\d{4}-\d{2}$/.test(m) && list.length) playoffDates[m] = list; }
-  const overrides = (Array.isArray(x.overrides) ? x.overrides : []).map(o => o && ({ date: date(o.date), a: o.a, b: o.b, toDate: date(o.toDate), home: o.home, road: o.road })).filter(o => o && o.date && o.toDate && [o.a, o.b, o.home, o.road].every(known) && o.home !== o.road && o.a !== o.b);
+  const overrides = (Array.isArray(x.overrides) ? x.overrides : []).map(o => o && (o.removed === true ? { date: date(o.date), a: o.a, b: o.b, removed: true } : { date: date(o.date), a: o.a, b: o.b, toDate: date(o.toDate), home: o.home, road: o.road }))
+    .filter(o => o && o.date && o.a !== o.b && known(o.a) && known(o.b) && (o.removed || (o.toDate && known(o.home) && known(o.road) && o.home !== o.road)));
   return { daysOff, playoffDates, overrides };
 }
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -107,8 +108,8 @@ function slateFor(date) {
   const base = baseSlateFor(date); if (!base) return base;
   const ovs = SCHEDFILE().overrides, own = base.map(g => ({ ...g, src: { date, a: g.home, b: g.road } }));
   if (!ovs.length) return own;
-  const out = own.map(g => { const o = ovs.find(o => o.date === date && samePair(o, g)); return !o ? g : o.toDate === date ? { home: o.home, road: o.road, edited: true, src: { date, a: o.a, b: o.b } } : null; }).filter(Boolean);
-  for (const o of ovs) if (o.toDate === date && o.date !== date && (baseSlateFor(o.date) || []).some(g => samePair(o, g))) out.push({ home: o.home, road: o.road, edited: true, src: { date: o.date, a: o.a, b: o.b } });
+  const out = own.map(g => { const o = ovs.find(o => o.date === date && samePair(o, g)); return !o ? g : o.removed ? null : o.toDate === date ? { home: o.home, road: o.road, edited: true, src: { date, a: o.a, b: o.b } } : null; }).filter(Boolean);
+  for (const o of ovs) if (!o.removed && o.toDate === date && o.date !== date && (baseSlateFor(o.date) || []).some(g => samePair(o, g))) out.push({ home: o.home, road: o.road, edited: true, src: { date: o.date, a: o.a, b: o.b } });
   return out;
 }
 /* The automatic regular-season matchups for one date, or null if it is not a regular game day. */
