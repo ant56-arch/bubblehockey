@@ -363,3 +363,4 @@ html.bx-lock, html.bx-lock body { overflow: hidden; }
 .bx-status { display: flex; height: 22px; align-items: center; padding: 0 12px; background: #f0f0f0; border-top: 1px solid #e1e1e1; color: #616161; font-size: 12px; flex: none; }
 @media (max-width: 980px) { .bx-folders, .bx-rail { display: none; } .bx-list { width: 42%; } }
 @media (max-width: 700px) { .bx-read { display: none; } .bx-list { width: 100%; border-right: 0; } .bx-search { display: none; } }
+.sg-scene.wide, .sg-ctl.wide { max-width: 760px; }

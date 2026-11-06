@@ -4,8 +4,8 @@
    Play alone (your best score is kept in this browser) or two players taking turns on one screen. It shares the arena, goalie and skater of the Shootout. */
 
 const SP = { screen: 'menu', mode: 'solo', names: ['', ''], turn: 0, k: [0, 0], score: [0, 0], log: [[], []], phase: 'aim', aim0: 0, ph: [0, 0], shot: null, show: true, timers: [] };
-const SP_SHOTS = 10, SP_NET = { x: 240, gy: 216, W: 200, H: 96 };
-const SP_TARGETS = [[-74, 24, 5, 18], [74, 24, 5, 18], [-74, 74, 5, 18], [74, 74, 5, 18], [0, 48, 2, 18]];       // [dx from the middle, dy below the crossbar, points, radius]
+const SP_SHOTS = 10, SP_NET = { x: 240, gy: 216, W: 232, H: 112 }, SP_ZOOM = { z: 1.22, x: 240, y: 252 };       // the whole scene is drawn a little larger than the other games
+const SP_TARGETS = [[-86, 28, 5, 20], [86, 28, 5, 20], [-86, 84, 5, 20], [86, 84, 5, 20], [0, 56, 2, 20]];       // [dx from the middle, dy below the crossbar, points, radius]
 const spRec = {
   get() { try { return JSON.parse(localStorage.getItem('bhl_slapshot') || '{"best":0,"games":0}'); } catch { return { best: 0, games: 0 }; } },
   add(score) { const r = spRec.get(); r.games++; if (score > r.best) r.best = score; try { localStorage.setItem('bhl_slapshot', JSON.stringify(r)); } catch { } return r; },
@@ -28,7 +28,7 @@ function spNewAim() { SP.phase = 'aim'; SP.shot = null; SP.show = true; SP.aim0 
 /* Where the crosshair is, in canvas coordinates. It speeds up with every shot of the current player. */
 function spAimAt(now) {
   const sp = 1 + 0.09 * SP.k[SP.turn], t = (now - SP.aim0) / 1000;
-  return { x: SP_NET.x + 112 * Math.sin(1.45 * sp * t + SP.ph[0]), y: SP_NET.gy - 48 + 60 * Math.sin(1.9 * sp * t + SP.ph[1]) };
+  return { x: SP_NET.x + 132 * Math.sin(1.45 * sp * t + SP.ph[0]), y: SP_NET.gy - 56 + 70 * Math.sin(1.9 * sp * t + SP.ph[1]) };
 }
 function spScoreFor(x, y) {
   const L = SP_NET.x - SP_NET.W / 2, R = SP_NET.x + SP_NET.W / 2, top = SP_NET.gy - SP_NET.H;
@@ -41,8 +41,8 @@ function spScoreFor(x, y) {
 function spShoot() {
   if (SP.screen !== 'play' || SP.phase !== 'aim') return;
   const now = performance.now(), a = spAimAt(now), res = spScoreFor(a.x, Math.min(a.y, SP_NET.gy - 3)), k = SP.k[SP.turn];
-  const sd = Math.max(52, 76 - 2.7 * k), tx = a.x + spGauss(sd), ty = Math.min(a.y, SP_NET.gy - 3) + spGauss(sd * 0.7);       // the goalie reads the aim, with an error that shrinks as the shots go on
-  const saved = res.goal && Math.hypot(a.x - tx, Math.min(a.y, SP_NET.gy - 3) - ty) < 27;
+  const sd = Math.max(46, 66 - 2.2 * k), tx = a.x + spGauss(sd), ty = Math.min(a.y, SP_NET.gy - 3) + spGauss(sd * 0.7);       // the goalie reads the aim, with an error that shrinks as the shots go on
+  const saved = res.goal && Math.hypot(a.x - tx, Math.min(a.y, SP_NET.gy - 3) - ty) < 36;
   SP.shot = { t0: now, x: a.x, y: Math.min(a.y, SP_NET.gy - 3), tx, ty, saved, out: saved ? 'SAVED!' : res.out, pts: saved ? 0 : res.pts, goal: res.goal && !saved, kind: saved ? 'save' : res.goal ? 'goal' : res.out === 'POST!' ? 'post' : 'wide', player: SP.turn, done: false };
   SP.phase = 'shot'; SP.show = false; sgSound('shot'); spRender();
 }
@@ -70,18 +70,18 @@ function spLoop(now) { if (!SPA.cv || !document.body.contains(SPA.cv)) { SPA.raf
 
 function spFrame(now) {
   const c = SPA.ctx; if (!c) return; const T = (now - SPA.t0) / 1000, S = SP.shot, u = S ? (now - S.t0) / 1000 : -1, N = SP_NET, gx = N.x, gy = N.gy, W = N.W, Hn = N.H;
-  c.setTransform(SPA.k, 0, 0, SPA.k, 0, 0); c.clearRect(0, 0, SGA.W, SGA.H);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, SPA.cv.width, SPA.cv.height); { const z = SP_ZOOM.z, k = SPA.k; c.setTransform(k * z, 0, 0, k * z, k * SP_ZOOM.x * (1 - z), k * SP_ZOOM.y * (1 - z)); }
   const arrive = 0.62, after = S ? u - arrive : -1, goal = S && S.goal, shake = goal && after > 0 && after < 0.3 ? Math.sin(after * 90) * 3 * (1 - after / 0.3) : 0;
   c.save(); c.translate(shake, 0);
-  sgArena(c, T, S ? { goal: !!goal } : null, goal ? after : -1, 1, gy, 0);
+  sgArena(c, T, S ? { goal: !!goal } : null, goal ? after : -1, 1.16, gy, 0);
   // net, with a bulge where a goal went in
   const bulge = goal && after > 0 ? Math.sin(after * 22) * 12 * Math.max(0, 1 - after / 0.9) : 0, bx = S ? S.x : gx;
   c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(gx - W / 2, gy - Hn, W, Hn); c.strokeStyle = 'rgba(60,80,110,.5)'; c.lineWidth = 1;
   for (let i = 0; i <= 16; i++) { const x = gx - W / 2 + i * W / 16, d = Math.max(0, 1 - Math.abs(x - bx) / (W * 0.35)) * bulge; c.beginPath(); c.moveTo(x, gy - Hn); c.lineTo(x + d * 0.4, gy); c.stroke(); }
   for (let i = 0; i <= 8; i++) { const y = gy - Hn + i * Hn / 8; c.beginPath(); c.moveTo(gx - W / 2, y); for (let x = 0; x <= W; x += 8) { const d = Math.max(0, 1 - Math.abs(gx - W / 2 + x - bx) / (W * 0.35)) * bulge; c.lineTo(gx - W / 2 + x, y + d * 0.6); } c.stroke(); }
   // goalie: waits, then lunges at where he read the aim
-  const dv = S ? sgEase(sgClamp(u, 0.1, 0.62)) : 0, tgx = S ? Math.max(gx - 62, Math.min(gx + 62, S.tx)) : gx, dirX = !S ? 0 : Math.abs(tgx - gx) < 24 ? 0 : tgx > gx ? 1 : -1;
-  sgDrawGoalie(c, gx + (tgx - gx) * dv + (S ? 0 : Math.sin(T * 1.8) * 5), gy - 2, 0.7, dirX * 0.8 * dv, dv, dirX, SG_TEAM[1 - SP.turn], null, T);
+  const dv = S ? sgEase(sgClamp(u, 0.1, 0.62)) : 0, tgx = S ? Math.max(gx - 80, Math.min(gx + 80, S.tx)) : gx, dirX = !S ? 0 : Math.abs(tgx - gx) < 24 ? 0 : tgx > gx ? 1 : -1;
+  sgDrawGoalie(c, gx + (tgx - gx) * dv + (S ? 0 : Math.sin(T * 1.8) * 5), gy - 2, 0.78, dirX * 0.8 * dv, dv, dirX, SG_TEAM[1 - SP.turn], null, T);
   // targets
   const top = gy - Hn; for (const [dx, dy, pts, r] of SP_TARGETS) { const hit = S && S.goal && after > 0 && Math.hypot(S.x - (gx + dx), S.y - (top + dy)) <= r; c.fillStyle = hit ? 'rgba(19,122,53,.55)' : pts === 5 ? 'rgba(245,179,1,.35)' : 'rgba(37,99,235,.2)'; c.beginPath(); c.arc(gx + dx, top + dy, r, 0, 6.3); c.fill(); c.lineWidth = 2; c.strokeStyle = pts === 5 ? '#d99a00' : '#2563eb'; c.stroke(); c.fillStyle = '#0b1f44'; c.font = '800 12px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(pts), gx + dx, top + dy + 0.5); c.textAlign = 'start'; }
   c.lineCap = 'round'; c.lineJoin = 'round'; for (const [lw, col] of [[11, SG_INK], [8, '#d62828']]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(gx - W / 2, gy); c.lineTo(gx - W / 2, gy - Hn); c.lineTo(gx + W / 2, gy - Hn); c.lineTo(gx + W / 2, gy); c.stroke(); }
@@ -142,7 +142,7 @@ function spRender() {
     return;
   }
   const shotNo = SP.k[SP.turn] + (SP.phase === 'shot' && !SP.shot.done ? 1 : 1);
-  root.innerHTML = `${spBoard()}<div class="sg-scene"><canvas id="sg-cv" class="sg-cv" data-sp="shoot" aria-label="Net with a moving crosshair" role="img"></canvas></div><div class="sg-ctl"><p class="muted sg-meta">Shot ${Math.min(SP_SHOTS, SP.k[SP.turn] + 1)} of ${SP_SHOTS}${SP.mode === 'two' ? ` · ${esc(spName(SP.turn))}` : ''}</p>
+  root.innerHTML = `${spBoard()}<div class="sg-scene wide"><canvas id="sg-cv" class="sg-cv" data-sp="shoot" aria-label="Net with a moving crosshair" role="img"></canvas></div><div class="sg-ctl wide"><p class="muted sg-meta">Shot ${Math.min(SP_SHOTS, SP.k[SP.turn] + 1)} of ${SP_SHOTS}${SP.mode === 'two' ? ` · ${esc(spName(SP.turn))}` : ''}</p>
     <button type="button" class="btn fo-tap" data-sp="shoot" ${SP.phase === 'aim' ? '' : 'disabled'}>SHOOT!</button><p class="muted sg-wait" style="margin-top:8px">Tap the button, the rink, or press Space when the crosshair is on a target.</p>
     <button type="button" class="link sg-snd" data-sp="sound">Sound: ${SGA.sound ? 'on' : 'off'}</button></div>`;
   spAttach(document.getElementById('sg-cv'));
