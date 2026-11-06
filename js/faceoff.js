@@ -10,6 +10,13 @@ const foRec = {
   get() { try { return JSON.parse(localStorage.getItem('bhl_faceoff') || '{"w":0,"l":0,"best":0}'); } catch { return { w: 0, l: 0, best: 0 }; } },
   add(win, best) { const r = foRec.get(); win ? r.w++ : r.l++; if (best && (!r.best || best < r.best)) r.best = best; try { localStorage.setItem('bhl_faceoff', JSON.stringify(r)); } catch { } },
 };
+/* The sentence under the rink. It is built when shown so that a late tap (after the computer already won) can add the player's own time. */
+function foText(R) {
+  if (R.fs >= 0) return R.text;
+  const w = R.winner, l = 1 - w, rw = R.rt[w], rl = R.rt[l];
+  if (rl !== null && rl !== undefined) return `${foName(w)} wins the draw with ${rw} ms. ${foName(l)}: ${rl} ms (${rl - rw} ms too slow).`;
+  return `${foName(w)} wins the draw with ${rw} ms. ${foName(l)} did not tap in time.`;
+}
 const foName = i => FO.names[i] || (i ? 'Player 2' : 'Player 1');
 const foLater = (fn, ms) => { const t = setTimeout(fn, ms); FO.timers.push(t); return t; };
 const foClear = () => { FO.timers.forEach(clearTimeout); FO.timers = []; };
@@ -36,8 +43,15 @@ function foDrop() {
   else foLater(() => foResolve(), 1500);                         // nobody tapped: the faster of the (missing) taps cannot be known, so the draw is simply replayed
   foRender();
 }
+function foLateTap(p, ts) {                // the draw is already decided, but the player's own time is still worth showing
+  const R = FO.res; if (!R || R.fs >= 0 || R.rt[p] !== null || (FO.mode === 'bot' && p !== 0)) return;
+  const rt = Math.round((ts || performance.now()) - FO.dropPerf); if (rt < 1 || rt > 1800) return;
+  R.rt[p] = rt; if (FO.best[p] === null || rt < FO.best[p]) FO.best[p] = rt;
+  const say = document.querySelector('.fo-after .sg-say'); if (say) say.textContent = foText(R);
+}
 function foTap(p, ts) {
-  if (FO.screen !== 'play' || FO.res) return;
+  if (FO.screen !== 'play') return;
+  if (FO.res) { foLateTap(p, ts); return; }
   if (FO.phase === 'wait') { foFalseStart(p, ts); return; }
   if (FO.phase !== 'drop' || FO.taps[p] !== null) return;
   FO.taps[p] = Math.max(1, Math.round((ts || performance.now()) - FO.dropPerf));
@@ -59,13 +73,15 @@ function foResolve() {
   else w = rt[1] === null || (rt[0] !== null && rt[0] <= rt[1]) ? 0 : 1;
   FO.phase = 'result';
   const loserRt = rt[1 - w], t = rt.map(x => (x === null ? '–' : x + ' ms'));
-  FO.res = { winner: w, rt, fs: -1, hit: Math.max(0.3, rt[w] / 1000 + 0.14), finished: false, text: `${foName(w)} wins the draw: ${rt[w]} ms${loserRt !== null ? ` to ${loserRt} ms` : ''}.` };
+  FO.res = { winner: w, rt, fs: -1, hit: Math.max(0.3, rt[w] / 1000 + 0.14), finished: false, text: '' };
   [0, 1].forEach(i => { if (rt[i] !== null && !(FO.mode === 'bot' && i === 1)) FO.best[i] = FO.best[i] === null ? rt[i] : Math.min(FO.best[i], rt[i]); });
   FO.score[w]++; FO.show = false; foRender();
 }
 function foShown() {            // the animation has finished: reveal the score and the next button
   FO.show = true; const r = document.getElementById('sg'); if (!r || FO.screen !== 'play') return;
   const after = r.querySelector('.fo-after'), wait = r.querySelector('.sg-wait'), bd = r.querySelector('.sg-board');
+  const say = r.querySelector('.fo-after .sg-say'); if (say && FO.res) say.textContent = foText(FO.res);
+  const zone = r.querySelector('.fo-tapzone'); if (zone) zone.remove();
   if (after) after.hidden = false; if (wait) wait.remove(); if (bd) bd.outerHTML = foBoard();
 }
 function foNext() {
@@ -202,8 +218,8 @@ function foRender() {
     return;
   }
   const ph = FO.phase, R = FO.res;
-  const say = ph === 'ready' ? 'Get ready…' : ph === 'wait' ? 'Wait for the drop…' : ph === 'drop' ? '<b>NOW!</b>' : esc(R.text);
-  const body = ph === 'result' ? `<div class="fo-after" hidden><p class="sg-say">${esc(R.text)}</p><div class="btnrow"><button class="btn" data-fo="next" type="button">${FO.score.some(s => s >= FO_WIN) ? 'See result' : 'Next face-off'}</button></div></div><p class="muted sg-wait">Tap the rink to skip the animation.</p>`
+  const say = ph === 'ready' ? 'Get ready…' : ph === 'wait' ? 'Wait for the drop…' : '<b>NOW!</b>';
+  const body = ph === 'result' ? `${R.fs >= 0 ? '' : `<div class="fo-tapzone">${foTapBtns()}</div>`}<div class="fo-after" hidden><p class="sg-say">${esc(foText(R))}</p><div class="btnrow"><button class="btn" data-fo="next" type="button">${FO.score.some(s => s >= FO_WIN) ? 'See result' : 'Next face-off'}</button></div></div><p class="muted sg-wait">Tap the rink to skip the animation.</p>`
     : `<p class="sg-say fo-say">${say}</p>${foTapBtns()}`;
   root.innerHTML = `${foBoard()}<div class="sg-scene"><canvas id="sg-cv" class="sg-cv" data-fo="skip" aria-label="Face-off" role="img"></canvas></div><div class="sg-ctl"><p class="muted sg-meta">Face-off ${FO.round}${FO.mode === 'bot' ? ` · ${FO_LEVELS[FO.level][0]}` : ''}</p>${body}<button type="button" class="link sg-snd" data-fo="sound">Sound: ${SGA.sound ? 'on' : 'off'}</button></div>`;
   foAttach(document.getElementById('sg-cv'));
@@ -218,7 +234,7 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('keydown', e => {
   if (RES.game !== 'faceoff' || FO.screen !== 'play' || e.repeat || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
   const k = e.key.toLowerCase();
-  if (FO.phase === 'result') { if ((k === ' ' || k === 'enter') && FO.show) { e.preventDefault(); foNext(); } return; }
+  if (FO.phase === 'result') { if ((k === ' ' || k === 'enter') && FO.show) { e.preventDefault(); foNext(); } else if (!FO.show) { if (FO.mode === 'bot' ? [' ', 'enter', 'a', 'l'].includes(k) : k === 'a' || k === 'l') foLateTap(FO.mode === 'bot' || k === 'a' ? 0 : 1, e.timeStamp); } return; }
   if (FO.mode === 'bot') { if ([' ', 'enter', 'a', 'l'].includes(k)) { e.preventDefault(); foTap(0, e.timeStamp); } }
   else if (k === 'a') foTap(0, e.timeStamp); else if (k === 'l') foTap(1, e.timeStamp);
 });
