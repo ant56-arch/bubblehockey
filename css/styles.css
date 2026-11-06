@@ -326,3 +326,8 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 6px; font-
 .mmonth { margin: 14px 0 6px; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .mcareer { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 16px 0 6px; padding-top: 12px; border-top: 1px solid var(--line); } .mcareer .muted { font-size: .8rem; }
 .mcard .inner .tiles { margin: 6px 0; }
+.res-list { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
+.fo-tap { width: 100%; min-height: 84px; font-size: 1.6rem; font-weight: 900; letter-spacing: .06em; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.fo-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .fo-two .fo-tap { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.2rem; letter-spacing: 0; color: #fff; }
+.fo-two small { font-weight: 600; font-size: .72rem; opacity: .85; letter-spacing: .04em; text-transform: uppercase; }
+.fo-say { min-height: 1.6em; }
