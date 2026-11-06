@@ -5,6 +5,7 @@
    Nothing here is saved to the league data; only a win-loss record against the computer is kept in this browser. */
 PAGES.push(['resources', 'Resources', true]);      // true = not in the top menu
 
+const RES = { game: '' };                 // which game is open on the Resources page: '' = the list, 'shootout', 'faceoff'
 const SG_DIRS = { L: 'Left', M: 'Middle', R: 'Right' }, SG_ROUNDS = 5, SG_CODE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SG = { screen: 'menu', mode: 'bot', names: ['', ''], score: [0, 0], log: [[], []], n: 0, phase: 'shooter', shot: null, res: null, winner: -1, done: true, mine: null, net: null, join: '', msg: '' };
 const sgRandom = () => 'LMR'[Math.floor(Math.random() * 3)], sgDir = d => (['L', 'M', 'R'].includes(d) ? d : '');
@@ -154,6 +155,8 @@ function sgSound(kind) {
     if (kind === 'goal') { tone('sawtooth', 240, 236, 0.7, 0.12); tone('square', 120, 118, 0.7, 0.06); }
     if (kind === 'save') { tone('sine', 150, 50, 0.22, 0.35); tone('triangle', 900, 300, 0.08, 0.12); }
     if (kind === 'skate') tone('sawtooth', 700, 200, 0.5, 0.025);
+    if (kind === 'whistle') { tone('square', 2300, 2250, 0.18, 0.05); setTimeout(() => sgSound('whistle2'), 120); }
+    if (kind === 'whistle2') tone('square', 2250, 2200, 0.25, 0.05);
   } catch { }
 }
 function sgAttach(cv) {
@@ -238,9 +241,17 @@ function sgBurst(P, shootX) {
 
 /* The arena: lit ceiling, crowd behind glass, boards with team ads, and shiny ice with the goal line, crease and face-off dots. */
 function sgArena(c, T, P, after, gs, gy, pt) {
+  const cheer = P && P.goal && after > 0 ? Math.sin(after * 14) * 3 * Math.max(0, 1 - after / 1.2) : 0;
+  sgBackdrop(c, T, !!P, cheer);
+  c.strokeStyle = 'rgba(190,40,50,.75)'; c.lineWidth = 3 * gs; c.beginPath(); c.moveTo(-10, gy + 5 * gs); c.lineTo(490, gy + 5 * gs); c.stroke();                       // goal line
+  c.beginPath(); c.ellipse(240, gy + 5 * gs, 82 * gs, 50 * gs, 0, 0, Math.PI); c.fillStyle = 'rgba(96,165,250,.28)'; c.fill(); c.strokeStyle = 'rgba(190,40,50,.8)'; c.lineWidth = 2.2; c.stroke();   // crease
+  c.strokeStyle = 'rgba(80,110,150,.16)'; c.lineWidth = 1; for (let i = 0; i < 16; i++) { const x = (i * 97) % 480, y = 140 + i * 13; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 60, y + 7, x + 150, y + 1); c.stroke(); }          // skate marks
+  c.fillStyle = 'rgba(190,40,50,.85)'; c.beginPath(); c.arc(240 - 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.arc(240 + 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.fill();      // face-off dots
+}
+/* The arena shared by the games: lit ceiling, crowd behind glass, boards with ads, and shiny ice. */
+function sgBackdrop(c, T, fast, cheer) {
   const bg = sgGrad(c, 0, 0, 0, 100, '#060b18', '#16233d'); c.fillStyle = bg; c.fillRect(-10, 0, 500, 100);
   for (let i = 0; i < 6; i++) { const x = 40 + i * 80, g = c.createRadialGradient(x, 0, 0, x, 0, 60); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(x - 60, 0, 120, 70); c.fillStyle = '#e2e8f0'; c.fillRect(x - 18, 0, 36, 3); }
-  const cheer = P && P.goal && after > 0 ? Math.sin(after * 14) * 3 * Math.max(0, 1 - after / 1.2) : 0;
   for (const p of SGA.crowd) {
     const y = 26 + p.r * 17 + Math.sin(T * 2 + p.ph) * 1 - Math.abs(cheer) * (p.r + 1) * .45, r = 4.6;
     c.fillStyle = p.c; c.beginPath(); c.roundRect(p.x - 5, y + 2, 10, 9, 3); c.fill();                       // shoulders
@@ -249,13 +260,9 @@ function sgArena(c, T, P, after, gs, gy, pt) {
   const gl = sgGrad(c, 0, 80, 0, 98, 'rgba(147,197,253,.0)', 'rgba(147,197,253,.28)'); c.fillStyle = gl; c.fillRect(-10, 80, 500, 18);                       // glass shine
   c.fillStyle = 'rgba(255,255,255,.07)'; for (let x = 20; x < 480; x += 90) { c.beginPath(); c.moveTo(x, 70); c.lineTo(x + 22, 70); c.lineTo(x + 10, 98); c.lineTo(x - 12, 98); c.fill(); }
   const bd = sgGrad(c, 0, 96, 0, 118, '#13306b', '#0b1f44'); c.fillStyle = bd; c.fillRect(-10, 96, 500, 22); c.fillStyle = '#f5b301'; c.fillRect(-10, 96, 500, 2.5); c.fillStyle = '#050b18'; c.fillRect(-10, 116, 500, 2);
-  c.fillStyle = '#fff'; c.font = '800 10px Inter, system-ui, sans-serif'; c.textBaseline = 'middle'; const sc = (T * 16 * (P ? 1 : 0.3)) % 170; for (let x = -sc; x < 500; x += 170) { c.fillText('BUBBLE HOCKEY LEAGUE', x + 6, 107); c.fillStyle = '#8cc63f'; c.fillRect(x + 148, 102, 6, 10); c.fillStyle = '#fff'; }
+  c.fillStyle = '#fff'; c.font = '800 10px Inter, system-ui, sans-serif'; c.textBaseline = 'middle'; const sc = (T * 16 * (fast ? 1 : 0.3)) % 170; for (let x = -sc; x < 500; x += 170) { c.fillText('BUBBLE HOCKEY LEAGUE', x + 6, 107); c.fillStyle = '#8cc63f'; c.fillRect(x + 148, 102, 6, 10); c.fillStyle = '#fff'; }
   const ice = sgGrad(c, 0, 118, 0, 340, '#cfe3f6', '#f4faff', '#e8f2fc'); c.fillStyle = ice; c.fillRect(-10, 118, 500, 230);
   const sheen = c.createRadialGradient(240, 250, 10, 240, 250, 260); sheen.addColorStop(0, 'rgba(255,255,255,.7)'); sheen.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = sheen; c.fillRect(-10, 118, 500, 230);
-  c.strokeStyle = 'rgba(190,40,50,.75)'; c.lineWidth = 3 * gs; c.beginPath(); c.moveTo(-10, gy + 5 * gs); c.lineTo(490, gy + 5 * gs); c.stroke();                       // goal line
-  c.beginPath(); c.ellipse(240, gy + 5 * gs, 82 * gs, 50 * gs, 0, 0, Math.PI); c.fillStyle = 'rgba(96,165,250,.28)'; c.fill(); c.strokeStyle = 'rgba(190,40,50,.8)'; c.lineWidth = 2.2; c.stroke();   // crease
-  c.strokeStyle = 'rgba(80,110,150,.16)'; c.lineWidth = 1; for (let i = 0; i < 16; i++) { const x = (i * 97) % 480, y = 140 + i * 13; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 60, y + 7, x + 150, y + 1); c.stroke(); }          // skate marks
-  c.fillStyle = 'rgba(190,40,50,.85)'; c.beginPath(); c.arc(240 - 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.arc(240 + 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.fill();      // face-off dots
 }
 
 /* The goalie, facing the shooter, drawn like real gear: big curved leg pads with knee rolls, bulky pants, a baggy jersey over a puffy chest protector,
@@ -377,12 +384,21 @@ function sgBoard() {
 const sgPicker = label => `<p class="sg-say">${label}</p><div class="sg-picks">${Object.entries(SG_DIRS).map(([k, v]) => `<button type="button" class="btn sg-pick" data-sg="pick" data-dir="${k}">${k === 'L' ? '◀ ' : ''}${v}${k === 'R' ? ' ▶' : ''}</button>`).join('')}</div>`;
 const sgInviteLink = () => location.href.split('#')[0] + '#/resources?join=' + (SG.net ? SG.net.code : '');
 
+function resList() {
+  const rec = sgRecord.get(), fr = typeof foRec === 'function' || typeof foRec === 'object' ? foRec.get() : { w: 0, l: 0 };
+  return `<div class="grid res-list"><section class="card"><h2 style="margin-top:4px">Shootout</h2><p class="muted">A penalty shot duel. Pick left, middle or right, and so does the goalie. Play the computer, a friend on this screen, or a friend on another computer with an invite code.</p>
+    <div class="btnrow"><button class="btn" data-res="shootout" type="button">Play</button></div>${rec.w + rec.l ? `<p class="muted" style="margin:10px 0 0">Record vs computer ${rec.w}–${rec.l}</p>` : ''}</section>
+    <section class="card"><h2 style="margin-top:4px">Face-off</h2><p class="muted">A reaction game at the dot. The referee drops the puck at a random moment: tap the instant it drops, but tap early and it is a false start. Play the computer or a friend on this screen.</p>
+    <div class="btnrow"><button class="btn" data-res="faceoff" type="button">Play</button></div>${fr.w + fr.l ? `<p class="muted" style="margin:10px 0 0">Record vs computer ${fr.w}–${fr.l}${fr.best ? ` · best ${fr.best} ms` : ''}</p>` : ''}</section></div>`;
+}
 function sgRender() {
   const root = document.getElementById('sg'); if (!root) return;
+  if (!RES.game) { root.innerHTML = resList(); return; }
+  if (RES.game === 'faceoff') return foRender();
   const rec = sgRecord.get(), nameBox = (id, label, val) => `<label class="f">${label}<input id="${id}" list="sg-names" value="${esc(val)}" maxlength="20" autocomplete="off"></label>`;
   const dl = `<datalist id="sg-names">${D.members.map(m => `<option value="${esc(m.short_name)}">`).join('')}</datalist>`;
   if (SG.screen === 'menu') {
-    root.innerHTML = `<section class="card sg-menu"><h2 style="margin-top:4px">Shootout</h2><p class="muted">A penalty shot duel. The shooter picks <b>left</b>, <b>middle</b> or <b>right</b>. The goalie picks too. Same pick is a save, anything else is a goal. Five shots each, then sudden death.</p>
+    root.innerHTML = `<section class="card sg-menu"><button class="link" data-res="list" type="button">← All games</button><h2 style="margin-top:8px">Shootout</h2><p class="muted">A penalty shot duel. The shooter picks <b>left</b>, <b>middle</b> or <b>right</b>. The goalie picks too. Same pick is a save, anything else is a goal. Five shots each, then sudden death.</p>
       <div class="btnrow"><button class="btn" data-sg="start" data-mode="bot">Play the computer</button><button class="btn ghost" data-sg="start" data-mode="two">Two players, one screen</button><button class="btn ghost" data-sg="start" data-mode="online">Play a friend online</button></div>
       ${rec.w + rec.l ? `<p class="muted" style="margin:12px 0 0">Your record against the computer: <b>${rec.w}–${rec.l}</b></p>` : ''}</section>`;
     return;
@@ -445,10 +461,11 @@ function sgRender() {
 view.resources = function () {
   const q = (location.hash.split('?')[1] || '').match(/join=([A-Za-z0-9]{5})/);
   if (!document.getElementById('sg') && SG.screen !== 'menu' && SG.screen !== 'end') { sgNetEnd(); Object.assign(SG, { screen: 'menu' }); }      // leaving mid-game and coming back starts fresh
-  if (q && SG.screen === 'menu') { SG.join = q[1].toUpperCase(); setTimeout(() => sgStart('online'), 0); } else setTimeout(sgRender, 0);
+  if (!document.getElementById('sg')) RES.game = '';
+  if (q && SG.screen === 'menu') { RES.game = 'shootout'; SG.join = q[1].toUpperCase(); setTimeout(() => sgStart('online'), 0); } else setTimeout(sgRender, 0);
   return `<h1>Resources</h1><p class="lead">Extras for the league.</p><div id="sg" class="sg"></div>`;
 };
-window.addEventListener('hashchange', () => { if (!/^#\/(resources|games)/.test(location.hash) && (SG.net || SG.screen !== 'menu')) { sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); } });
+window.addEventListener('hashchange', () => { if (!/^#\/(resources|games)/.test(location.hash)) { RES.game = ''; if (SG.net || SG.screen !== 'menu') { sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); } } });
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-sg]'); if (!b || !document.getElementById('sg')) return;
   const a = b.dataset.sg, flash = t => { const el = document.querySelector('.sg-copied'); if (el) el.textContent = t; };
@@ -469,4 +486,9 @@ document.addEventListener('click', async e => {
   else if (a === 'next') sgAdvance();
   else if (a === 'sound') { SGA.sound = !SGA.sound; try { localStorage.setItem('bhl_sg_sound', SGA.sound ? '1' : '0'); } catch { } b.textContent = SGA.sound ? 'Sound: on' : 'Sound: off'; if (SGA.sound) sgSound('save'); }
   else if (a === 'skip') sgSkip();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-res]'); if (!b || !document.getElementById('sg')) return;
+  const g = b.dataset.res; if (g === 'list') { if (typeof foReset === 'function') foReset(); sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); RES.game = ''; } else { RES.game = g; if (g === 'shootout') SG.screen = 'menu'; else if (typeof foReset === 'function') foReset(); }
+  sgRender();
 });
