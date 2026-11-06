@@ -20,6 +20,16 @@ function foText(R) {
 const foName = i => FO.names[i] || (i ? 'Player 2' : 'Player 1');
 const foLater = (fn, ms) => { const t = setTimeout(fn, ms); FO.timers.push(t); return t; };
 const foClear = () => { FO.timers.forEach(clearTimeout); FO.timers = []; };
+/* How long the referee waits before dropping the puck: a mix of quick drops, ordinary waits and long ones, so there is no pattern to learn. */
+function foWaitDelay() {
+  const r = Math.random();
+  return r < 0.28 ? 600 + Math.random() * 700 : r < 0.74 ? 1300 + Math.random() * 2000 : r < 0.92 ? 3300 + Math.random() * 1800 : 5100 + Math.random() * 2200;
+}
+/* Sometimes the referee fidgets: the hand dips with the puck and comes back up without letting go. Tapping then is still a false start. */
+function foFeints(delay) {
+  const out = []; if (Math.random() < 0.45 && delay > 1500) for (let i = 0, n = 1 + (Math.random() < 0.35 ? 1 : 0); i < n; i++) out.push({ at: 500 + Math.random() * (delay - 1100), dur: 260 + Math.random() * 200, amp: 7 + Math.random() * 9 });
+  return out;
+}
 const foGauss = (mean, sd) => mean + sd * (Math.random() + Math.random() + Math.random() - 1.5) * 1.15;      // a bell-shaped spread around the average
 
 /* ---------- game flow ---------- */
@@ -33,9 +43,9 @@ function foBegin() {
   foReady(); foRender();
 }
 function foReady() {
-  foClear(); Object.assign(FO, { phase: 'ready', drop: 0, taps: [null, null], res: null, show: true });
+  foClear(); Object.assign(FO, { phase: 'ready', drop: 0, taps: [null, null], res: null, show: true, feints: [] });
   sgSound('skate');
-  foLater(() => { FO.phase = 'wait'; foRender(); foLater(foDrop, 1100 + Math.random() * 2400); }, 900);
+  foLater(() => { FO.phase = 'wait'; foRender(); const d = foWaitDelay(); FO.waitStart = performance.now(); FO.feints = foFeints(d); foLater(foDrop, d); }, 600 + Math.random() * 700);
 }
 function foDrop() {
   FO.phase = 'drop'; FO.drop = FO.dropPerf = performance.now();
@@ -109,9 +119,10 @@ function foFrame(now) {
   c.fillStyle = 'rgba(190,40,50,.12)'; c.fill(); c.lineWidth = 2; c.beginPath(); c.moveTo(FO_DOT.x - 112, FO_DOT.y); c.lineTo(FO_DOT.x - 124, FO_DOT.y); c.moveTo(FO_DOT.x + 112, FO_DOT.y); c.lineTo(FO_DOT.x + 124, FO_DOT.y); c.stroke();
   c.fillStyle = '#1d4ed8'; c.beginPath(); c.ellipse(FO_DOT.x, FO_DOT.y, 7, 3.2, 0, 0, 6.3); c.fill();
   // referee: holds the puck out over the dot
-  foRef(c, 240, 246, 0.86, R && R.fs >= 0 && u < 0.6 ? 1 : 0, T);
+  let dip = 0; if (FO.phase === 'wait' && FO.feints) for (const f of FO.feints) { const q = (now - FO.waitStart - f.at) / f.dur; if (q > 0 && q < 1) dip += Math.sin(q * Math.PI) * f.amp; }
+  foRef(c, 240, 246, 0.86, R && R.fs >= 0 && u < 0.6 ? 1 : 0, T, dip);
   // puck
-  const hand = { x: 240, y: 212 }, fall = u >= 0 ? Math.min(1, u / 0.3) : 0, hit = R ? R.hit : 99;
+  const hand = { x: 240, y: 212 + dip * 0.86 }, fall = u >= 0 ? Math.min(1, u / 0.3) : 0, hit = R ? R.hit : 99;
   let px = hand.x, py = hand.y, vis = true;
   if (u >= 0) {
     py = u < 0.3 ? hand.y + (FO_DOT.y - hand.y) * fall * fall : FO_DOT.y - Math.abs(Math.sin((u - 0.3) * 18)) * 5 * Math.exp(-(u - 0.3) * 9);
@@ -165,7 +176,7 @@ function foPlayer(c, x, y, face, pal, s, T, name, happy) {
   c.restore();
 }
 /* The referee, facing us: black and white stripes, white helmet, orange armbands, whistle, one arm out holding the puck. */
-function foRef(c, x, y, s, raiseOther, T) {
+function foRef(c, x, y, s, raiseOther, T, dip = 0) {
   c.save(); c.translate(x, y); c.scale(s, s);
   c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(0, 3, 32, 6, 0, 0, 6.3); c.fill();
   for (const sx of [-1, 1]) { sgRR(c, sx * 9 - 8, -56, 16, 52, 7); sgFS(c, '#0b1426'); sgRR(c, sx * 9 - 10, -6, 20, 10, 4); sgFS(c, '#111827', 1.6); c.fillStyle = '#cbd5e1'; c.fillRect(sx * 9 - 12, 5, 24, 3); }
@@ -174,9 +185,9 @@ function foRef(c, x, y, s, raiseOther, T) {
   c.beginPath(); c.moveTo(-20, -52); c.lineTo(-24, -98); c.quadraticCurveTo(0, -108, 24, -98); c.lineTo(20, -52); c.closePath(); c.lineWidth = 2; c.strokeStyle = SG_INK; c.stroke();
   const wave = raiseOther ? Math.sin(T * 14) * 3 : 0;
   sgLimb(c, -22, -92, -34, -70 - (raiseOther ? 36 : 0), 11, '#f8fafc'); sgLimb(c, -34, -70 - (raiseOther ? 36 : 0), -36 + wave, -52 - (raiseOther ? 48 : 0), 10, '#f8fafc');      // free arm (up for a false start)
-  sgLimb(c, 22, -92, 30, -66, 11, '#f8fafc'); sgLimb(c, 30, -66, 8, -48, 10, '#f8fafc');                                                                                          // arm holding the puck out
+  sgLimb(c, 22, -92, 30, -66 + dip * 0.5, 11, '#f8fafc'); sgLimb(c, 30, -66 + dip * 0.5, 8, -48 + dip, 10, '#f8fafc');                                                                                          // arm holding the puck out
   c.fillStyle = '#f97316'; c.fillRect(-37, -78, 6, 7); c.fillRect(27, -76, 6, 7);
-  c.beginPath(); c.arc(8, -48, 5.5, 0, 6.3); sgFS(c, '#1f2937', 1.5);
+  c.beginPath(); c.arc(8, -48 + dip, 5.5, 0, 6.3); sgFS(c, '#1f2937', 1.5);
   sgRR(c, -6, -108, 12, 11, 4); sgFS(c, '#e2c9a8', 1.6);
   c.beginPath(); c.arc(0, -118, 13.5, 0, 6.3); sgFS(c, '#f1c9a5');
   c.beginPath(); c.arc(0, -121, 14.5, Math.PI, 0); c.closePath(); sgFS(c, sgGrad(c, -14, -136, 14, -118, '#ffffff', '#c3ccda'));      // white helmet
