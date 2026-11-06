@@ -296,7 +296,7 @@ const view = {
     const sched = games.slice(0, 3).map(r => `<div class="rrow s3"><span class="d">${dateShort(r.date)}</span><span class="t">${esc(r.home)} v ${esc(r.road)}</span><span class="d r">Home: ${esc(r.home)}</span></div>`).join('') || '<div class="feat muted">Nothing scheduled.</div>';
     const champ = lastChamp ? `<div class="feat"><b class="big">${esc(lastChamp.c)}</b><div class="muted">${monthLabel(lastChamp.m)} · ${esc(team(lastChamp.c))}</div></div>` : '<div class="feat muted">No champion yet.</div>';
     const [head] = (cfg.headline || 'Every game. Every standing. One league.').split('|');
-    return `<section class="band"><div class="hero"><div class="hero-text"><span class="eyebrow">${esc(cfg.eyebrow || (m ? monthLabel(m) : 'Season'))}</span>
+    return `<div class="res-head" style="justify-content:flex-end;margin-top:6px"><button class="link res-hide" data-boss type="button" title="Shortcut: Esc">Hide screen (Esc)</button></div><section class="band"><div class="hero"><div class="hero-text"><span class="eyebrow">${esc(cfg.eyebrow || (m ? monthLabel(m) : 'Season'))}</span>
         <h1>${esc(head).replace(/\. /g, '.<br>')}</h1><p>${esc(cfg.text || 'Live standings, daily matchups and a double-elimination playoff for the whole office. Join the table.')}</p>
         <a class="btn" href="#/rules">Join the League</a>
         <div class="hero-stats"><div><b>${counted.length}</b><span>Games played</span></div><div><b>${D.members.length}</b><span>Teams</span></div><div><b>${champs.length}</b><span>Champions crowned</span></div></div></div>
