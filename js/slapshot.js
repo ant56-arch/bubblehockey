@@ -1,6 +1,7 @@
-/* Slap Shot (part of the Resources page): a timing game. A crosshair sweeps back and forth across the net, faster with every shot. Tap to shoot
-   where it is. Corner targets are worth 5, the middle 2, anywhere else in the net 1. The goalie reads your aim and lunges at it, and gets sharper as
-   the shots go on, so a saved shot scores nothing. A miss, a post or a shot over the bar scores nothing either. 10 shots.
+/* Slap Shot (part of the Resources page): a timing game with two taps per shot, like a kicking meter. First a line sweeps left and right across the net:
+   tap to lock where you aim. Then a power meter rises and falls: tap to shoot. Low power keeps the puck down, more power lifts it toward the top corners,
+   too much sends it over the bar, and a weak shot is an easy save. Both meters get faster with every shot. Corner targets are worth 5, the middle 2,
+   anywhere else in the net 1. The goalie reads your shot and lunges at it, and gets sharper as the shots go on. A save, a miss or a post scores nothing. 10 shots.
    Play alone (your best score is kept in this browser) or two players taking turns on one screen. It shares the arena, goalie and skater of the Shootout. */
 
 const SP = { screen: 'menu', mode: 'solo', names: ['', ''], turn: 0, k: [0, 0], score: [0, 0], log: [[], []], phase: 'aim', aim0: 0, ph: [0, 0], shot: null, show: true, timers: [] };
@@ -24,11 +25,20 @@ function spBegin() {
   spClear(); Object.assign(SP, { screen: 'play', turn: 0, k: [0, 0], score: [0, 0], log: [[], []], shot: null, show: true });
   spNewAim(); spRender();
 }
-function spNewAim() { SP.phase = 'aim'; SP.shot = null; SP.show = true; SP.aim0 = performance.now(); SP.ph = [Math.random() * 6.28, Math.random() * 6.28]; }
-/* Where the crosshair is, in canvas coordinates. It speeds up with every shot of the current player. */
-function spAimAt(now) {
-  const sp = 1 + 0.09 * SP.k[SP.turn], t = (now - SP.aim0) / 1000;
-  return { x: SP_NET.x + 132 * Math.sin(1.45 * sp * t + SP.ph[0]), y: SP_NET.gy - 56 + 70 * Math.sin(1.9 * sp * t + SP.ph[1]) };
+function spNewAim() { SP.phase = 'aim'; SP.shot = null; SP.show = true; SP.lockX = null; SP.aim0 = performance.now(); SP.ph = [Math.random() * 560, Math.random() * 2]; }
+/* The aim line sweeps left and right at a steady speed, then the power meter rises and falls. Both speed up with every shot of the current player.
+   Power 0 keeps the puck on the ice, about 0.65 reaches the top corners, above about 0.9 it flies over the bar. */
+const spHeight = p => Math.min(SP_NET.gy - 3, SP_NET.gy - p * 1.15 * SP_NET.H);
+function spAim(now) {
+  const k = SP.k[SP.turn], out = { x: SP.lockX, p: null, y: null, locked: SP.lockX !== null };
+  if (SP.lockX === null) { const s = ((now - SP.aim0) / 1000 * (250 + 26 * k) + SP.ph[0]) % 560, d = s < 280 ? s : 560 - s; out.x = SP_NET.x - 140 + d; }
+  if (SP.phase === 'power') { const pos = ((now - SP.p0) / 1000 * (1.1 + 0.11 * k) + SP.ph[1]) % 2; out.p = pos < 1 ? pos : 2 - pos; out.y = spHeight(out.p); }
+  return out;
+}
+function spTap() {                                   // first tap locks the aim, second tap sets the power and shoots
+  if (SP.screen !== 'play') return;
+  if (SP.phase === 'aim') { const a = spAim(performance.now()); SP.lockX = a.x; SP.phase = 'power'; SP.p0 = performance.now(); SP.ph[1] = Math.random() * 2; sgSound('skate'); spRender(); }
+  else if (SP.phase === 'power') spShoot();
 }
 function spScoreFor(x, y) {
   const L = SP_NET.x - SP_NET.W / 2, R = SP_NET.x + SP_NET.W / 2, top = SP_NET.gy - SP_NET.H;
@@ -39,11 +49,11 @@ function spScoreFor(x, y) {
   return { out: 'GOAL! +1', pts: 1, goal: true };
 }
 function spShoot() {
-  if (SP.screen !== 'play' || SP.phase !== 'aim') return;
-  const now = performance.now(), a = spAimAt(now), res = spScoreFor(a.x, Math.min(a.y, SP_NET.gy - 3)), k = SP.k[SP.turn];
-  const sd = Math.max(46, 66 - 2.2 * k), tx = a.x + spGauss(sd), ty = Math.min(a.y, SP_NET.gy - 3) + spGauss(sd * 0.7);       // the goalie reads the aim, with an error that shrinks as the shots go on
-  const saved = res.goal && Math.hypot(a.x - tx, Math.min(a.y, SP_NET.gy - 3) - ty) < 36;
-  SP.shot = { t0: now, x: a.x, y: Math.min(a.y, SP_NET.gy - 3), tx, ty, saved, out: saved ? 'SAVED!' : res.out, pts: saved ? 0 : res.pts, goal: res.goal && !saved, kind: saved ? 'save' : res.goal ? 'goal' : res.out === 'POST!' ? 'post' : 'wide', player: SP.turn, done: false };
+  if (SP.screen !== 'play' || SP.phase !== 'power') return;
+  const now = performance.now(), a = spAim(now), p = a.p, x = a.x, y = a.y, res = spScoreFor(x, y), k = SP.k[SP.turn];
+  const sd = Math.max(46, 66 - 2.2 * k), tx = x + spGauss(sd), ty = y + spGauss(sd * 0.7), reach = 36 + (1 - p) * 12;       // the goalie reads the shot, with an error that shrinks as the shots go on; a softer shot is easier to reach
+  const soft = res.goal && p < 0.12, saved = res.goal && (soft || Math.hypot(x - tx, y - ty) < reach);
+  SP.shot = { t0: now, x, y, p, tx, ty, saved, out: saved ? (soft ? 'SOFT SHOT!' : 'SAVED!') : res.out, pts: saved ? 0 : res.pts, goal: res.goal && !saved, kind: saved ? 'save' : res.goal ? 'goal' : res.out === 'POST!' ? 'post' : 'wide', player: SP.turn, done: false };
   SP.phase = 'shot'; SP.show = false; sgSound('shot'); spRender();
 }
 function spDone() {                                   // the animation has played: add the points and move on
@@ -99,8 +109,25 @@ function spFrame(now) {
   } else if (S) { px = bladeX; py = bladeY; }
   else { px = bladeX; py = bladeY; }
   if (vis) { c.fillStyle = '#0b1426'; c.beginPath(); c.ellipse(px, py, pr, pr * .6, 0, 0, 6.3); c.fill(); c.fillStyle = '#334155'; c.beginPath(); c.ellipse(px, py - pr * .25, pr, pr * .45, 0, 0, 6.3); c.fill(); }
-  // crosshair while aiming
-  if (!S && SP.screen === 'play') { const a = spAimAt(now); c.strokeStyle = '#c1272d'; c.lineWidth = 2.4; c.beginPath(); c.arc(a.x, a.y, 11, 0, 6.3); c.moveTo(a.x - 18, a.y); c.lineTo(a.x - 5, a.y); c.moveTo(a.x + 5, a.y); c.lineTo(a.x + 18, a.y); c.moveTo(a.x, a.y - 18); c.lineTo(a.x, a.y - 5); c.moveTo(a.x, a.y + 5); c.lineTo(a.x, a.y + 18); c.stroke(); c.fillStyle = 'rgba(193,39,45,.2)'; c.beginPath(); c.arc(a.x, a.y, 11, 0, 6.3); c.fill(); }
+  // aim line, then the reticle and power meter
+  if (!S && SP.screen === 'play') {
+    const a = spAim(now), top = gy - Hn; c.lineCap = 'round';
+    if (!a.locked) {
+      c.setLineDash([7, 5]); c.strokeStyle = '#c1272d'; c.lineWidth = 3; c.beginPath(); c.moveTo(a.x, top - 22); c.lineTo(a.x, gy); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#c1272d'; c.beginPath(); c.moveTo(a.x - 9, top - 36); c.lineTo(a.x + 9, top - 36); c.lineTo(a.x, top - 22); c.closePath(); c.fill(); c.font = '800 10px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.fillStyle = '#fff'; c.fillText('AIM', a.x, top - 44); c.textAlign = 'start';
+    } else {
+      c.setLineDash([5, 5]); c.strokeStyle = 'rgba(193,39,45,.7)'; c.lineWidth = 2; c.beginPath(); c.moveTo(a.x, top - 22); c.lineTo(a.x, gy); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = '#c1272d'; c.lineWidth = 2.6; c.beginPath(); c.arc(a.x, a.y, 11, 0, 6.3); c.moveTo(a.x - 18, a.y); c.lineTo(a.x - 5, a.y); c.moveTo(a.x + 5, a.y); c.lineTo(a.x + 18, a.y); c.moveTo(a.x, a.y - 18); c.lineTo(a.x, a.y - 5); c.moveTo(a.x, a.y + 5); c.lineTo(a.x, a.y + 18); c.stroke(); c.fillStyle = 'rgba(193,39,45,.22)'; c.beginPath(); c.arc(a.x, a.y, 11, 0, 6.3); c.fill();
+      // the power meter, to the right of the net
+      const mx = 382, mw = 16, mh = 132, my = gy - mh, lvl = a.p, zone = p => { const h = p * 1.15 * Hn; return h > Hn + 4 ? '#d62828' : p < 0.12 ? '#94a3b8' : p > 0.5 ? '#f5b301' : '#22a05a'; };
+      c.fillStyle = 'rgba(255,255,255,.92)'; c.beginPath(); c.roundRect(mx - 5, my - 20, mw + 10, mh + 28, 8); c.fill(); c.lineWidth = 2; c.strokeStyle = SG_INK; c.stroke();
+      for (let i = 0; i < 60; i++) { const p0 = i / 60, y0 = gy - 4 - p0 * (mh - 8); c.fillStyle = zone(p0 + 0.008); c.globalAlpha = 0.28; c.fillRect(mx, y0 - (mh - 8) / 60, mw, (mh - 8) / 60 + 0.6); c.globalAlpha = 1; }
+      const fy = gy - 4 - lvl * (mh - 8); c.fillStyle = zone(lvl); c.fillRect(mx, fy, mw, gy - 4 - fy);
+      c.strokeStyle = SG_INK; c.lineWidth = 1.2; for (const [pp, t] of [[(Hn - 28) / (1.15 * Hn), 'top'], [(Hn - 56) / (1.15 * Hn), ''], [(Hn - 84) / (1.15 * Hn), 'low']]) { const ty2 = gy - 4 - pp * (mh - 8); c.beginPath(); c.moveTo(mx - 5, ty2); c.lineTo(mx + 3, ty2); c.stroke(); }
+      c.fillStyle = SG_INK; c.beginPath(); c.moveTo(mx - 9, fy); c.lineTo(mx - 1, fy - 5); c.lineTo(mx - 1, fy + 5); c.closePath(); c.fill();
+      c.font = '800 9px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.fillStyle = SG_INK; c.fillText('POWER', mx + mw / 2, my - 8); c.textAlign = 'start';
+    }
+  }
   // ice spray and confetti
   if (S && !S.sprayed && u > arrive) { S.sprayed = true; sgBurst({ goal: S.goal }, S.x >= gx ? 1 : -1); }
   for (let i = SGA.parts.length - 1; i >= 0; i--) { const q = SGA.parts[i]; q.life -= 1 / 60; if (q.life <= 0) { SGA.parts.splice(i, 1); continue; } q.x += q.vx / 60; q.y += q.vy / 60; q.vy += (q.spray ? 120 : 160) / 60; c.globalAlpha = Math.min(1, q.life * 2); c.fillStyle = q.c || '#fff'; if (q.spray) c.fillRect(q.x, q.y, 2.2, 2.2); else { c.save(); c.translate(q.x, q.y); c.rotate(q.life * 9 + i); c.fillRect(-3, -2, 6, 4); c.restore(); } c.globalAlpha = 1; }
@@ -124,7 +151,7 @@ function spRender() {
   const rec = spRec.get(), nameBox = (id, label, val) => `<label class="f">${label}<input id="${id}" list="sg-names" value="${esc(val)}" maxlength="20" autocomplete="off"></label>`;
   const dl = `<datalist id="sg-names">${D.members.map(m => `<option value="${esc(m.short_name)}">`).join('')}</datalist>`;
   if (SP.screen === 'menu') {
-    root.innerHTML = `<section class="card"><button class="link" data-res="list" type="button">← All games</button><h2 style="margin-top:8px">Slap Shot</h2><p class="muted">A crosshair sweeps across the net and speeds up with every shot. <b>Tap to shoot where it is.</b> Corner targets are worth 5, the middle 2, anywhere else in the net 1. The goalie reads your aim and gets sharper as you go, so he can still save it. ${SP_SHOTS} shots.</p>
+    root.innerHTML = `<section class="card"><button class="link" data-res="list" type="button">← All games</button><h2 style="margin-top:8px">Slap Shot</h2><p class="muted"><b>Two taps per shot.</b> First a line sweeps across the net: tap to lock your aim. Then a power meter rises and falls: tap to shoot. More power lifts the puck toward the top corners, too much sails over the bar, and a weak shot is an easy save. Corners are worth 5, the middle 2, anywhere else in the net 1. Everything speeds up as you go, and the goalie gets sharper. ${SP_SHOTS} shots.</p>
       <div class="btnrow"><button class="btn" data-sp="start" data-mode="solo">Play solo</button><button class="btn ghost" data-sp="start" data-mode="two">Two players, one screen</button></div>
       ${rec.games ? `<p class="muted" style="margin:12px 0 0">Your best score: <b>${rec.best}</b> · games played ${rec.games}</p>` : ''}</section>`;
     return;
@@ -142,8 +169,8 @@ function spRender() {
     return;
   }
   const shotNo = SP.k[SP.turn] + (SP.phase === 'shot' && !SP.shot.done ? 1 : 1);
-  root.innerHTML = `${spBoard()}<div class="sg-scene wide"><canvas id="sg-cv" class="sg-cv" data-sp="shoot" aria-label="Net with a moving crosshair" role="img"></canvas></div><div class="sg-ctl wide"><p class="muted sg-meta">Shot ${Math.min(SP_SHOTS, SP.k[SP.turn] + 1)} of ${SP_SHOTS}${SP.mode === 'two' ? ` · ${esc(spName(SP.turn))}` : ''}</p>
-    <button type="button" class="btn fo-tap" data-sp="shoot" ${SP.phase === 'aim' ? '' : 'disabled'}>SHOOT!</button><p class="muted sg-wait" style="margin-top:8px">Tap the button, the rink, or press Space when the crosshair is on a target.</p>
+  root.innerHTML = `${spBoard()}<div class="sg-scene wide"><canvas id="sg-cv" class="sg-cv" data-sp="tap" aria-label="Net, aim line and power meter" role="img"></canvas></div><div class="sg-ctl wide"><p class="muted sg-meta">Shot ${Math.min(SP_SHOTS, SP.k[SP.turn] + 1)} of ${SP_SHOTS}${SP.mode === 'two' ? ` · ${esc(spName(SP.turn))}` : ''}</p>
+    <button type="button" class="btn fo-tap" data-sp="tap" ${SP.phase === 'shot' ? 'disabled' : ''}>${SP.phase === 'aim' ? '1 · SET AIM' : SP.phase === 'power' ? '2 · SET POWER' : 'SHOOT!'}</button><p class="muted sg-wait" style="margin-top:8px">${SP.phase === 'aim' ? 'Stop the line where you want to aim.' : SP.phase === 'power' ? 'Stop the meter: low keeps it down, high goes for the top corners, too high sails over.' : 'Here it comes…'} Tap the button, the rink, or press Space.</p>
     <button type="button" class="link sg-snd" data-sp="sound">Sound: ${SGA.sound ? 'on' : 'off'}</button></div>`;
   spAttach(document.getElementById('sg-cv'));
 }
@@ -152,7 +179,7 @@ function spReset() { spClear(); Object.assign(SP, { screen: 'menu', phase: 'aim'
 window.addEventListener('hashchange', () => { if (!/^#\/(resources|games)/.test(location.hash) && SP.screen !== 'menu') spReset(); });
 document.addEventListener('keydown', e => {
   if (RES.game !== 'slapshot' || SP.screen !== 'play' || e.repeat || (typeof BOSS !== 'undefined' && BOSS.on) || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
-  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); spShoot(); }
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); spTap(); }
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-sp]'); if (!b || !document.getElementById('sg') || RES.game !== 'slapshot') return;
@@ -160,6 +187,6 @@ document.addEventListener('click', e => {
   if (a === 'start') spStart(b.dataset.mode);
   else if (a === 'menu') { spReset(); spRender(); }
   else if (a === 'go') { if (SP.screen === 'setup') { const clean = v => String(v || '').replace(/[<>]/g, '').trim().slice(0, 20), n0 = clean(document.getElementById('sp-n0').value), n1 = document.getElementById('sp-n1'); SP.names = [n0 || 'Player 1', SP.mode === 'solo' ? '' : (clean(n1 && n1.value) || 'Player 2')]; if (SP.mode === 'two' && SP.names[0] === SP.names[1]) SP.names[1] += ' 2'; } spBegin(); }
-  else if (a === 'shoot') spShoot();
+  else if (a === 'tap') spTap();
   else if (a === 'sound') { SGA.sound = !SGA.sound; try { localStorage.setItem('bhl_sg_sound', SGA.sound ? '1' : '0'); } catch { } b.textContent = SGA.sound ? 'Sound: on' : 'Sound: off'; if (SGA.sound) sgSound('save'); }
 });

@@ -391,7 +391,7 @@ function resList() {
     <div class="btnrow"><button class="btn" data-res="shootout" type="button">Play</button></div>${rec.w + rec.l ? `<p class="muted" style="margin:10px 0 0">Record vs computer ${rec.w}–${rec.l}</p>` : ''}</section>
     <section class="card"><h2 style="margin-top:4px">Face-off</h2><p class="muted">A reaction game at the dot. The referee drops the puck at a random moment: tap the instant it drops, but tap early and it is a false start. Play the computer or a friend on this screen.</p>
     <div class="btnrow"><button class="btn" data-res="faceoff" type="button">Play</button></div>${fr.w + fr.l ? `<p class="muted" style="margin:10px 0 0">Record vs computer ${fr.w}–${fr.l}${fr.best ? ` · best ${fr.best} ms` : ''}</p>` : ''}</section>
-    <section class="card"><h2 style="margin-top:4px">Slap Shot</h2><p class="muted">A timing game. A crosshair sweeps across the net and speeds up every shot: tap to shoot where it is. Corners score 5, but the goalie reads your aim. Play solo for a high score, or take turns with a friend on this screen.</p>
+    <section class="card"><h2 style="margin-top:4px">Slap Shot</h2><p class="muted">A timing game with two taps per shot, like a kicking meter: stop the aim line, then stop the power meter. Corners score 5, but the goalie reads your shot. Play solo for a high score, or take turns with a friend on this screen.</p>
     <div class="btnrow"><button class="btn" data-res="slapshot" type="button">Play</button></div>${sp.games ? `<p class="muted" style="margin:10px 0 0">Best score ${sp.best}</p>` : ''}</section></div>`;
 }
 function sgRender() {
