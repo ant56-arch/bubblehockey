@@ -1,4 +1,4 @@
-/* Quick hide for the Resources page. The "Hide screen" button (or the Esc key) covers the whole window with a made-up desktop mail client:
+/* Quick hide for the Home and Resources pages. The "Hide screen" button (or the Esc key) covers the whole window with a made-up desktop mail client:
    folders, an inbox, and a reading pane. Esc again (or a click on the round profile picture, top right) brings the page back.
    While it is showing, sounds are muted and the tab title and icon change. Everything in it is invented sample text; it uses no company names or logos. */
 
@@ -62,9 +62,10 @@ function bossToggle(force) {
     try { SGA.audio && SGA.audio.resume && SGA.audio.resume(); } catch { }
   }
 }
+const bossPageOK = () => /^#?\/?(home|resources|games)?(\?.*)?$/.test(location.hash);
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || e.repeat) return;
-  if (BOSS.on) { e.preventDefault(); bossToggle(false); } else if (document.getElementById('sg')) { e.preventDefault(); bossToggle(true); }       // Esc hides, but only on the Resources page
+  if (BOSS.on) { e.preventDefault(); bossToggle(false); } else if (bossPageOK()) { e.preventDefault(); bossToggle(true); }       // Esc hides, but only on the Home and Resources pages
 });
 document.addEventListener('click', e => {
   if (e.target.closest('[data-boss]')) { bossToggle(true); return; }
@@ -73,4 +74,4 @@ document.addEventListener('click', e => {
   const f = e.target.closest('[data-bx-folder]'); if (f) { BOSS.folder = f.dataset.bxFolder; BOSS.sel = 0; root.innerHTML = bxHTML(); return; }
   const m = e.target.closest('[data-bx-msg]'); if (m) { BOSS.sel = +m.dataset.bxMsg; BOSS.read = { ...(BOSS.read || {}), [BOSS.sel]: 1 }; root.innerHTML = bxHTML(); }
 });
-window.addEventListener('hashchange', () => { if (BOSS.on && !/^#\/(resources|games)/.test(location.hash)) bossToggle(false); });
+window.addEventListener('hashchange', () => { if (BOSS.on && !bossPageOK()) bossToggle(false); });
