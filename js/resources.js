@@ -155,6 +155,7 @@ function sgSound(kind) {
     if (kind === 'goal') { tone('sawtooth', 240, 236, 0.7, 0.12); tone('square', 120, 118, 0.7, 0.06); }
     if (kind === 'save') { tone('sine', 150, 50, 0.22, 0.35); tone('triangle', 900, 300, 0.08, 0.12); }
     if (kind === 'skate') tone('sawtooth', 700, 200, 0.5, 0.025);
+    if (kind === 'post') { tone('triangle', 1900, 1100, 0.25, 0.3); tone('sine', 700, 600, 0.3, 0.1); }
     if (kind === 'whistle') { tone('square', 2300, 2250, 0.18, 0.05); setTimeout(() => sgSound('whistle2'), 120); }
     if (kind === 'whistle2') tone('square', 2250, 2200, 0.25, 0.05);
   } catch { }
@@ -385,16 +386,19 @@ const sgPicker = label => `<p class="sg-say">${label}</p><div class="sg-picks">$
 const sgInviteLink = () => location.href.split('#')[0] + '#/resources?join=' + (SG.net ? SG.net.code : '');
 
 function resList() {
-  const rec = sgRecord.get(), fr = typeof foRec === 'function' || typeof foRec === 'object' ? foRec.get() : { w: 0, l: 0 };
+  const rec = sgRecord.get(), fr = typeof foRec === 'object' ? foRec.get() : { w: 0, l: 0 }, sp = typeof spRec === 'object' ? spRec.get() : { best: 0, games: 0 };
   return `<div class="grid res-list"><section class="card"><h2 style="margin-top:4px">Shootout</h2><p class="muted">A penalty shot duel. Pick left, middle or right, and so does the goalie. Play the computer, a friend on this screen, or a friend on another computer with an invite code.</p>
     <div class="btnrow"><button class="btn" data-res="shootout" type="button">Play</button></div>${rec.w + rec.l ? `<p class="muted" style="margin:10px 0 0">Record vs computer ${rec.w}–${rec.l}</p>` : ''}</section>
     <section class="card"><h2 style="margin-top:4px">Face-off</h2><p class="muted">A reaction game at the dot. The referee drops the puck at a random moment: tap the instant it drops, but tap early and it is a false start. Play the computer or a friend on this screen.</p>
-    <div class="btnrow"><button class="btn" data-res="faceoff" type="button">Play</button></div>${fr.w + fr.l ? `<p class="muted" style="margin:10px 0 0">Record vs computer ${fr.w}–${fr.l}${fr.best ? ` · best ${fr.best} ms` : ''}</p>` : ''}</section></div>`;
+    <div class="btnrow"><button class="btn" data-res="faceoff" type="button">Play</button></div>${fr.w + fr.l ? `<p class="muted" style="margin:10px 0 0">Record vs computer ${fr.w}–${fr.l}${fr.best ? ` · best ${fr.best} ms` : ''}</p>` : ''}</section>
+    <section class="card"><h2 style="margin-top:4px">Slap Shot</h2><p class="muted">A timing game. A crosshair sweeps across the net and speeds up every shot: tap to shoot where it is. Corners score 5, but the goalie reads your aim. Play solo for a high score, or take turns with a friend on this screen.</p>
+    <div class="btnrow"><button class="btn" data-res="slapshot" type="button">Play</button></div>${sp.games ? `<p class="muted" style="margin:10px 0 0">Best score ${sp.best}</p>` : ''}</section></div>`;
 }
 function sgRender() {
   const root = document.getElementById('sg'); if (!root) return;
   if (!RES.game) { root.innerHTML = resList(); return; }
   if (RES.game === 'faceoff') return foRender();
+  if (RES.game === 'slapshot') return spRender();
   const rec = sgRecord.get(), nameBox = (id, label, val) => `<label class="f">${label}<input id="${id}" list="sg-names" value="${esc(val)}" maxlength="20" autocomplete="off"></label>`;
   const dl = `<datalist id="sg-names">${D.members.map(m => `<option value="${esc(m.short_name)}">`).join('')}</datalist>`;
   if (SG.screen === 'menu') {
@@ -489,6 +493,6 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-res]'); if (!b || !document.getElementById('sg')) return;
-  const g = b.dataset.res; if (g === 'list') { if (typeof foReset === 'function') foReset(); sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); RES.game = ''; } else { RES.game = g; if (g === 'shootout') SG.screen = 'menu'; else if (typeof foReset === 'function') foReset(); }
+  const g = b.dataset.res; if (g === 'list') { if (typeof foReset === 'function') foReset(); if (typeof spReset === 'function') spReset(); sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); RES.game = ''; } else { RES.game = g; if (g === 'shootout') SG.screen = 'menu'; else { if (g === 'faceoff' && typeof foReset === 'function') foReset(); if (g === 'slapshot' && typeof spReset === 'function') spReset(); } }
   sgRender();
 });
