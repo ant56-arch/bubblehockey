@@ -232,7 +232,7 @@ document.addEventListener('pointerdown', e => {
   e.preventDefault(); foTap(+b.dataset.foTap, e.timeStamp);
 });
 document.addEventListener('keydown', e => {
-  if (RES.game !== 'faceoff' || FO.screen !== 'play' || e.repeat || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
+  if (RES.game !== 'faceoff' || FO.screen !== 'play' || e.repeat || (typeof BOSS !== 'undefined' && BOSS.on) || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
   const k = e.key.toLowerCase();
   if (FO.phase === 'result') { if ((k === ' ' || k === 'enter') && FO.show) { e.preventDefault(); foNext(); } else if (!FO.show) { if (FO.mode === 'bot' ? [' ', 'enter', 'a', 'l'].includes(k) : k === 'a' || k === 'l') foLateTap(FO.mode === 'bot' || k === 'a' ? 0 : 1, e.timeStamp); } return; }
   if (FO.mode === 'bot') { if ([' ', 'enter', 'a', 'l'].includes(k)) { e.preventDefault(); foTap(0, e.timeStamp); } }

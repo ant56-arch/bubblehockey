@@ -147,7 +147,7 @@ const SGA = {
 };
 const sgEase = t => (t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t)), sgOut = t => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3, sgClamp = (t, a, b) => Math.min(1, Math.max(0, (t - a) / (b - a)));
 function sgSound(kind) {
-  if (!SGA.sound) return;
+  if (!SGA.sound || (typeof BOSS !== 'undefined' && BOSS.on)) return;
   try {
     const A = SGA.audio ||= new (window.AudioContext || window.webkitAudioContext)(), t = A.currentTime;
     const tone = (type, f0, f1, dur, vol) => { const o = A.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = A.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(A.destination); o.start(t); o.stop(t + dur); };
@@ -463,7 +463,7 @@ view.resources = function () {
   if (!document.getElementById('sg') && SG.screen !== 'menu' && SG.screen !== 'end') { sgNetEnd(); Object.assign(SG, { screen: 'menu' }); }      // leaving mid-game and coming back starts fresh
   if (!document.getElementById('sg')) RES.game = '';
   if (q && SG.screen === 'menu') { RES.game = 'shootout'; SG.join = q[1].toUpperCase(); setTimeout(() => sgStart('online'), 0); } else setTimeout(sgRender, 0);
-  return `<h1>Resources</h1><p class="lead">Extras for the league.</p><div id="sg" class="sg"></div>`;
+  return `<h1>Resources</h1><div class="res-head"><p class="lead">Extras for the league.</p><button class="link res-hide" data-boss type="button" title="Shortcut: Esc">Hide screen (Esc)</button></div><div id="sg" class="sg"></div>`;
 };
 window.addEventListener('hashchange', () => { if (!/^#\/(resources|games)/.test(location.hash)) { RES.game = ''; if (SG.net || SG.screen !== 'menu') { sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); } } });
 document.addEventListener('click', async e => {
