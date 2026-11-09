@@ -364,8 +364,8 @@ function applyTeamColors() {
   document.querySelectorAll('[data-tc]').forEach(el => { const c = TC[el.dataset.tc]; if (!c) return; let t = el; if (el.classList.contains('who')) { const tr = el.closest('tr'); t = tr && tr.querySelectorAll('.who[data-tc]').length === 1 ? tr : el.closest('.match .side'); } if (t) t.style.setProperty('--tc', c); });
 }
 function loadTeamColors() {
-  D.members.forEach((m, i) => { TC[m.short_name] = TC_FALLBACK[i % TC_FALLBACK.length]; });
-  D.members.forEach(m => { if (!m.logo) return; const img = new Image(); img.onload = () => { try {
+  D.members.forEach((m, i) => { TC[m.short_name] = /^#[0-9a-f]{6}$/i.test(m.color || '') ? m.color : TC_FALLBACK[i % TC_FALLBACK.length]; });
+  D.members.forEach(m => { if (!m.logo || /^#[0-9a-f]{6}$/i.test(m.color || '')) return; const img = new Image(); img.onload = () => { try {
     const cv = document.createElement('canvas'); cv.width = cv.height = 24; const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0, 24, 24); const d = cx.getImageData(0, 0, 24, 24).data, hue = new Array(12).fill(0).map(() => ({ w: 0, r: 0, g: 0, b: 0 }));
     for (let k = 0; k < d.length; k += 4) { if (d[k + 3] < 200) continue; const r = d[k], g = d[k + 1], b = d[k + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 510, s = mx === mn ? 0 : (mx - mn) / (255 - Math.abs(mx + mn - 255)); if (l < .22 || l > .85 || s < .35) continue;
       let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h = Math.floor(((h * 60 + 360) % 360) / 30); const w = s * (1 - Math.abs(l - .5)); const o = hue[h]; o.w += w; o.r += r * w; o.g += g * w; o.b += b * w; }

@@ -166,3 +166,7 @@ A past game day (from `autoDnpFrom` on) where **nothing at all was logged** is s
 - **Results:** the winner gets a green **W** chip and the loser is dimmed (home page and schedule).
 - **Members:** bigger team logo and a **Last 5** form strip of W / L chips.
 - **Polish:** gold-topped champion card with a trophy, hover states, one card radius and shadow, and dark-mode contrast fixes.
+
+## Editing team colors
+
+In **Add / Edit → Members & teams**, choose a member and click **Edit**. Untick **Pick it from the logo automatically**, choose a color, and save. The color is stored in a `color` column of `data/members.csv` (added the first time you set one). Tick the box again to go back to the logo's color.
