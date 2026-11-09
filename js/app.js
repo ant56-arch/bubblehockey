@@ -300,7 +300,7 @@ const view = {
         <h1>${esc(head).replace(/\. /g, '.<br>')}</h1><p>${esc(cfg.text || 'Live standings, daily matchups and a double-elimination playoff for the whole office. Join the table.')}</p>
         <a class="btn" href="#/rules">Join the League</a>
         <div class="hero-stats"><div><b>${counted.length}</b><span>Games played</span></div><div><b>${D.members.length}</b><span>Teams</span></div><div><b>${champs.length}</b><span>Champions crowned</span></div></div></div>
-      <div class="hero-art"><img src="images/table.svg" alt="Bubble hockey table"></div></div></section>
+      <div class="hero-art"><img data-logo src="${esc(D.config.logo || 'images/league-logo.webp')}" alt="${esc(D.config.leagueName)} logo"></div></div></section>
       <div class="pgrid"><div class="pcol">${card(useNow ? 'Standings' : (prev ? monthLabel(prev) + ' standings' : 'Standings'), ['Full table →', '#/standings'], stand)}${card('Recent results', ['All results →', '#/schedule'], recent || '<div class="feat muted">No games yet.</div>')}</div>
         <div class="pcol">${card('Next matchup', null, next)}${card('Schedule', ['Full →', '#/schedule'], sched)}${card('Champion', null, champ)}</div></div>
       ${t.html.includes('<h2>') ? '<div class="more-text">' + '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') + '</div>' : ''}`;
@@ -335,8 +335,8 @@ function route(keepScroll) {
 
 /* The league logo: images/league-logo.webp unless data/config.json has a "logo" path (set from Add / Edit, Rules & text). */
 function applyLogo() {
-  const lg = D.config.logo || 'images/league-logo.webp', img = document.querySelector('.brand-logo'), ic = document.querySelector('link[rel~=icon]');
-  if (img && img.getAttribute('src') !== lg) img.src = lg; if (ic && ic.getAttribute('href') !== lg) ic.href = lg;
+  const lg = D.config.logo || 'images/league-logo.webp', ic = document.querySelector('link[rel~=icon]');
+  document.querySelectorAll('[data-logo]').forEach(img => { if (img.getAttribute('src') !== lg) img.src = lg; }); if (ic && ic.getAttribute('href') !== lg) ic.href = lg;
 }
 async function startApp() {
   await load();

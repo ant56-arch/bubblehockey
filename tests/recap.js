@@ -42,7 +42,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127';
   ok('Copy plain text puts the text recap on the clipboard', /TEST LEAGUE RECAP/.test(clip1) && /STORYLINES/.test(clip1) && /RESULTS \(5 games\)/.test(clip1), clip1.slice(0, 60));
   await p.click('[data-recap=copy-rich]'); await p.waitForTimeout(400);
   const clip2 = await p.evaluate(async () => { const items = await navigator.clipboard.read(); const out = {}; for (const it of items) for (const ty of it.types) out[ty] = await (await it.getType(ty)).text(); return out; });
-  ok('Copy for email puts formatted HTML (tables) and a text version on the clipboard', /<table/.test(clip2['text/html'] || '') && /<h1/.test(clip2['text/html'] || '') && /RECAP/.test(clip2['text/plain'] || ''), Object.keys(clip2).join(','));
+  ok('Copy for email puts formatted HTML (tables and the logo) and a text version on the clipboard', /<table/.test(clip2['text/html'] || '') && /<img[^>]+league-logo/.test(clip2['text/html'] || '') && /RECAP/.test(clip2['text/plain'] || ''), Object.keys(clip2).join(','));
   ok('the confirmation says it is copied', /Copied/.test(await p.textContent('.recap-note')));
   const href = await p.evaluate(() => { const a = document.querySelector('[data-recap=mail]'); a.addEventListener('click', e => e.preventDefault(), { once: true }); a.click(); return a.getAttribute('href'); });
   ok('Open email draft builds a mailto link with the subject and the recap', /^mailto:\?subject=Test%20League%20recap/.test(href) && /body=/.test(href) && href.length < 2600, String(href.length));
