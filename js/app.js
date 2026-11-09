@@ -261,18 +261,37 @@ function championOf(month) { return hasPlayoffs(month) ? buildBracket(month).cha
 function bracketHTML(month) {
   const B = buildBracket(month), { G, champion, live, scores } = B;
   if (!B.S) return '<p class="muted">The playoffs need at least two teams.</p>';
+  const nextGame = !champion && live !== false ? (B.list.find(n => { const g = G[n]; return g.a && g.b && !g.w && !g.skipped; }) || 0) : 0;      // the first game ready to be played
   const card = g => {
     const side = (p, seed, won, ph) => `<div class="side ${won ? 'won' : ''}"><span>${seed ? `<span class="seed">${seed}</span>` : ''}${p ? who(p, 22) : `<span class="muted">${ph}</span>`}</span>${scores[g.n]?.[p] != null ? `<span>${scores[g.n][p]}</span>` : won ? '<span>✔</span>' : ''}</div>`;
     const title = g.kind === 'GF' ? ' · Grand final' : g.kind === 'RESET' ? ' · Grand final, game 2' : '';
-    return `<div class="match ${g.skipped ? 'skipped' : ''}"><div class="gname">Game ${g.n}${title}${g.skipped ? ' · not needed' : g.kind === 'RESET' ? ' · only if needed' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, g.la)}${side(g.b, g.sb, g.w && g.w === g.b, g.lb)}</div>`;
+    const src = [g.la, g.lb].map(x => /^(Winner|Loser) G(\d+)$/.exec(x || '')).filter(Boolean).map(m => `${m[1][0]}${m[2]}`).join(','), isNext = nextGame === g.n;
+    return `<div class="match ${g.skipped ? 'skipped' : ''}${isNext ? ' next' : ''}" data-n="${g.n}" data-src="${src}"><div class="gname">Game ${g.n}${title}${g.skipped ? ' · not needed' : g.kind === 'RESET' ? ' · only if needed' : ''}${isNext ? ' <span class="tag">Up next</span>' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, g.la)}${side(g.b, g.sb, g.w && g.w === g.b, g.lb)}</div>`;
   };
   const col = r => `<div class="round"><h3>${r.label}</h3><div class="matches">${r.nums.map(n => card(G[n])).join('')}</div></div>`;
   const rounds = k => B.rounds.filter(r => r.kind === k);
-  return `${champion ? `<p class="champ">🏆 Champion: <b>${esc(champion)}</b></p>` : ''}<p class="muted">${B.seeds.length} teams · ${B.list.length - 1} games${B.S.P > B.seeds.length ? ` · top ${B.S.P - B.seeds.length} seeds get a bye` : ''}${live ? ' · seeded from the current standings' : ''}.</p>${howTo(`Every month all the teams are seeded by the month's standings into a double-elimination bracket: lose once and you drop to the losers bracket, lose twice and you are out. The winners-bracket champion meets the losers-bracket champion in the grand final; if the losers-bracket champion wins it, there is one more game. ${B.seeds.length} teams make ${B.list.length - 1} games plus that possible extra one${B.S.P > B.seeds.length ? `, and the top ${B.S.P - B.seeds.length} seeds skip the first round` : ''}.${live ? ' The bracket is seeded from the current standings and updates as playoff games are added.' : ''}`)}
+  return `${champion ? `<div class="champ-card">${member(champion) && member(champion).logo ? `<img src="${esc(member(champion).logo)}" alt="">` : '<span style="font-size:2rem">🏆</span>'}<div><small>${monthLabel(month)} champion</small><b>${esc(champion)}</b>${member(champion) && member(champion).team_name ? `<span>${esc(member(champion).team_name)}</span>` : ''}</div></div>` : ''}<p class="muted">${B.seeds.length} teams · ${B.list.length - 1} games${B.S.P > B.seeds.length ? ` · top ${B.S.P - B.seeds.length} seeds get a bye` : ''}${live ? ' · seeded from the current standings' : ''}.</p>${howTo(`Every month all the teams are seeded by the month's standings into a double-elimination bracket: lose once and you drop to the losers bracket, lose twice and you are out. The winners-bracket champion meets the losers-bracket champion in the grand final; if the losers-bracket champion wins it, there is one more game. ${B.seeds.length} teams make ${B.list.length - 1} games plus that possible extra one${B.S.P > B.seeds.length ? `, and the top ${B.S.P - B.seeds.length} seeds skip the first round` : ''}.${live ? ' The bracket is seeded from the current standings and updates as playoff games are added.' : ''}`)}
     <h2>Winners bracket</h2><div class="bracket">${rounds('W').map(col).join('')}</div>
     ${rounds('L').length ? `<h2>Losers bracket</h2><div class="bracket">${rounds('L').map(col).join('')}</div>` : ''}
     <h2>Grand final</h2><div class="bracket">${rounds('GF').map(col).join('')}</div>`;
 }
+
+/* Lines joining each bracket game to the games that feed it (winners go on to the next round). Drawn over the bracket after it is on the page. */
+function drawBracketLines() {
+  document.querySelectorAll('.bracket').forEach(br => {
+    let svg = br.querySelector('svg.bracket-lines'); if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'bracket-lines'); br.appendChild(svg); }
+    svg.innerHTML = ''; if (getComputedStyle(br).flexDirection === 'column') return;            // phones stack the rounds, so no lines there
+    svg.setAttribute('width', br.scrollWidth); svg.setAttribute('height', br.scrollHeight);
+    const byN = {}; br.querySelectorAll('.match[data-n]').forEach(m => { byN[m.dataset.n] = m; });
+    br.querySelectorAll('.match[data-src]').forEach(to => (to.dataset.src || '').split(',').filter(Boolean).forEach(s => {
+      const from = byN[s.slice(1)]; if (!from || s[0] !== 'W') return;
+      const bb = br.getBoundingClientRect(), f = from.getBoundingClientRect(), t = to.getBoundingClientRect(), ox = bb.left - br.scrollLeft, oy = bb.top - br.scrollTop;      // positions inside the bracket, scroll included
+      const x1 = f.right - ox, y1 = f.top + f.height / 2 - oy, x2 = t.left - ox, y2 = t.top + t.height / 2 - oy, xm = x1 + (x2 - x1) / 2;
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', `M${x1} ${y1}H${xm}V${y2}H${x2}`); p.setAttribute('class', 'bl' + (from.querySelector('.side.won') ? ' done' : '')); svg.appendChild(p);
+    }));
+  });
+}
+window.addEventListener('resize', () => { if (typeof drawBracketLines === 'function') drawBracketLines(); });
 
 /* ---------- pages ---------- */
 const view = {
@@ -332,6 +351,7 @@ function route(keepScroll) {
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));
   document.getElementById('nav').classList.remove('open');
   document.title = `${PAGES.find(p => p[0] === page)[1]} · ${D.config.leagueName}`;
+  if (typeof drawBracketLines === 'function') { drawBracketLines(); requestAnimationFrame(drawBracketLines); setTimeout(drawBracketLines, 400); }
   if (keepScroll !== true) window.scrollTo(0, 0);
 }
 

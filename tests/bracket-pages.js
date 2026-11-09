@@ -21,7 +21,7 @@ let seedrng = 777; const rnd = () => (seedrng = (seedrng * 1664525 + 1013904223)
 
   // ---- 1. October's real data is unchanged
   let p = await open(null, null, null); await go(p, 'playoffs');
-  ok('OCTOBER: champion Connor, 6 scored games, bracket sections present', (await txt(p, '.champ')).includes('Connor') && (await p.$$eval('.match', m => m.filter(x => [...x.querySelectorAll('.side')].every(s => /^\d+$/.test(s.lastElementChild ? s.lastElementChild.textContent.trim() : ''))).length)) >= 6 && (await p.$$eval('h2', h => h.map(x => x.textContent).join('|'))).includes('Winners bracket') && (await p.$$eval('h2', h => h.map(x => x.textContent).join('|'))).includes('Grand final'));
+  ok('OCTOBER: champion Connor, 6 scored games, bracket sections present', (await txt(p, '.champ-card')).includes('Connor') && (await p.$$eval('.match', m => m.filter(x => [...x.querySelectorAll('.side')].every(s => /^\d+$/.test(s.lastElementChild ? s.lastElementChild.textContent.trim() : ''))).length)) >= 6 && (await p.$$eval('h2', h => h.map(x => x.textContent).join('|'))).includes('Winners bracket') && (await p.$$eval('h2', h => h.map(x => x.textContent).join('|'))).includes('Grand final'));
   const octCards = await p.$$eval('.match .gname', g => g.map(x => x.textContent.replace(/\s+/g, ' ')));
   ok('OCTOBER: 7 cards in the 4-team shape (Game 6 = Grand final, Game 7 not needed)', octCards.length === 7 && octCards[5].includes('Grand final') && octCards[6].includes('not needed'), octCards.join(' | '));
   const names = await p.$$eval('.match', m => m.map(x => [...x.querySelectorAll('.side > span:first-child')].map(s => s.textContent.replace(/\s+/g, ' ').trim()).join(' v ')));
@@ -36,7 +36,7 @@ let seedrng = 777; const rnd = () => (seedrng = (seedrng * 1664525 + 1013904223)
   for (const N of [2, 3, 5, 8, 13, 20]) {
     const sim = simulate(N), games = { _how: 'x', games: sim.entries };
     p = await open(membersCsv(N), games, cfgBase); await go(p, 'playoffs');
-    const champ = (await p.textContent('.champ').catch(() => '')).replace(/\s+/g, ' '), cards = (await p.$$('.match')).length, banner = !!(await p.$('.alert'));
+    const champ = (await p.textContent('.champ-card').catch(() => '')).replace(/\s+/g, ' '), cards = (await p.$$('.match')).length, banner = !!(await p.$('.alert'));
     ok(`N=${N}: champion shown (${sim.champion}) and all ${sim.m.list.length} game cards drawn, no warnings`, champ.includes(sim.champion) && cards === sim.m.list.length && !banner, `${champ.slice(0, 40)} | ${cards} cards | warnings=${banner}`);
     ok(`N=${N}: ${sim.played} playoff games all placed in the bracket (none unmatched)`, await p.evaluate(() => buildBracket('2026-10').unmatched.length) === 0);
     const over = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth); ok(`N=${N}: no sideways scroll on a phone`, !over);

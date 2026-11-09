@@ -150,7 +150,13 @@ html, body { overflow-x: clip; }
 .tlogo { border-radius: 50%; object-fit: cover; background: #000; flex: none; }
 
 /* Bracket */
-.bracket { display: flex; gap: 24px; overflow-x: auto; padding: 4px 0 12px; }
+.bracket { display: flex; gap: 44px; overflow-x: auto; padding: 4px 0 12px; position: relative; }
+.bracket-lines { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 0; } .bracket .round { position: relative; z-index: 1; }
+.bl { fill: none; stroke: #c3ccda; stroke-width: 2; stroke-linejoin: round; } .bl.done { stroke: var(--accent); }
+:root[data-theme="dark"] .bl { stroke: #3a3a40; }
+.match.next { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.champ-card { display: flex; align-items: center; gap: 14px; background: #fffbea; border: 2px solid #d99a00; border-radius: var(--radius); padding: 12px 16px; margin: 6px 0 14px; max-width: 460px; color: #111827; }
+.champ-card img { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; background: #000; } .champ-card small { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8a6200; } .champ-card b { display: block; font-size: 1.3rem; line-height: 1.2; } .champ-card span { font-size: .85rem; color: #4b5563; }
 .round { display: flex; flex-direction: column; gap: 10px; min-width: 230px; }
 .round h3 { margin: 0; font-size: .78rem; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .round .matches { display: flex; flex-direction: column; justify-content: space-around; gap: 16px; flex: 1; }
@@ -284,7 +290,7 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 6px; font-
   .more-stats { display: block; }
   .stand .table-scroll td:nth-child(2), .stand .table-scroll th:nth-child(2) { position: sticky; left: 0; background: var(--surface); }
   .stand tbody tr:nth-child(even) td:nth-child(2) { background: var(--surface-2); }
-  .bracket { flex-direction: column; gap: 14px; overflow: visible; } .round { min-width: 0; } .round .matches { gap: 10px; }
+  .bracket { flex-direction: column; gap: 14px; overflow: visible; } .bracket-lines { display: none; } .round { min-width: 0; } .round .matches { gap: 10px; }
   .mlogo { width: 72px; height: 72px; }
   .row2 { gap: 10px; }
 }
