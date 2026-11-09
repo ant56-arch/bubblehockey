@@ -359,6 +359,9 @@ function textSection() {
   return `<h2>League logo</h2><div class="card"><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><img id="ll-cur" src="${esc(logo)}" alt="Current league logo" style="width:84px;height:84px;object-fit:contain;border:1px solid var(--line);border-radius:var(--radius);background:#fff;padding:6px">
       <form class="form" style="flex:1;min-width:220px" onsubmit="return false"><label class="f">Choose a new logo <span class="muted">(a square or wide image works; it is resized and saved for you)</span><input id="ll-file" type="file" accept="image/*"></label>
       <div class="btnrow"><button class="btn" id="ll-save" type="button">Save logo</button></div><p id="ll-note" class="form-note"></p></form></div></div>
+    <h2>Commissioner contact</h2><div class="card"><form class="form" onsubmit="return false"><p class="muted" style="margin:0">Shown in the <b>How to join</b> section of the Rules page, with buttons to message you on Teams or send an email. Leave both empty to show no buttons.</p>
+      <div class="row2"><label class="f">Name<input id="cc-name" value="${esc((D.config.commissioner || {}).name || '')}" maxlength="60" autocomplete="off"></label><label class="f">Email (also used for Teams)<input id="cc-email" type="email" value="${esc((D.config.commissioner || {}).email || '')}" autocomplete="off"></label></div>
+      <div class="btnrow"><button class="btn" id="cc-save" type="button">Save contact</button></div><p id="cc-note" class="form-note"></p></form></div>
     <h2>Edit the ${label.toLowerCase()}</h2>
     <div class="chips">${Object.entries(TXT_FILES).map(([k, v]) => `<button type="button" class="chip ${TXT.file === k ? 'on' : ''}" data-txtfile="${k}">${v[1]}</button>`).join('')}</div>
     <div class="card"><form class="form" onsubmit="return false">
@@ -533,15 +536,24 @@ document.addEventListener('click', async e => {
   e.target.disabled = false;
 });
 /* Save a new league logo: the image goes in images/ and data/config.json points at it. */
-async function saveConfigLogo(path) {
+async function saveConfig(mutate, message) {
   const { branch } = repoInfo();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { text, sha } = await readFile('data/config.json'), obj = JSON.parse(text); obj.logo = path;
-    const r = await ghContents('data/config.json', { method: 'PUT', body: JSON.stringify({ message: 'Change the league logo', content: b64enc(JSON.stringify(obj, null, 2) + '\n'), sha, branch }) });
+    const { text, sha } = await readFile('data/config.json'), obj = JSON.parse(text); mutate(obj);
+    const r = await ghContents('data/config.json', { method: 'PUT', body: JSON.stringify({ message, content: b64enc(JSON.stringify(obj, null, 2) + '\n'), sha, branch }) });
     if (r.ok) return; if (r.status !== 409 && r.status !== 422) throw new Error('GitHub error ' + r.status);
   }
   throw new Error('The settings file changed while saving. Please try again.');
 }
+const saveConfigLogo = path => saveConfig(o => { o.logo = path; }, 'Change the league logo');
+document.addEventListener('click', async e => {
+  if (e.target.id !== 'cc-save') return; const t = e.target, name = document.getElementById('cc-name').value.trim().replace(/[<>]/g, '').slice(0, 60), email = document.getElementById('cc-email').value.trim();
+  if (email && !/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(email)) { note('That does not look like an email address.', false, 'cc-note'); return; }
+  if (!tok.get()) return needConnect('cc-note');
+  t.disabled = true; note('Saving…', true, 'cc-note');
+  try { await saveConfig(o => { if (name || email) o.commissioner = { name, email }; else delete o.commissioner; }, 'Change the commissioner contact'); D.config.commissioner = name || email ? { name, email } : undefined; t.disabled = false; note('Saved. The How to join section on the Rules page uses this; everyone sees it in about a minute.', true, 'cc-note'); }
+  catch (err) { t.disabled = false; note(err.message, false, 'cc-note'); }
+});
 document.addEventListener('click', async e => {
   if (e.target.id !== 'll-save') return; const t = e.target, file = document.getElementById('ll-file').files[0];
   if (!file) { note('Choose an image first.', false, 'll-note'); return; }

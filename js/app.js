@@ -266,29 +266,30 @@ function bracketHTML(month) {
     const side = (p, seed, won, ph) => `<div class="side ${won ? 'won' : ''}"><span>${seed ? `<span class="seed">${seed}</span>` : ''}${p ? who(p, 22) : `<span class="muted">${ph}</span>`}</span>${scores[g.n]?.[p] != null ? `<span>${scores[g.n][p]}</span>` : won ? '<span>✔</span>' : ''}</div>`;
     const title = g.kind === 'GF' ? ' · Grand final' : g.kind === 'RESET' ? ' · Grand final, game 2' : '';
     const src = [g.la, g.lb].map(x => /^(Winner|Loser) G(\d+)$/.exec(x || '')).filter(Boolean).map(m => `${m[1][0]}${m[2]}`).join(','), isNext = nextGame === g.n;
-    return `<div class="match ${g.skipped ? 'skipped' : ''}${isNext ? ' next' : ''}" data-n="${g.n}" data-src="${src}"><div class="gname">Game ${g.n}${title}${g.skipped ? ' · not needed' : g.kind === 'RESET' ? ' · only if needed' : ''}${isNext ? ' <span class="tag">Up next</span>' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, g.la)}${side(g.b, g.sb, g.w && g.w === g.b, g.lb)}</div>`;
+    return `<div class="match ${g.skipped ? 'skipped' : ''}${isNext ? ' next' : ''}" data-n="${g.n}" data-kind="${g.kind}" data-src="${src}"><div class="gname">Game ${g.n}${title}${g.skipped ? ' · not needed' : g.kind === 'RESET' ? ' · only if needed' : ''}${isNext ? ' <span class="tag">Up next</span>' : ''}</div>${side(g.a, g.sa, g.w && g.w === g.a, g.la)}${side(g.b, g.sb, g.w && g.w === g.b, g.lb)}</div>`;
   };
   const col = r => `<div class="round"><h3>${r.label}</h3><div class="matches">${r.nums.map(n => card(G[n])).join('')}</div></div>`;
   const rounds = k => B.rounds.filter(r => r.kind === k);
   return `${champion ? `<div class="champ-card">${member(champion) && member(champion).logo ? `<img src="${esc(member(champion).logo)}" alt="">` : '<span style="font-size:2rem">🏆</span>'}<div><small>${monthLabel(month)} champion</small><b>${esc(champion)}</b>${member(champion) && member(champion).team_name ? `<span>${esc(member(champion).team_name)}</span>` : ''}</div></div>` : ''}<p class="muted">${B.seeds.length} teams · ${B.list.length - 1} games${B.S.P > B.seeds.length ? ` · top ${B.S.P - B.seeds.length} seeds get a bye` : ''}${live ? ' · seeded from the current standings' : ''}.</p>${howTo(`Every month all the teams are seeded by the month's standings into a double-elimination bracket: lose once and you drop to the losers bracket, lose twice and you are out. The winners-bracket champion meets the losers-bracket champion in the grand final; if the losers-bracket champion wins it, there is one more game. ${B.seeds.length} teams make ${B.list.length - 1} games plus that possible extra one${B.S.P > B.seeds.length ? `, and the top ${B.S.P - B.seeds.length} seeds skip the first round` : ''}.${live ? ' The bracket is seeded from the current standings and updates as playoff games are added.' : ''}`)}
-    <h2>Winners bracket</h2><div class="bracket">${rounds('W').map(col).join('')}</div>
-    ${rounds('L').length ? `<h2>Losers bracket</h2><div class="bracket">${rounds('L').map(col).join('')}</div>` : ''}
-    <h2>Grand final</h2><div class="bracket">${rounds('GF').map(col).join('')}</div>`;
+    <div class="bracket dbl"><div class="dbl-main">
+      <div class="lane-wrap"><div class="lane-label">Winners bracket</div><div class="lane wb">${rounds('W').map(col).join('')}</div></div>
+      ${rounds('L').length ? `<div class="lane-wrap"><div class="lane-label">Losers bracket</div><div class="lane lb">${rounds('L').map(col).join('')}</div></div>` : ''}
+    </div><div class="dbl-gf"><div class="lane-label">Grand final</div>${rounds('GF').map(col).join('')}</div></div>`;
 }
 
 /* Lines joining each bracket game to the games that feed it (winners go on to the next round). Drawn over the bracket after it is on the page. */
 function drawBracketLines() {
   document.querySelectorAll('.bracket').forEach(br => {
     let svg = br.querySelector('svg.bracket-lines'); if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'bracket-lines'); br.appendChild(svg); }
-    svg.innerHTML = ''; if (getComputedStyle(br).flexDirection === 'column') return;            // phones stack the rounds, so no lines there
+    svg.innerHTML = ''; if (window.matchMedia('(max-width: 640px)').matches) return;            // phones stack the rounds, so no lines there
     svg.setAttribute('width', br.scrollWidth); svg.setAttribute('height', br.scrollHeight);
     const byN = {}; br.querySelectorAll('.match[data-n]').forEach(m => { byN[m.dataset.n] = m; });
-    br.querySelectorAll('.match[data-src]').forEach(to => (to.dataset.src || '').split(',').filter(Boolean).forEach(s => {
+    br.querySelectorAll('.match[data-src]').forEach(to => { if (to.dataset.kind === 'RESET') return; (to.dataset.src || '').split(',').filter(Boolean).forEach(s => {
       const from = byN[s.slice(1)]; if (!from || s[0] !== 'W') return;
       const bb = br.getBoundingClientRect(), f = from.getBoundingClientRect(), t = to.getBoundingClientRect(), ox = bb.left - br.scrollLeft, oy = bb.top - br.scrollTop;      // positions inside the bracket, scroll included
       const x1 = f.right - ox, y1 = f.top + f.height / 2 - oy, x2 = t.left - ox, y2 = t.top + t.height / 2 - oy, xm = x1 + (x2 - x1) / 2;
       const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', `M${x1} ${y1}H${xm}V${y2}H${x2}`); p.setAttribute('class', 'bl' + (from.querySelector('.side.won') ? ' done' : '')); svg.appendChild(p);
-    }));
+    }); });
   });
 }
 window.addEventListener('resize', () => { if (typeof drawBracketLines === 'function') drawBracketLines(); });
@@ -318,8 +319,8 @@ const view = {
     const champ = lastChamp ? `<div class="feat"><b class="big">${esc(lastChamp.c)}</b><div class="muted">${monthLabel(lastChamp.m)} · ${esc(team(lastChamp.c))}</div></div>` : '<div class="feat muted">No champion yet.</div>';
     const [head] = (cfg.headline || 'Every game. Every standing. One league.').split('|');
     return `<div class="res-head" style="justify-content:flex-end;margin-top:6px"><button class="link res-hide" data-boss type="button" title="Shortcut: Esc">Hide screen (Esc)</button></div><section class="band"><div class="hero"><div class="hero-text"><span class="eyebrow">${esc(cfg.eyebrow || (m ? monthLabel(m) : 'Season'))}</span>
-        <h1>${esc(head).replace(/\. /g, '.<br>')}</h1><p>${esc(cfg.text || 'Live standings, daily matchups and a double-elimination playoff for the whole office. Join the table.')}</p>
-        <a class="btn" href="#/rules">Join the League</a>
+        <h1>${esc(head).replace(/\. /g, '.<br>')}</h1><p>${esc(cfg.text || (t.html.match(/^<p>(.*?)<\/p>/) || [])[1]?.replace(/&amp;/g, '&').replace(/&#39;/g, "'") || 'Live standings, daily matchups and a double-elimination playoff for the whole office. Join the table.')}</p>
+        <a class="btn" href="#/rules?join">Join the League</a>
         <div class="hero-stats"><div><b>${counted.length}</b><span>Games played</span></div><div><b>${D.members.length}</b><span>Teams</span></div><div><b>${champs.length}</b><span>Champions crowned</span></div></div></div>
       <div class="hero-art"><img data-logo src="${esc(D.config.logo || 'images/league-logo.webp')}" alt="${esc(D.config.leagueName)} logo"></div></div></section>
       <div class="pgrid"><div class="pcol">${card(useNow ? 'Standings' : (prev ? monthLabel(prev) + ' standings' : 'Standings'), ['Full table →', '#/standings'], stand)}${card('Recent results', ['All results →', '#/schedule'], recent || '<div class="feat muted">No games yet.</div>')}</div>
@@ -332,9 +333,12 @@ const view = {
     for (const l of lines) { if (l.startsWith('# ')) continue; if (l.startsWith('## ')) { cur_ = { name: l.slice(3).trim(), body: [] }; secs.push(cur_); } else if (cur_) cur_.body.push(l); else intro.push(l); }
     const P = D.config.points, tile = (v, l) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`;
     const glance = `<div class="rules-glance"><b>Points at a glance</b><div class="tiles">${tile(P.win, 'Win')}${tile(P.overtimeWin, 'OT win')}${tile(P.overtimeLoss, 'OT loss')}${tile(P.loss, 'Loss')}</div></div>`;
-    const jump = secs.length > 1 ? `<div class="chips">${secs.map((s, i) => `<button type="button" class="chip" data-jump="rule-${i}">${esc(s.name)}</button>`).join('')}</div>` : '';
+    const jump = `<div class="chips">${secs.map((s, i) => `<button type="button" class="chip" data-jump="rule-${i}">${esc(s.name)}</button>`).join('')}<button type="button" class="chip" data-jump="rule-join">How to join</button></div>`;
+    if (/\?join/.test(location.hash)) setTimeout(() => { const el = document.getElementById('rule-join'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120);
+    const cm = D.config.commissioner || {}, who_ = esc(cm.name || 'the commissioner'), hi = 'Hi! I would like to join the ' + (D.config.leagueName || 'league') + '.';
+    const joinCard = `<section class="card rule-card" id="rule-join"><h2>How to join</h2><p style="margin:0 0 12px">Want to play? Message ${who_} on Microsoft Teams or send an email, with your name and the team name you want. You will be added to the schedule on your start date.</p>${cm.email ? `<div class="btnrow"><a class="btn" href="https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(cm.email)}&message=${encodeURIComponent(hi)}" target="_blank" rel="noopener">Message on Teams</a><a class="btn ghost" href="mailto:${esc(cm.email)}?subject=${encodeURIComponent('Join the ' + (D.config.leagueName || 'league'))}&body=${encodeURIComponent(hi)}">Send an email</a></div>` : ''}</section>`;
     const cards = secs.length ? secs.map((s, i) => `<section class="card rule-card" id="rule-${i}"><h2>${esc(s.name)}</h2>${textBlocks(s.body.join('\n')).html}</section>`).join('') : `<div class="card rules">${textBlocks(D.rules).html}</div>`;
-    return `<h1>${esc(title)}</h1>${intro.join('').trim() ? `<p class="lead">${esc(intro.join(' ').trim())}</p>` : ''}${glance}${jump}<div class="rule-cards">${cards}</div>`;
+    return `<h1>${esc(title)}</h1>${intro.join('').trim() ? `<p class="lead">${esc(intro.join(' ').trim())}</p>` : ''}${glance}${jump}<div class="rule-cards">${cards}${joinCard}</div>`;
   },
   standings() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
