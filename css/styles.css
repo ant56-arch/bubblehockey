@@ -280,6 +280,7 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 6px; font-
   th, td { padding: 10px 6px; font-size: .88rem; }
   .table-scroll { border-radius: 6px; padding: 6px 4px; }
   .stand:not(.show-all) .opt, .games .opt { display: none; }
+  .stand:not(.show-all) .mrec { display: table-cell; }
   .more-stats { display: block; }
   .stand .table-scroll td:nth-child(2), .stand .table-scroll th:nth-child(2) { position: sticky; left: 0; background: var(--surface); }
   .stand tbody tr:nth-child(even) td:nth-child(2) { background: var(--surface-2); }
@@ -369,3 +370,4 @@ html.bx-lock, html.bx-lock body { overflow: hidden; }
 .recap { margin: 10px 0 18px; } .recap-preview { background: #fff; color: #111827; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; overflow-x: auto; }
 .day.noplay { padding-top: 12px; padding-bottom: 12px; } .day.noplay .dayhead { margin-bottom: 0; }
 footer .foot-logo { display: block; width: 56px; height: 56px; margin: 0 auto 8px; border-radius: 8px; opacity: .95; }
+.mrec { display: none; }
