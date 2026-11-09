@@ -14,7 +14,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127';
   await p.click('[data-res=slapshot]'); ok('menu offers solo and two players', !!(await p.$('[data-sp=start][data-mode=solo]')) && !!(await p.$('[data-sp=start][data-mode=two]')));
   await p.click('[data-sp=start][data-mode=solo]'); await p.fill('#sp-n0', 'Ann'); await p.click('[data-sp=go]');
   ok('solo: starts on step 1 (set aim)', /SET AIM/.test(await p.textContent('.fo-tap')) && /Shot 1 of 10/.test(await p.textContent('.sg-meta')));
-  const x0 = await p.evaluate(() => spAim(performance.now()).x); await p.waitForTimeout(250); const x1 = await p.evaluate(() => spAim(performance.now()).x); ok('the aim line moves on its own', Math.abs(x1 - x0) > 20, `${Math.round(x0)} -> ${Math.round(x1)}`);
+  const xs = []; for (let i = 0; i < 6; i++) { xs.push(await p.evaluate(() => spAim(performance.now()).x)); await p.waitForTimeout(120); } ok('the aim line moves on its own', Math.max(...xs) - Math.min(...xs) > 30, xs.map(Math.round).join(' '));
   await p.click('.fo-tap'); await p.waitForFunction(() => SP.phase === 'power');
   ok('first tap locks the aim and moves on to step 2 (set power)', /SET POWER/.test(await p.textContent('.fo-tap')) && (await p.evaluate(() => SP.lockX !== null)));
   const l0 = await p.evaluate(() => spAim(performance.now())); await p.waitForTimeout(200); const l1 = await p.evaluate(() => spAim(performance.now()));
