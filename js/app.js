@@ -1,7 +1,7 @@
 /* Bubble Hockey League site. All data lives in /data (see README). */
 const PAGES = [
   ['home', 'Home'], ['rules', 'Rules'], ['members', 'Members'], ['schedule', 'Schedule'],
-  ['gamelog', 'Game Log'], ['standings', 'Standings'], ['playoffs', 'Playoffs'],
+  ['standings', 'Standings'], ['playoffs', 'Playoffs'],
 ];
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -301,18 +301,13 @@ const view = {
         <a class="btn" href="#/rules">Join the League</a>
         <div class="hero-stats"><div><b>${counted.length}</b><span>Games played</span></div><div><b>${D.members.length}</b><span>Teams</span></div><div><b>${champs.length}</b><span>Champions crowned</span></div></div></div>
       <div class="hero-art"><img src="images/table.svg" alt="Bubble hockey table"></div></div></section>
-      <div class="pgrid"><div class="pcol">${card(useNow ? 'Standings' : (prev ? monthLabel(prev) + ' standings' : 'Standings'), ['Full table →', '#/standings'], stand)}${card('Recent results', ['Game log →', '#/gamelog'], recent || '<div class="feat muted">No games yet.</div>')}</div>
+      <div class="pgrid"><div class="pcol">${card(useNow ? 'Standings' : (prev ? monthLabel(prev) + ' standings' : 'Standings'), ['Full table →', '#/standings'], stand)}${card('Recent results', ['All results →', '#/schedule'], recent || '<div class="feat muted">No games yet.</div>')}</div>
         <div class="pcol">${card('Next matchup', null, next)}${card('Schedule', ['Full →', '#/schedule'], sched)}${card('Champion', null, champ)}</div></div>
       ${t.html.includes('<h2>') ? '<div class="more-text">' + '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') + '</div>' : ''}`;
   },
   rules() {
     const t = textBlocks(D.rules);
     return `<h1>${esc(t.title || 'Rules')}</h1><div class="card rules">${t.html}</div>`;
-  },
-  gamelog() {
-    const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
-    const c = chipsFor('gamelog', months, m => m === cur() ? 'current' : monthGames(m).length + ' games'), games = monthLog(c.sel), dnp = games.filter(g => g.dnp).length, played = games.length - dnp;
-    return `<h1>Game Log</h1><p class="lead">${c.sel === cur() ? `${monthLabel(c.sel)} · ${played} games${dnp ? ` (${dnp} DNP)` : ''}. Playoff games are included and tagged; DNP means a scheduled game that was not played, which does not change the standings. The log starts fresh each month; earlier months are in the buttons below.` : `${monthLabel(c.sel)} · ${played} games${dnp ? ` (${dnp} DNP)` : ''}.`}</p>${c.html}${gamesTable(games)}`;
   },
   standings() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
@@ -328,8 +323,8 @@ const view = {
 
 /* ---------- router ---------- */
 function route(keepScroll) {
-  const OLD = { 'gamelog-history': 'gamelog', 'standings-history': 'standings', 'playoffs-history': 'playoffs', enter: 'add', admin: 'add', games: 'resources' };
-  let id = location.hash.replace(/^#\/?/, '') || 'home'; id = OLD[id.split('?')[0]] || id.split('?')[0];
+  const OLD = { gamelog: 'schedule', 'gamelog-history': 'schedule', 'standings-history': 'standings', 'playoffs-history': 'playoffs', enter: 'add', admin: 'add', games: 'resources' };
+  let id = location.hash.replace(/^#\/?/, '') || 'home'; const old = id.split('?')[0]; id = OLD[old] || old; if (/^gamelog/.test(old) && !UI.schedule) UI.schedule = cur();      // the old Game Log address opens this month on the Schedule
   const page = view[id] ? id : 'home';
   document.getElementById('app').innerHTML = (D.problems.length ? `<div class="alert"><b>Heads up, the data file needs attention:</b><ul>${D.problems.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : '') + view[page]();
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));

@@ -1,6 +1,6 @@
 # Bubble Hockey League
 
-A small static website (no build step, no login, no backend, nothing to pay for) hosted on GitHub Pages. Tabs: Home, Rules, Members, Schedule, Game Log, Standings, Playoffs, Add Game. Game Log, Standings and Playoffs each have month buttons for the current and past months.
+A small static website (no build step, no login, no backend, nothing to pay for) hosted on GitHub Pages. Tabs: Home, Rules, Members, Schedule (which is also the game log), Standings, Playoffs, Add Game. Game Log, Standings and Playoffs each have month buttons for the current and past months.
 
 Everything is calculated from one file, **`data/games.json`**: standings, the game log, per-player records for every month, the schedule's results and the playoff brackets. The current month is simply today's month, so the game log and standings reset by themselves on the 1st.
 
@@ -32,7 +32,7 @@ Open `data/games.json` on GitHub, tap the pencil (Edit), copy the last game line
 | `homeShots`, `roadShots` | no | used for the shot stats |
 | `playoff` | no | `true` for a playoff game (see below) |
 | `winner` | no | for a playoff game with no score |
-| `dnp` | no | `true` for a scheduled game that was **not played** (no scores): it shows as DNP in the Game Log and Schedule and never changes the standings |
+| `dnp` | no | `true` for a scheduled game that was **not played** (no scores): it shows as DNP on the Schedule and never changes the standings |
 
 Without connecting, the Add / Edit tab builds the line for you: fill in the form, tap **Copy**, edit `data/games.json`, tap at the end of the last game line (right after its `}`), paste, and commit.
 
@@ -42,7 +42,7 @@ Without connecting, the Add / Edit tab builds the line for you: fill in the form
 ```json
 { "date": "2026-11-10", "home": "Connor", "road": "Boban", "dnp": true }
 ```
-It appears in the Game Log and on the Schedule marked **DNP** (and in the player's "Did not play" count), and does not count in any record.
+It appears on the Schedule marked **DNP** (and in the player's "Did not play" count), and does not count in any record.
 
 **Automatic DNP (from November 2026):** with `"autoDnpFrom": "2026-11-01"` in the `schedule` settings of `data/config.json`, any scheduled regular game on a *past* day that was never logged is shown as DNP automatically (shown on the Schedule, in the Game Log and in the "Did not play" count; never counted in the standings). It only applies on days where at least one game was logged (a day with nothing logged is simply left out), never to today or the future, and never before that date. Change the date, or remove the setting, to turn it off. It assumes the schedule is what you follow, so a game logged between the same two players on that day cancels the DNP whichever side was home.
 
@@ -56,7 +56,7 @@ Every month all the teams (up to 20) are seeded by their regular-season standing
 - **Days:** the playoffs take **2 game days, or 3 days when 15 or more teams play** (20 teams is about 13 games a day over 3 days), and the schedule spreads the games over them. To force a number, set `schedule.playoffDays` (0 to 5) in `data/config.json`; leave it out for the automatic rule.
 - **Ties in the standings** (which decide the seeds) are broken by points, then goal difference, then goals for. If teams are still level after that, they are ordered alphabetically; to seed such teams differently, use `playoffSeeds` below.
 
-Add playoff games to the same file with `"playoff": true`; they **still count in the standings and everyone's records** (the Game Log tags them "Playoff"):
+Add playoff games to the same file with `"playoff": true`; they **still count in the standings and everyone's records** (the Schedule tags them "Playoff"):
 ```json
 { "date": "2026-11-25", "home": "Connor", "road": "Boban", "homeScore": 4, "roadScore": 1, "playoff": true }
 ```
@@ -131,3 +131,6 @@ Edits are stored as `overrides` (`date`, the automatic pair `a`/`b`, and the new
 **Unpredictable puck drop:** the Face-off wait is a mix of quick (about 0.6 to 1.3 s), ordinary (1.3 to 3.3 s) and long (3.3 to 7.3 s) waits, the "get ready" pause varies too, and in about 3 of 10 rounds the referee fidgets (dips the puck and brings it back) before the real drop. Tapping during a fidget is a false start.
 
 **Slap Shot (third game on Resources):** a timing game with two taps per shot, like a kicking meter. First a line sweeps left and right across the net: tap to lock your aim. Then a power meter rises and falls: tap to shoot. Power sets the height (low keeps it on the ice, about 65% reaches the top corners, above about 87% is the crossbar and over the bar), and a very weak shot is an easy save. Corner targets score 5, the middle 2, anywhere else in the net 1. The goalie reads the finished shot with an error that shrinks as the shots go on (about 30% saves on shot 1 rising to about 50% on shot 10; a softer shot is easier for him to reach), and posts, wide shots and shots over the bar score nothing. Both meters speed up every shot. 10 shots, solo (best score kept in your browser) or two players taking turns. Code: `js/slapshot.js`.
+
+## Schedule and game log in one page
+The **Schedule** tab is also the game log. **Upcoming** shows the next game days plus the latest results; each month button (the current month, then earlier months) shows that month's games day by day, with today and the days to come first and everything played below, newest first. Scores, overtime and playoff tags, DNP and the shots (when logged) all appear in the day rows, and games played on a day off are listed too. **Table** switches a month to the old compact log table. The old `#/gamelog` address still works and opens the current month.
