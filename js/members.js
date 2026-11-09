@@ -54,7 +54,7 @@ view.members = function () {
     const showcase = logos.length ? `<div class="showcase ${logos.length === 1 ? 'one' : ''}">${logos.map(([src, cap]) => `<figure><img src="${esc(src)}" alt="${esc(m.team_name)} ${cap.toLowerCase()} logo" loading="lazy"><figcaption>${cap}</figcaption></figure>`).join('')}</div>` : '';
     return `<details class="card mcard"><summary>
       <div class="mtop">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}
-        <div class="minfo"><b class="mname">${esc(m.name)}</b><div class="team">${esc(m.team_name)}</div>
+        <div class="minfo"><b class="mname">${esc(m.name)}${cBadge(m.short_name)}</b><div class="team">${esc(m.team_name)}</div>
           <div class="muted nowline">${po.titles.length ? `🏆 ${plural(po.titles.length, 'championship')} · ${po.titles.map(monthLabel).join(', ')}` : 'No championships yet'}</div></div></div>
       <div class="mmonth">${monthLabel(cur())}${mo && mo.gp ? ` · ${mo.gp} game${mo.gp === 1 ? '' : 's'}` : ' · no games yet'}</div>
       <div class="tiles">
