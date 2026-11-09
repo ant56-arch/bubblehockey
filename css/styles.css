@@ -403,3 +403,58 @@ footer .foot-logo { display: block; width: 44px; height: 44px; margin: 0 auto 8p
 .dbl { gap: 40px; margin-top: 18px; } .dbl .round { min-width: 210px; } .lane { gap: 32px; } .dbl-gf .round h3 { display: none; } .dbl .gname { white-space: normal; }
 
 .cbadge { display: inline-flex; align-items: center; justify-content: center; width: 1.15em; height: 1.15em; margin-left: .4em; border-radius: 50%; background: #1d4ed8; color: #fff; font: 800 .62em/1 inherit; letter-spacing: 0; vertical-align: .12em; flex: none; }
+
+/* 1. Home: a compact hero so the live standings are visible on the first screen */
+.hero { grid-template-columns: 1fr 260px; padding: 28px 24px 30px; gap: 32px; }
+.hero h1 { font-size: clamp(1.9rem, 4.2vw, 2.7rem); margin: 8px 0 10px; }
+.hero p { font-size: 1rem; margin: 0 0 18px; }
+.hero-stats { margin-top: 20px; } .hero-stats b { font-size: 1.4rem; }
+.hero-art { padding: 12px; } .hero-art img { max-width: 236px; }
+.pgrid { margin-top: 28px; }
+@media (max-width: 800px) { .hero { grid-template-columns: 1fr; padding: 20px 16px; gap: 16px; } .hero-art { order: -1; max-width: 200px; margin: 0 auto; width: 100%; } }
+
+/* 2. Team accent colors (--tc is set from each team's logo) */
+tr[style*="--tc"] > td:first-child { box-shadow: inset 3px 0 0 var(--tc, transparent); }
+.mcard[data-tc] { border-top: 3px solid var(--tc, var(--line)); }
+.match .side { border-left: 3px solid var(--tc, transparent); }
+
+/* 3. Standings: the main columns up front, every other stat behind "Show all stats" on every screen size */
+.stand:not(.show-all) .opt2 { display: none; }
+.stand .more-stats { display: block; width: auto; margin: 12px auto 0; padding: 9px 18px; }
+@media (max-width: 640px) { .stand .more-stats { width: 100%; } }
+
+/* 4. Bracket: undecided slots are light and dashed, finished paths are a bold line */
+.match:not(:has(.who)) { background: transparent; border-style: dashed; box-shadow: none; }
+.match:not(:has(.who)) .gname { opacity: .75; }
+.match .side .muted { font-style: italic; font-size: .92rem; opacity: .8; }
+.bl.done { stroke-width: 3.5; }
+
+/* 5. Results: the winner gets a W chip and the loser is dimmed */
+.rrow .t.lost, .mrow:has(.side.win) .side:not(.win) { opacity: .6; font-weight: 500; }
+.rrow .t.wint::after, .mrow .side.win .who > span:last-child::after { content: "W"; display: inline-flex; align-items: center; justify-content: center; margin-left: .5em; padding: 0 .45em; height: 1.35em; border-radius: 4px; background: color-mix(in srgb, var(--win) 16%, transparent); color: var(--win); font-size: .68rem; font-weight: 800; letter-spacing: .03em; vertical-align: .08em; }
+.rrow .t.r.wint::after { margin-left: .5em; }
+
+/* 6. Members: bigger logo and a last-5 form strip */
+.mlogo { width: 104px; height: 104px; border-radius: 8px; } @media (max-width: 640px) { .mlogo { width: 80px; height: 80px; } }
+.mcard .form { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
+.form-l { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.fchip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 5px; font: 800 .72rem/1 inherit; font-style: normal; }
+.fchip.w { background: color-mix(in srgb, var(--win) 18%, transparent); color: var(--win); }
+.fchip.l { background: color-mix(in srgb, #dc2626 14%, transparent); color: #dc2626; } :root[data-theme="dark"] .fchip.l { color: #f87171; }
+
+/* 7. Polish: champion treatment, hover states, one radius and shadow, dark-mode contrast */
+:root { --shadow: 0 1px 2px rgba(11, 31, 68, .06), 0 4px 14px rgba(11, 31, 68, .05); }
+.card, .match, .champ-card { border-radius: 10px; box-shadow: var(--shadow); }
+.champ-feat { display: flex; align-items: center; gap: 14px; }
+.champ-feat .trophy { font-size: 2.1rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(217, 119, 6, .35)); }
+.pc:has(.champ-feat) { border-top: 3px solid #d4a017; }
+.mcard, .match, .rrow, .btn, .chip { transition: box-shadow .15s, transform .15s, background-color .15s, border-color .15s; }
+.mcard:hover, .match:hover { box-shadow: 0 6px 20px rgba(11, 31, 68, .12); transform: translateY(-1px); }
+.rrow:hover, .ptable tbody tr:hover, .stand tbody tr:hover { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.btn:hover { transform: translateY(-1px); } .btn:active { transform: none; }
+.chip:hover { border-color: var(--accent); }
+:root[data-theme="dark"] { --shadow: none; }
+:root[data-theme="dark"] .card, :root[data-theme="dark"] .match { border-color: #2c2f3a; }
+:root[data-theme="dark"] .lane-label, :root[data-theme="dark"] .round h3 { color: #b6bccb; }
+:root[data-theme="dark"] .cbadge { background: #3b82f6; }
+@media (prefers-reduced-motion: reduce) { .mcard, .match, .rrow, .btn, .chip { transition: none; } .mcard:hover, .match:hover, .btn:hover { transform: none; } }

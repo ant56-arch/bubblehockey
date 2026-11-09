@@ -156,3 +156,13 @@ A past game day (from `autoDnpFrom` on) where **nothing at all was logged** is s
 - The **Join the League** button on the home page opens the Rules page at its **How to join** section. That section shows **Message on Teams** and **Send an email** buttons once a commissioner contact is saved: go to **Add / Edit → Rules & text → Commissioner contact** and enter a name and email. The email is stored in `data/config.json` (`commissioner`), so it is public on the site.
 - The repeated "How it works / How to join" text was removed from the bottom of the home page; `data/home.txt` is now just a title and one intro line.
 - Page spacing: the footer now has the same padding on every page, with a divider above it.
+
+## Design pass (hero, team colors, standings, bracket, results, members)
+
+- **Home:** the hero is shorter and the logo panel smaller, so the standings show on the first screen.
+- **Team colors:** each team gets an accent color picked from its logo (its most vivid color). It shows as a thin edge on standings rows, bracket cards and member cards. Teams without a usable logo fall back to a preset color.
+- **Standings:** every screen size shows Rank, Player, GP, W, L, PTS and GD. A **Show all stats** button reveals the rest.
+- **Playoff bracket:** undecided slots are light, italic and dashed; a finished path to the next round is a bold colored line.
+- **Results:** the winner gets a green **W** chip and the loser is dimmed (home page and schedule).
+- **Members:** bigger team logo and a **Last 5** form strip of W / L chips.
+- **Polish:** gold-topped champion card with a trophy, hover states, one card radius and shadow, and dark-mode contrast fixes.

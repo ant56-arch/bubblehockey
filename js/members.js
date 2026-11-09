@@ -37,6 +37,12 @@ function playerProfile(name) {
   return { best, longest, h2h, months, po: playoffRecord(name) };
 }
 
+/* The last five counted games for a player as W / L chips, newest on the right. */
+function formStrip(n) {
+  const gs = D.games.filter(g => isCounted(g) && (g.home === n || g.road === n)).sort(cmpNew).slice(0, 5).reverse();
+  if (!gs.length) return '<span class="muted">No games yet</span>';
+  return gs.map(g => { const w = (g.hg > g.rg) === (g.home === n); return `<i class="fchip ${w ? 'w' : 'l'}" title="${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}">${w ? 'W' : 'L'}</i>`; }).join('');
+}
 view.members = function () {
   const ini = n => n.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const career = Object.fromEntries(standingsFor(D.games.filter(isCounted)).map(r => [r.name, r]));
@@ -52,10 +58,11 @@ view.members = function () {
     const sub = (title, hint, body) => `<details class="sub"><summary><span>${title}</span><span class="hint">${hint}</span></summary><div class="inner">${body}</div></details>`;
     const logos = [[m.logo, 'Primary'], [m.alt_logo, 'Alternate']].filter(x => x[0]);
     const showcase = logos.length ? `<div class="showcase ${logos.length === 1 ? 'one' : ''}">${logos.map(([src, cap]) => `<figure><img src="${esc(src)}" alt="${esc(m.team_name)} ${cap.toLowerCase()} logo" loading="lazy"><figcaption>${cap}</figcaption></figure>`).join('')}</div>` : '';
-    return `<details class="card mcard"><summary>
+    return `<details class="card mcard" data-tc="${esc(m.short_name)}"><summary>
       <div class="mtop">${m.logo ? `<img class="mlogo" src="${esc(m.logo)}" alt="${esc(m.team_name)} logo" loading="lazy">` : `<div class="avatar">${esc(ini(m.name))}</div>`}
         <div class="minfo"><b class="mname">${esc(m.name)}${cBadge(m.short_name)}</b><div class="team">${esc(m.team_name)}</div>
           <div class="muted nowline">${po.titles.length ? `🏆 ${plural(po.titles.length, 'championship')} · ${po.titles.map(monthLabel).join(', ')}` : 'No championships yet'}</div></div></div>
+      <div class="form"><span class="form-l">Last 5</span>${formStrip(n)}</div>
       <div class="mmonth">${monthLabel(cur())}${mo && mo.gp ? ` · ${mo.gp} game${mo.gp === 1 ? '' : 's'}` : ' · no games yet'}</div>
       <div class="tiles">
         <div class="tile"><b>${mo && mo.gp ? `${mo.w + mo.otw}-${mo.l}-${mo.otl}` : '–'}</b><span>Record</span></div>
