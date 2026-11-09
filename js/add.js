@@ -88,7 +88,7 @@ const tokenLink = () => {
 function needConnect(noteId) {
   const card = document.getElementById('connect-card');
   note('To save, connect to GitHub first (one time). The steps are at the top of this page.', false, noteId);
-  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 1600); }
+  if (card) { card.open = true; card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 1600); }
 }
 
 /* ---------- the form ---------- */
@@ -240,15 +240,14 @@ view.add = function () {
   const editing = ADM.editing !== null;
   const { owner, repo } = repoInfo();
   const connect = connected ? `<p class="muted" style="margin:0 0 14px">${ADM.loading ? 'Connecting to GitHub…' : ADM.error || ADM.layoutError ? '' : 'Connected to GitHub. Changes save straight to the site.'} <button class="link" id="a-disconnect" type="button">Disconnect</button> · <button class="link" id="a-diag" type="button">Test connection</button></p><div id="diag-out"></div>${ADM.error || ADM.layoutError ? `<p class="form-note err">${esc(ADM.error || ADM.layoutError)} ${ADM.error ? '<button class="link" id="a-retry" type="button">Try again</button>' : 'You can still use the form to copy a line.'}</p>` : ''}`
-    : `<div class="card" id="connect-card"><b>Connect once to save changes</b>
-        <p class="muted" style="margin:6px 0 12px">You can look around and fill things in now. To actually save, GitHub has to give this site permission once. It takes about two minutes.</p>
-        <p class="stepno">Step 1 · Get a token from GitHub</p>
-        <a class="btn wide" href="${esc(tokenLink())}" target="_blank" rel="noopener noreferrer">Open GitHub</a>
-        <p class="muted" style="margin:8px 0 0">Sign in if it asks. Then, on that page: under <b>Repository access</b> pick <b>Only select repositories</b> and choose <b>${esc(owner || '')}/${esc(repo || '')}</b>. Tap <b>Generate token</b> at the bottom and <b>copy</b> the token (it starts with <code>github_pat_</code>). <button class="link" id="a-copylink" type="button">Link not opening? Copy it instead.</button></p>
-        <p class="stepno" style="margin-top:18px">Step 2 · Come back here and paste it</p>
+    : `<details class="card connect" id="connect-card"><summary><span><b>Not connected</b> <span class="muted">· you can look around now; connect once to save changes</span></span><span class="btn small">Connect</span></summary>
+        <div class="inner"><ol class="steps">
+          <li><b>Get a token from GitHub.</b> Tap the button below and sign in if it asks.<br><a class="btn wide" href="${esc(tokenLink())}" target="_blank" rel="noopener noreferrer" style="margin-top:8px">Open GitHub</a> <button class="link" id="a-copylink" type="button">Link not opening? Copy it instead.</button></li>
+          <li><b>Set it up.</b> Under <b>Repository access</b> pick <b>Only select repositories</b> and choose <b>${esc(owner || '')}/${esc(repo || '')}</b>. Tap <b>Generate token</b> at the bottom and copy the token (it starts with <code>github_pat_</code>).</li>
+          <li><b>Paste it here.</b></li></ol>
         <form id="tok-form" class="form" novalidate><label class="f">Token<input id="a-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
         <div class="btnrow"><button class="btn ghost" id="a-paste" type="button">Paste</button><button class="btn" id="a-connect" type="submit" disabled>Connect</button></div><p id="tok-note" class="form-note">Paste the token above, then tap Connect.</p></form>
-        <p class="muted" style="margin:10px 0 0">The token stays only in this browser. You renew it once a year. Not working on this computer? <button class="link" id="a-diag" type="button">Test connection</button></p><div id="diag-out" style="margin-top:10px"></div></div>`;
+        <p class="muted" style="margin:10px 0 0">The token stays only in this browser, and you renew it once a year. Not working on this computer? <button class="link" id="a-diag" type="button">Test connection</button></p><div id="diag-out" style="margin-top:10px"></div></div></details>`;
   const live = connected && ADM.loaded && !ADM.layoutError;
   setTimeout(() => { if (!document.getElementById('add-form')) return; if (editing && rawList()[ADM.editing]) setForm(rawList()[ADM.editing]); else showOut(); }, 0);
   const sec = ['members', 'rules', 'schedule'].includes(UI['add-sec']) ? UI['add-sec'] : 'games';
