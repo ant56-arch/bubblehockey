@@ -365,3 +365,5 @@ html.bx-lock, html.bx-lock body { overflow: hidden; }
 @media (max-width: 700px) { .bx-read { display: none; } .bx-list { width: 100%; border-right: 0; } .bx-search { display: none; } }
 .sg-scene.wide, .sg-ctl.wide { max-width: 760px; }
 .mrow .vs .shots { display: block; font-size: .68rem; font-weight: 500; color: var(--muted); margin-top: 1px; white-space: nowrap; }
+.recap-bar { margin: 4px 0 6px; } .recap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.recap { margin: 10px 0 18px; } .recap-preview { background: #fff; color: #111827; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; overflow-x: auto; }
