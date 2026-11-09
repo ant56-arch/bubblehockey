@@ -95,5 +95,5 @@ view.members = function () {
       </div></details>`;
   });
   const champs = D.members.map(m => [m.short_name, titleCount(m)]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
-  return `<h1>Members</h1><p class="lead">${D.members.length} players${champs.length ? ` · most championships: ${champs.filter(x => x[1] === champs[0][1]).map(x => esc(x[0])).join(', ')} (${champs[0][1]})` : ''}. Each card shows this month's record. Tap a card for career stats and the full profile.</p><div class="grid members">${cards.join('')}</div>`;
+  return `<h1>Members</h1><p class="lead">${D.members.length} players${champs.length ? ` · most titles: ${champs.filter(x => x[1] === champs[0][1]).map(x => esc(x[0])).join(', ')} (${champs[0][1]})` : ''}. Tap a card for career stats.</p><div class="grid members">${cards.join('')}</div>`;
 };

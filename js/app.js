@@ -135,6 +135,8 @@ const pastMonths = () => [...new Set(D.games.map(g => g.month))].filter(m => m !
 const member = n => D.members.find(m => m.short_name === n);
 const who = (n, size = 26) => { const m = member(n); return `<span class="who">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}</span></span>`; };
 const UI = {};
+/* A short line up front and the longer explanation tucked behind "How this works". */
+const howTo = html => `<details class="how"><summary>How this works</summary><div>${html}</div></details>`;
 const chipsFor = (page, months, labelExtra) => {
   const sel = months.includes(UI[page]) ? UI[page] : months[0];
   return { sel, html: `<div class="chips" role="tablist">${months.map(m => `<button type="button" class="chip ${m === sel ? 'on' : ''}" data-page="${page}" data-m="${m}">${monthLabel(m)}${labelExtra ? `<small>${labelExtra(m)}</small>` : ''}</button>`).join('')}</div>` };
@@ -266,7 +268,7 @@ function bracketHTML(month) {
   };
   const col = r => `<div class="round"><h3>${r.label}</h3><div class="matches">${r.nums.map(n => card(G[n])).join('')}</div></div>`;
   const rounds = k => B.rounds.filter(r => r.kind === k);
-  return `${champion ? `<p class="champ">🏆 Champion: <b>${esc(champion)}</b></p>` : ''}<p class="muted">${B.seeds.length} teams · ${B.list.length - 1} games, plus a second grand final game only if the losers-bracket champion wins the first${B.S.P > B.seeds.length ? ` · the top ${B.S.P - B.seeds.length} seeds get a first-round bye` : ''}.${live ? ' Seeded from the current standings; updates as playoff games are added.' : ''}</p>
+  return `${champion ? `<p class="champ">🏆 Champion: <b>${esc(champion)}</b></p>` : ''}<p class="muted">${B.seeds.length} teams · ${B.list.length - 1} games${B.S.P > B.seeds.length ? ` · top ${B.S.P - B.seeds.length} seeds get a bye` : ''}${live ? ' · seeded from the current standings' : ''}.</p>${howTo(`Every month all the teams are seeded by the month's standings into a double-elimination bracket: lose once and you drop to the losers bracket, lose twice and you are out. The winners-bracket champion meets the losers-bracket champion in the grand final; if the losers-bracket champion wins it, there is one more game. ${B.seeds.length} teams make ${B.list.length - 1} games plus that possible extra one${B.S.P > B.seeds.length ? `, and the top ${B.S.P - B.seeds.length} seeds skip the first round` : ''}.${live ? ' The bracket is seeded from the current standings and updates as playoff games are added.' : ''}`)}
     <h2>Winners bracket</h2><div class="bracket">${rounds('W').map(col).join('')}</div>
     ${rounds('L').length ? `<h2>Losers bracket</h2><div class="bracket">${rounds('L').map(col).join('')}</div>` : ''}
     <h2>Grand final</h2><div class="bracket">${rounds('GF').map(col).join('')}</div>`;
@@ -312,12 +314,12 @@ const view = {
   standings() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
     const c = chipsFor('standings', months, m => m === cur() ? 'current' : ''), ch = c.sel === cur() ? '' : championOf(c.sel);
-    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an overtime win, 1 for an overtime loss. Playoff games count too.' : ' · final standings.'}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)), 0, c.sel)}${statKey(c.sel)}${monthlyRecords()}`;
+    return `<h1>Standings</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · 3 pts for a win, 2 for an OT win, 1 for an OT loss.' : ' · final standings.'}${c.sel === cur() ? howTo('Playoff games count in the standings too. Ties are broken by goal difference, then goals for. The standings start fresh every month; earlier months are in the buttons below.') : ''}</p>${c.html}${ch ? `<p class="champ">🏆 Playoff champion: <b>${esc(ch)}</b></p>` : ''}${standingsTable(standingsFor(monthGames(c.sel)), 0, c.sel)}${statKey(c.sel)}${monthlyRecords()}`;
   },
   playoffs() {
     const months = [cur(), ...pastMonths().filter(hasPlayoffs)];
     const c = chipsFor('playoffs', months, m => m === cur() ? 'current' : '');
-    return `<h1>Playoffs</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · every month all the teams are seeded by standings into a double-elimination bracket.' : ' · final bracket.'}</p>${c.html}${bracketHTML(c.sel)}`;
+    return `<h1>Playoffs</h1><p class="lead">${monthLabel(c.sel)}${c.sel === cur() ? ' · double elimination, everyone plays.' : ' · final bracket.'}</p>${c.html}${bracketHTML(c.sel)}`;
   },
 };
 
