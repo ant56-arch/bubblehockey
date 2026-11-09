@@ -203,7 +203,7 @@ function spareDayCard(v) {
   const today = v.date === todayStr();
   return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b><span class="tag">Makeup day</span>${today ? '<span class="tag">Today</span>' : ''}</div>
     <p class="muted" style="margin:0">No scheduled games. This day is kept open for any games that were missed or postponed, including playoff games.</p>
-    ${v.extra.length ? `<p style="margin:10px 0 0">Played: ${v.extra.map(g => `${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}`).join(', ')}</p>` : ''}</div>`;
+    ${v.extra.length ? `<p style="margin:10px 0 0">Played: ${v.extra.map(g => `${nm(g.home)} ${g.hg}–${g.rg} ${nm(g.road)}`).join(', ')}</p>` : ''}</div>`;
 }
 /* Small "14–11 shots" line under a score, when the shots were logged. */
 const shotsLine = (g, H) => (g && !g.dnp && (g.hs || g.rs) ? `<small class="shots">${g.home === H ? `${g.hs}–${g.rs}` : `${g.rs}–${g.hs}`} shots</small>` : '');
@@ -232,7 +232,7 @@ function dayCard(v) {
   const done = v.rows.filter(r => r.result && !r.result.dnp).length, dnpCount = v.rows.filter(r => r.result && r.result.dnp).length;
   return `<div class="card day ${today ? 'today' : ''}"><div class="dayhead"><b>${dayLabel(v.date)}</b>${today ? '<span class="tag">Today</span>' : ''}<span class="muted">${v.rows.length} games${done ? ` · ${done} played` : (past && !dnpCount ? ' · none played' : '')}${dnpCount ? ` · ${dnpCount} DNP` : ''}</span></div>
     <div class="mhead"><span></span><span>Home</span><span></span><span class="r">Road</span></div>${v.rows.map(row).join('')}
-    ${v.extra.length ? `<p class="muted" style="margin:10px 0 0">Also played (beyond the scheduled games): ${v.extra.map(g => `${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}`).join(', ')}</p>` : ''}</div>`;
+    ${v.extra.length ? `<p class="muted" style="margin:10px 0 0">Also played (beyond the scheduled games): ${v.extra.map(g => `${nm(g.home)} ${g.hg}–${g.rg} ${nm(g.road)}`).join(', ')}</p>` : ''}</div>`;
 }
 
 function upcomingDays(count = 5) {

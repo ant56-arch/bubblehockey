@@ -198,7 +198,7 @@ function membersSection() {
   const thumb = m => m.logo ? `<img class="tlogo" style="width:38px;height:38px" src="${esc(m.logo)}" alt="" loading="lazy">` : '<span class="tlogo" style="width:38px;height:38px;background:var(--surface-2);display:inline-block"></span>';
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   return `<h2>Members &amp; teams</h2><div class="glist">${D.members.map(m => `<div class="grow${MEM.editing === m.short_name ? ' editing' : ''}">
-      <div class="ginfo" style="display:flex;gap:10px;align-items:center">${thumb(m)}<span><b>${esc(m.name)}</b> <span class="muted">· ${esc(m.short_name)}</span><br><span class="muted">${esc(m.team_name)}</span></span></div>
+      <div class="ginfo" style="display:flex;gap:10px;align-items:center">${thumb(m)}<span><b>${esc(m.name)}</b>${cBadge(m.short_name)}${champMark(m.short_name, '')} <span class="muted">· ${esc(m.short_name)}</span><br><span class="muted">${esc(m.team_name)}</span></span></div>
       <div class="gbtns"><button class="btn small" type="button" data-medit="${esc(m.short_name)}">Edit</button></div></div>`).join('')}</div>
     <h2 id="mem-h">${editing ? 'Edit this member' : 'Add a member'}</h2><div class="card"><form id="mem-form" class="form" onsubmit="return false">
       <label class="f">Full name<input id="m-name" autocomplete="off"></label>
@@ -433,7 +433,7 @@ function scheduleSection() {
   // matchups of the chosen day
   const gameRows = rows.map((r, i) => {
     const key = `${r.src.date}|${r.src.a}|${r.src.b}`, res = r.result && !r.result.dnp ? `${r.result.home} ${r.result.hg}–${r.result.rg} ${r.result.road}` : '', open = SCH.editing === key;
-    return `<div class="grow${open ? ' editing' : ''}"><div class="ginfo"><span class="muted">${i + 1}.</span> <b>${esc(r.home)} vs ${esc(r.road)}</b> <span class="muted">(${esc(r.home)} at home)</span>${r.edited ? ' <span class="tag">Edited</span>' : ''}${r.src.date !== SCH.date ? ` <span class="muted">· moved from ${esc(dayLabel(r.src.date))}</span>` : ''}${res ? `<br><span class="muted">Played: ${esc(res)}</span>` : ''}</div>
+    return `<div class="grow${open ? ' editing' : ''}"><div class="ginfo"><span class="muted">${i + 1}.</span> <b>${nm(r.home)} vs ${nm(r.road)}</b> <span class="muted">(${esc(r.home)} at home)</span>${r.edited ? ' <span class="tag">Edited</span>' : ''}${r.src.date !== SCH.date ? ` <span class="muted">· moved from ${esc(dayLabel(r.src.date))}</span>` : ''}${res ? `<br><span class="muted">Played: ${esc(res)}</span>` : ''}</div>
       <div class="gbtns"><button class="btn small" type="button" data-ssw="${i}">Swap sides</button><button class="btn small ghost" type="button" data-sed="${i}">Edit</button>${res ? '' : `<button class="btn small ghost" type="button" data-sdelgame="${i}">Remove</button>`}</div></div>
       ${open ? `<div class="card" style="margin:-2px 0 8px"><form class="form" onsubmit="return false"><div class="row2"><label class="f">Home${pick('se-home', r.home)}</label><label class="f">Road${pick('se-road', r.road)}</label></div>
         <label class="f">Day<select id="se-date">${dayOpt(SCH.date)}</select></label><div class="btnrow"><button class="btn" type="button" data-ssave="${i}">Save</button>${r.edited ? `<button class="btn ghost" type="button" data-sreset="${i}">Back to automatic</button>` : ''}<button class="btn ghost" type="button" data-scancel>Cancel</button></div></form></div>` : ''}`;
