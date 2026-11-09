@@ -149,3 +149,10 @@ A past game day (from `autoDnpFrom` on) where **nothing at all was logged** is s
 **League logo placements:** header and tab icon, the big panel on the Home page, the footer, the rink boards and the centre-ice circle in the games, the top of the Email recap (it uses the full web address so it still shows when pasted into an email), the picture shown when the site link is shared (Open Graph tags), and the iPhone home-screen icon (`images/apple-touch-icon.png`, 180px). Changing the logo in Add / Edit updates all of the on-page places; the share picture and home-screen icon use the files named in `index.html`.
 
 **Rules page:** each `##` section in `data/rules.txt` is shown as its own card, with a row of the point values (from `data/config.json`) at the top and buttons that jump to each section. Edit the text in Add / Edit → Rules & text as before.
+
+## Playoff bracket, joining, and spacing
+
+- The Playoffs tab draws one connected double-elimination bracket: the winners lane on top, the losers lane below it, and the grand final on the right, with lines showing where each winner goes. On phones the rounds stack in a column.
+- The **Join the League** button on the home page opens the Rules page at its **How to join** section. That section shows **Message on Teams** and **Send an email** buttons once a commissioner contact is saved: go to **Add / Edit → Rules & text → Commissioner contact** and enter a name and email. The email is stored in `data/config.json` (`commissioner`), so it is public on the site.
+- The repeated "How it works / How to join" text was removed from the bottom of the home page; `data/home.txt` is now just a title and one intro line.
+- Page spacing: the footer now has the same padding on every page, with a divider above it.
