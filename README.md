@@ -137,3 +137,9 @@ The **Schedule** tab is also the game log. **Upcoming** shows the next game days
 
 ## Email recap
 On the **Schedule** page, **✉ Email recap** opens a panel: pick two dates (or a quick range: last 7 days, yesterday, this week, this month) and it builds a recap of those dates from `data/games.json`: storylines (new leader, win and losing streaks, blowouts, shutouts, overtime games, upsets, head-to-head results, playoff titles, new members, and so on, picking the most interesting ones), every result by day, standings for just those dates, the month's standings through the end date, leaders, and (optionally) the next game day's matchups. **Copy for email** copies a formatted version with tables (paste it into the email body); **Copy plain text** copies a text version; **Open email draft** starts a message with the text (long drafts are cut off, so use Copy for email for the full recap). Code: `js/recap.js`.
+
+## Tests
+`tests/` holds the browser tests (Playwright). Run all of them with `node tests/run.js`; see `tests/README.md`.
+
+## No-play days and the league logo
+A past game day (from `autoDnpFrom` on) where **nothing at all was logged** is shown on the Schedule as a single "No games played" card, and no DNPs are made up for it (automatic DNP still fills in the unplayed games on days where at least one game or DNP was logged). Change the league logo in **Add / Edit → Rules & text → League logo**: the image is resized, saved under `images/teams/`, and `data/config.json` gets a `logo` path; the header and tab icon use it.

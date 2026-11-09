@@ -367,3 +367,4 @@ html.bx-lock, html.bx-lock body { overflow: hidden; }
 .mrow .vs .shots { display: block; font-size: .68rem; font-weight: 500; color: var(--muted); margin-top: 1px; white-space: nowrap; }
 .recap-bar { margin: 4px 0 6px; } .recap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .recap { margin: 10px 0 18px; } .recap-preview { background: #fff; color: #111827; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; overflow-x: auto; }
+.day.noplay { padding-top: 12px; padding-bottom: 12px; } .day.noplay .dayhead { margin-bottom: 0; }
