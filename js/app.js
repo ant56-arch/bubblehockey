@@ -194,7 +194,11 @@ const statKey = month => `<details><summary>Stat key</summary><div class="inner"
 /* A trophy next to a month's champion; on the current month it marks the reigning champion (the latest finished month's winner). */
 function champMark(n, month) {
   const past = month && month !== cur() ? month : (pastMonths().find(x => hasPlayoffs(x) && championOf(x)) || ''), c = past && championOf(past);
-  return c && c === n ? `<span class="trophy-mark" title="${monthLabel(past)} champion" aria-label="${monthLabel(past)} champion">🏆</span>` : '';
+  let out = c && c === n ? `<span class="trophy-mark" title="${monthLabel(past)} champion" aria-label="${monthLabel(past)} champion">🏆</span>` : '';
+  /* A toilet next to whoever finished last in that month (the latest finished month when looking at the current one). */
+  const lastM = month && month !== cur() ? month : (pastMonths().filter(x => monthGames(x).length).slice(-1)[0] || '');
+  if (lastM) { const rows = standingsFor(monthGames(lastM)).filter(r => r.gp); if (rows.length > 1 && rows[rows.length - 1].name === n) out += `<span class="last-mark" title="Finished last in ${monthLabel(lastM)}" aria-label="Finished last in ${monthLabel(lastM)}">🚽</span>`; }
+  return out;
 }
 function standingsTable(rows, limit, month) {
   rows = limit ? rows.slice(0, limit) : rows;
