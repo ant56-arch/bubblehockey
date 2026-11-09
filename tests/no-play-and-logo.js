@@ -20,7 +20,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127'; const fs = require
   ok('today and future days are never "no games played"', (await p.evaluate(() => dayView('2026-11-06').noPlay)) === false && (await p.evaluate(() => dayView('2026-11-09').noPlay)) === false);
   // content
   const home = fs.readFileSync('data/home.txt', 'utf8'), rules = fs.readFileSync('data/rules.txt', 'utf8');
-  ok('home text no longer has the placeholder wording', !/company-wide|portal|free agent|UWM/i.test(home) && /How it works/.test(home));
+  ok('home text no longer has the placeholder wording or the repeated sections', !/company-wide|portal|free agent|UWM|How it works|How to Join/i.test(home));
   ok('rules typos fixed and tie-breaker and playoff lines added', !/singles  on|periods  tracked|overtime lose|Commissioner hold /.test(rules) && /Tie-breakers/.test(rules) && /double-elimination/.test(rules));
   // league logo upload
   const ctx = await b.newContext({ viewport: { width: 420, height: 1200 } }), q = await ctx.newPage(); q.on('pageerror', e => errs.push(e.message)); const puts = [];

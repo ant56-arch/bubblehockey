@@ -21,7 +21,7 @@ let seedrng = 777; const rnd = () => (seedrng = (seedrng * 1664525 + 1013904223)
 
   // ---- 1. October's real data is unchanged
   let p = await open(null, null, null); await go(p, 'playoffs');
-  ok('OCTOBER: champion Connor, 6 scored games, bracket sections present', (await txt(p, '.champ-card')).includes('Connor') && (await p.$$eval('.match', m => m.filter(x => [...x.querySelectorAll('.side')].every(s => /^\d+$/.test(s.lastElementChild ? s.lastElementChild.textContent.trim() : ''))).length)) >= 6 && (await p.$$eval('h2', h => h.map(x => x.textContent).join('|'))).includes('Winners bracket') && (await p.$$eval('h2', h => h.map(x => x.textContent).join('|'))).includes('Grand final'));
+  ok('OCTOBER: champion Connor, 6 scored games, bracket sections present', (await txt(p, '.champ-card')).includes('Connor') && (await p.$$eval('.match', m => m.filter(x => [...x.querySelectorAll('.side')].every(s => /^\d+$/.test(s.lastElementChild ? s.lastElementChild.textContent.trim() : ''))).length)) >= 6 && (await p.$$eval('.lane-label', h => h.map(x => x.textContent).join('|'))).includes('Winners bracket') && (await p.$$eval('.lane-label', h => h.map(x => x.textContent).join('|'))).includes('Grand final'));
   const octCards = await p.$$eval('.match .gname', g => g.map(x => x.textContent.replace(/\s+/g, ' ')));
   ok('OCTOBER: 7 cards in the 4-team shape (Game 6 = Grand final, Game 7 not needed)', octCards.length === 7 && octCards[5].includes('Grand final') && octCards[6].includes('not needed'), octCards.join(' | '));
   const names = await p.$$eval('.match', m => m.map(x => [...x.querySelectorAll('.side > span:first-child')].map(s => s.textContent.replace(/\s+/g, ' ').trim()).join(' v ')));

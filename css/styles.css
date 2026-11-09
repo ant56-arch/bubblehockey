@@ -41,7 +41,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 a { color: var(--text); text-underline-offset: 3px; }
 .muted { color: var(--muted); }
-footer { padding: 56px 24px 40px; font-size: .85rem; text-align: center; }
+footer.wrap { padding: 28px 24px 40px; margin-top: 64px; border-top: 1px solid var(--line); font-size: .85rem; text-align: center; }
 
 /* Header */
 .site-header { position: sticky; top: 0; z-index: 20; background: var(--navy); color: #fff; border-bottom: 1px solid #13306b; }
@@ -60,7 +60,7 @@ nav a.active { color: #fff; border-bottom-color: #fff; }
 
 /* Type */
 h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; letter-spacing: -0.02em; font-weight: 800; color: var(--navy); margin: 48px 0 10px; }
-h2 { font-size: 1.05rem; letter-spacing: .02em; font-weight: 800; margin: 44px 0 14px; color: var(--navy); text-transform: uppercase; }
+h2 { font-size: 1.05rem; letter-spacing: .02em; font-weight: 800; margin: 36px 0 12px; color: var(--navy); text-transform: uppercase; }
 .lead { color: var(--muted); font-size: 1.05rem; max-width: 62ch; margin: 0 0 28px; }
 .eyebrow { display: inline-block; font-size: .8rem; font-weight: 500; padding: 5px 12px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); margin-top: 48px; }
 .sub { display: block; color: var(--muted); }
@@ -375,7 +375,7 @@ html.bx-lock, html.bx-lock body { overflow: hidden; }
 .recap-bar { margin: 4px 0 6px; } .recap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .recap { margin: 10px 0 18px; } .recap-preview { background: #fff; color: #111827; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; overflow-x: auto; }
 .day.noplay { padding-top: 12px; padding-bottom: 12px; } .day.noplay .dayhead { margin-bottom: 0; }
-footer .foot-logo { display: block; width: 56px; height: 56px; margin: 0 auto 8px; border-radius: 8px; opacity: .95; }
+footer .foot-logo { display: block; width: 44px; height: 44px; margin: 0 auto 8px; border-radius: 8px; opacity: .95; }
 .mrec { display: none; }
 .how { margin: 6px 0 0; font-size: .86rem; background: none; border: 0; border-radius: 0; } .how summary { padding: 0; font-weight: 400; cursor: pointer; color: var(--muted); display: inline-block; text-decoration: underline; text-underline-offset: 3px; }
 .how > div { margin: 8px 0 4px; color: var(--muted); max-width: 66ch; }
@@ -389,3 +389,15 @@ footer .foot-logo { display: block; width: 56px; height: 56px; margin: 0 auto 8p
 .rules-glance .tiles { max-width: 460px; margin: 0; } .rules-glance .tile { background: var(--surface); border: 1px solid var(--line); text-align: center; padding: 10px 6px; } .rules-glance .tile b { font-size: 1.5rem; }
 .rule-cards { display: grid; gap: 14px; max-width: 820px; } .rule-card { padding: 18px 22px; scroll-margin-top: 80px; } .rule-card h2 { margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .rule-card ul { margin: 0; padding-left: 20px; } .rule-card li { margin-bottom: 9px; } .rule-card li:last-child { margin-bottom: 0; }
+
+/* Playoffs: one connected double-elimination chart (winners lane, losers lane, grand final) */
+#app { min-height: 55vh; }
+.dbl { display: flex; align-items: stretch; gap: 56px; }
+.dbl-main { display: flex; flex-direction: column; gap: 28px; flex: none; }
+.dbl-gf { display: flex; flex-direction: column; justify-content: center; gap: 10px; flex: none; }
+.lane-wrap { display: flex; flex-direction: column; gap: 10px; }
+.lane-label { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--navy); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.lane { display: flex; gap: 44px; }
+.lane-wrap + .lane-wrap { padding-top: 22px; border-top: 1px dashed var(--line); }
+@media (max-width: 640px) { .dbl, .dbl-main, .lane { flex-direction: column; gap: 14px; } .dbl-gf { justify-content: flex-start; } .lane-wrap + .lane-wrap { padding-top: 14px; } }
+.dbl { gap: 40px; margin-top: 18px; } .dbl .round { min-width: 210px; } .lane { gap: 32px; } .dbl-gf .round h3 { display: none; } .dbl .gname { white-space: normal; }
