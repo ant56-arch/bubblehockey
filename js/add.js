@@ -135,11 +135,12 @@ const gameLine = o => o.dnp ? `${o.home} vs ${o.road} (DNP)` : o.homeScore !== u
 /* ---------- members & teams (data/members.csv) ---------- */
 const MEM = { editing: null };                                  // short_name being edited, or null when adding
 const csvField = v => { v = String(v ?? ''); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-const MEM_KEYS = ['name', 'short_name', 'team_name', 'established', 'logo', 'alt_logo'];
+const MEM_KEYS = ['name', 'short_name', 'team_name', 'established', 'logo', 'alt_logo', 'color'];
 
 function readMember() {
   const v = id => document.getElementById(id).value.trim(), problems = [];
-  const rec = { name: v('m-name'), short_name: MEM.editing !== null ? MEM.editing : v('m-short'), team_name: v('m-team'), established: v('m-est') };
+  const rec = { name: v('m-name'), short_name: MEM.editing !== null ? MEM.editing : v('m-short'), team_name: v('m-team'), established: v('m-est'), color: document.getElementById('m-color-auto').checked ? '' : v('m-color').toLowerCase() };
+  if (rec.color && !/^#[0-9a-f]{6}$/.test(rec.color)) problems.push('Pick a valid color.');
   if (!rec.name) problems.push('Enter the full name.');
   if (!rec.short_name) problems.push('Enter a short name.'); else if (!/^[\p{L}\p{N} .'-]{1,24}$/u.test(rec.short_name)) problems.push('The short name can use letters, numbers, spaces, dots, apostrophes and hyphens (up to 24 characters).');
   if (!rec.team_name) problems.push('Enter the team name.');
@@ -152,6 +153,7 @@ function setMemberForm(m) {
   const set = (id, v) => { document.getElementById(id).value = v ?? ''; };
   set('m-name', m.name); set('m-short', m.short_name); set('m-team', m.team_name); set('m-est', m.established);
   document.getElementById('m-short').disabled = true;
+  const auto = !/^#[0-9a-f]{6}$/i.test(m.color || ''); document.getElementById('m-color-auto').checked = auto; if (!auto) document.getElementById('m-color').value = m.color;
 }
 /* Shrink a chosen picture to a 400px square (kept whole) and return it as bytes plus a preview. */
 async function logoBlob(file) {
@@ -175,6 +177,7 @@ async function saveMember(rec, files, isNew) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const { text, sha } = await readFile('data/members.csv'), eol = text.includes('\r\n') ? '\r\n' : '\n';
     const head = text.split(/\r?\n/)[0].split(',').map(h => h.trim()), keys = head.map(h => h.toLowerCase().replace(/\s+/g, '_'));
+    if (!keys.includes('color')) { head.push('color'); keys.push('color'); }      // the team color column is added the first time it is needed
     const rows = parseCSV(text); if (!keys.includes('short_name')) throw new Error('members.csv is not laid out the way this page expects. Edit it on GitHub instead.');
     const i = rows.findIndex(r => r.short_name === rec.short_name);
     if (isNew && i >= 0) throw new Error('Someone already uses that short name.');
@@ -203,6 +206,8 @@ function membersSection() {
       <label class="f">Team name<input id="m-team" autocomplete="off"></label>
       <label class="f">Established <span class="muted">(the first day they are scheduled)</span><input id="m-est" type="date" value="${editing ? '' : today}"></label>
       <label class="f">Team logo <span class="muted">${editing ? '(leave empty to keep the current one)' : '(optional)'}</span><input id="m-logo" type="file" accept="image/*"></label>
+      <div class="f">Team color <span class="muted">(the thin accent edge on standings rows, bracket cards and member cards)</span>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><input id="m-color" type="color" value="#2563eb" style="width:56px;height:38px;padding:2px"><label style="display:flex;gap:6px;align-items:center;margin:0"><input id="m-color-auto" type="checkbox" checked> Pick it from the logo automatically</label></div></div>
       <label class="f">Alternate logo <span class="muted">${editing ? '(leave empty to keep the current one)' : '(optional)'}</span><input id="m-alt" type="file" accept="image/*"></label>
       <div class="btnrow"><button class="btn" id="m-save" type="button">${editing ? 'Save changes' : 'Add member'}</button>${editing ? '<button class="btn ghost" id="m-cancel" type="button">Cancel</button>' : ''}</div>
       <p id="m-note" class="form-note"></p>
@@ -318,7 +323,7 @@ document.addEventListener('click', async e => {
     try {
       const isNew = MEM.editing === null, files = { logo: document.getElementById('m-logo').files[0], alt_logo: document.getElementById('m-alt').files[0] };
       if (isNew && !confirm(`Add ${rec.name} (${rec.team_name})? They join the schedule on ${rec.established || 'day one'}.`)) { t.disabled = false; note('', true, 'm-note'); return; }
-      await saveMember(rec, files, isNew); MEM.editing = null; rerender();
+      await saveMember(rec, files, isNew); MEM.editing = null; if (typeof loadTeamColors === 'function') loadTeamColors(); rerender();
       setTimeout(() => note(`${isNew ? 'Added' : 'Saved'} ${rec.name}. The public site updates in about a minute (new logos can take a little longer).`, true, 'm-note'), 20);
     } catch (err) { t.disabled = false; note(err.message, false, 'm-note'); }
     return;
