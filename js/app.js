@@ -137,7 +137,7 @@ const member = n => D.members.find(m => m.short_name === n);
 const isComm = n => { const c = ((D.config.commissioner || {}).name || '').trim().toLowerCase(), m = member(n); return !!c && !!m && [m.short_name, m.name].some(x => x && String(x).trim().toLowerCase() === c) || (!!c && !!m && c.endsWith(' ' + String(m.short_name).toLowerCase())); };
 const cBadge = n => isComm(n) ? '<span class="cbadge" title="Commissioner" aria-label="Commissioner">C</span>' : '';
 const nm = n => esc(n) + cBadge(n);
-const who = (n, size = 26) => { const m = member(n); return `<span class="who">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}${cBadge(n)}</span></span>`; };
+const who = (n, size = 26) => { const m = member(n); return `<span class="who" data-tc="${esc(n)}">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}${cBadge(n)}</span></span>`; };
 const UI = {};
 /* A short line up front and the longer explanation tucked behind "How this works". */
 const howTo = html => `<details class="how"><summary>How this works</summary><div>${html}</div></details>`;
@@ -193,10 +193,10 @@ const statKey = month => `<details><summary>Stat key</summary><div class="inner"
 
 function standingsTable(rows, limit, month) {
   rows = limit ? rows.slice(0, limit) : rows;
-  const n = (x, opt) => `<td class="n${opt ? ' opt' : ''}">${x}</td>`;
-  const heads = [['Record', 0, 'mrec'], ['GP', 1], ['W', 1], ['L', 1], ['OTW', 1], ['OTL', 1], ['PTS'], ...(showPtsPct(month) ? [['PTS%', 1]] : []), ['GF', 1], ['GA', 1], ['GD'], ['SF', 1], ['SA', 1], ['Shot%', 1], ['SV%', 1], ['SO', 1], ['Home', 1], ['Road', 1], ['Strk', 1]];
-  return `<div class="stand"><div class="table-scroll"><table><thead><tr><th>Rank</th><th>Player</th>${heads.map(([h, o, k]) => `<th class="n${o ? ' opt' : ''}${k ? ' ' + k : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
-    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name)}</td><td class="n mrec nowrap">${r.w + r.otw}-${r.l}-${r.otl}</td>${n(r.gp, 1)}${n(r.w, 1)}${n(r.l, 1)}${n(r.otw, 1)}${n(r.otl, 1)}<td class="n"><b>${r.pts}</b></td>${showPtsPct(month) ? n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 1) : ''}${n(r.gf, 1)}${n(r.ga, 1)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 1)}${n(r.sa, 1)}${n(r.sf ? pct(r.gf / r.sf) : '–', 1)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 1)}${n(r.so, 1)}${n(r.hw + '-' + r.hl, 1)}${n(r.rw + '-' + r.rl, 1)}${n(r.streak, 1)}</tr>`).join('')
+  const n = (x, opt) => `<td class="n${opt === 2 ? ' opt2' : opt ? ' opt' : ''}">${x}</td>`;
+  const heads = [['Record', 0, 'mrec'], ['GP', 1], ['W', 1], ['L', 1], ['OTW', 2], ['OTL', 2], ['PTS'], ...(showPtsPct(month) ? [['PTS%', 2]] : []), ['GF', 2], ['GA', 2], ['GD'], ['SF', 2], ['SA', 2], ['Shot%', 2], ['SV%', 2], ['SO', 2], ['Home', 2], ['Road', 2], ['Strk', 2]];
+  return `<div class="stand"><div class="table-scroll"><table><thead><tr><th>Rank</th><th>Player</th>${heads.map(([h, o, k]) => `<th class="n${o === 2 ? ' opt2' : o ? ' opt' : ''}${k ? ' ' + k : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
+    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name)}</td><td class="n mrec nowrap">${r.w + r.otw}-${r.l}-${r.otl}</td>${n(r.gp, 1)}${n(r.w, 1)}${n(r.l, 1)}${n(r.otw, 2)}${n(r.otl, 2)}<td class="n"><b>${r.pts}</b></td>${showPtsPct(month) ? n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 2) : ''}${n(r.gf, 2)}${n(r.ga, 2)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 2)}${n(r.sa, 2)}${n(r.sf ? pct(r.gf / r.sf) : '–', 2)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 2)}${n(r.so, 2)}${n(r.hw + '-' + r.hl, 2)}${n(r.rw + '-' + r.rl, 2)}${n(r.streak, 2)}</tr>`).join('')
   }</tbody></table></div><button class="more-stats" type="button">Show all stats</button></div>`;
 }
 
@@ -311,8 +311,8 @@ const view = {
     const card = (title, link, body) => `<section class="card pc"><h2>${title}${link ? `<a href="${link[1]}">${link[0]}</a>` : ''}</h2>${body}</section>`;
     const sign = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
     const stand = `<div class="table-scroll"><table class="ptable"><thead><tr><th>Rank</th><th>Player</th><th class="n">W</th><th class="n">L</th><th class="n">Diff</th><th class="n">Pts</th></tr></thead><tbody>${
-      board.map((r, i) => `<tr><td>${i + 1}</td><td><div class="pl">${member(r.name)?.logo ? `<img class="tlogo sq" src="${esc(member(r.name).logo)}" alt="" loading="lazy">` : ''}<span><b>${esc(r.name)}</b><small>${esc(team(r.name))}</small></span></div></td><td class="n">${r.w + r.otw}</td><td class="n">${r.l + r.otl}</td><td class="n">${sign(r.gf - r.ga)}</td><td class="n"><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`;
-    const recent = counted.sort(cmpNew).slice(0, 3).map(g => `<div class="rrow"><span class="d">${dateShort(g.date)}</span><span class="t">${nm(g.home)}</span><span class="s">${g.hg > g.rg ? `<b class="win">${g.hg}</b> – ${g.rg}` : `${g.hg} – <b class="win">${g.rg}</b>`}</span><span class="t r">${nm(g.road)}${g.playoff ? ' <span class="tag">Playoffs</span>' : ''}</span></div>`).join('');
+      board.map((r, i) => `<tr data-tc="${esc(r.name)}"><td>${i + 1}</td><td><div class="pl">${member(r.name)?.logo ? `<img class="tlogo sq" src="${esc(member(r.name).logo)}" alt="" loading="lazy">` : ''}<span><b>${esc(r.name)}</b><small>${esc(team(r.name))}</small></span></div></td><td class="n">${r.w + r.otw}</td><td class="n">${r.l + r.otl}</td><td class="n">${sign(r.gf - r.ga)}</td><td class="n"><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`;
+    const recent = counted.sort(cmpNew).slice(0, 3).map(g => `<div class="rrow"><span class="d">${dateShort(g.date)}</span><span class="t ${g.hg > g.rg ? 'wint' : 'lost'}">${nm(g.home)}</span><span class="s">${g.hg > g.rg ? `<b class="win">${g.hg}</b> – ${g.rg}` : `${g.hg} – <b class="win">${g.rg}</b>`}</span><span class="t r ${g.hg > g.rg ? 'lost' : 'wint'}">${nm(g.road)}${g.playoff ? ' <span class="tag">Playoffs</span>' : ''}</span></div>`).join('');
     const days = typeof upcomingDays === 'function' && D.members.length > 1 ? upcomingDays(3).map(d => dayView(d)).filter(Boolean) : [];
     const games = days.flatMap(v => v.playoff ? [] : v.rows.filter(r => !r.result).map(r => ({ ...r, date: v.date })));
     const nx = games[0], h2h = nx ? counted.filter(g => [g.home, g.road].includes(nx.home) && [g.home, g.road].includes(nx.road)) : [], hw = nx ? h2h.filter(g => (g.hg > g.rg ? g.home : g.road) === nx.home).length : 0;
@@ -320,9 +320,9 @@ const view = {
       <div class="kv2"><span>Date</span><b>${dayLabel(nx.date)}</b></div><div class="kv2"><span>Home</span><b>${nm(nx.home)}</b></div><div class="kv2"><span>Head to head</span><b>${h2h.length ? `${hw}–${h2h.length - hw} ${esc(nx.home)}` : 'No games yet'}</b></div></div>`
       : '<div class="feat muted">No games scheduled right now.</div>';
     const sched = games.slice(0, 3).map(r => `<div class="rrow s3"><span class="d">${dateShort(r.date)}</span><span class="t">${nm(r.home)} v ${nm(r.road)}</span><span class="d r">Home: ${nm(r.home)}</span></div>`).join('') || '<div class="feat muted">Nothing scheduled.</div>';
-    const champ = lastChamp ? `<div class="feat"><b class="big">${esc(lastChamp.c)}</b><div class="muted">${monthLabel(lastChamp.m)} · ${esc(team(lastChamp.c))}</div></div>` : '<div class="feat muted">No champion yet.</div>';
+    const champ = lastChamp ? `<div class="feat champ-feat"><span class="trophy" aria-hidden="true">🏆</span><div><b class="big">${nm(lastChamp.c)}</b><div class="muted">${monthLabel(lastChamp.m)} · ${esc(team(lastChamp.c))}</div></div></div>` : '<div class="feat muted">No champion yet.</div>';
     const [head] = (cfg.headline || 'Every game. Every standing. One league.').split('|');
-    return `<div class="res-head" style="justify-content:flex-end;margin-top:6px"><button class="link res-hide" data-boss type="button" title="Shortcut: Esc">Hide screen (Esc)</button></div><section class="band"><div class="hero"><div class="hero-text"><span class="eyebrow">${esc(cfg.eyebrow || (m ? monthLabel(m) : 'Season'))}</span>
+    return `<div class="res-head" style="justify-content:flex-end;margin-top:6px"><button class="link res-hide" data-boss type="button" title="Shortcut: Esc">Hide screen (Esc)</button></div><section class="band hero-band"><div class="hero"><div class="hero-text"><span class="eyebrow">${esc(cfg.eyebrow || (m ? monthLabel(m) : 'Season'))}</span>
         <h1>${esc(head).replace(/\. /g, '.<br>')}</h1><p>${esc(cfg.text || (t.html.match(/^<p>(.*?)<\/p>/) || [])[1]?.replace(/&amp;/g, '&').replace(/&#39;/g, "'") || 'Live standings, daily matchups and a double-elimination playoff for the whole office. Join the table.')}</p>
         <a class="btn" href="#/rules?join">Join the League</a>
         <div class="hero-stats"><div><b>${counted.length}</b><span>Games played</span></div><div><b>${D.members.length}</b><span>Teams</span></div><div><b>${champs.length}</b><span>Champions crowned</span></div></div></div>
@@ -357,6 +357,22 @@ const view = {
 };
 
 /* ---------- router ---------- */
+
+/* Team accent colors: taken from each team's logo (its most vivid color), used as a thin edge on standings rows, bracket cards and member cards. */
+const TC = {}, TC_FALLBACK = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#db2777', '#4d7c0f'];
+function applyTeamColors() {
+  document.querySelectorAll('[data-tc]').forEach(el => { const c = TC[el.dataset.tc]; if (!c) return; let t = el; if (el.classList.contains('who')) { const tr = el.closest('tr'); t = tr && tr.querySelectorAll('.who[data-tc]').length === 1 ? tr : el.closest('.match .side'); } if (t) t.style.setProperty('--tc', c); });
+}
+function loadTeamColors() {
+  D.members.forEach((m, i) => { TC[m.short_name] = TC_FALLBACK[i % TC_FALLBACK.length]; });
+  D.members.forEach(m => { if (!m.logo) return; const img = new Image(); img.onload = () => { try {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 24; const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0, 24, 24); const d = cx.getImageData(0, 0, 24, 24).data, hue = new Array(12).fill(0).map(() => ({ w: 0, r: 0, g: 0, b: 0 }));
+    for (let k = 0; k < d.length; k += 4) { if (d[k + 3] < 200) continue; const r = d[k], g = d[k + 1], b = d[k + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 510, s = mx === mn ? 0 : (mx - mn) / (255 - Math.abs(mx + mn - 255)); if (l < .22 || l > .85 || s < .35) continue;
+      let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h = Math.floor(((h * 60 + 360) % 360) / 30); const w = s * (1 - Math.abs(l - .5)); const o = hue[h]; o.w += w; o.r += r * w; o.g += g * w; o.b += b * w; }
+    const best = hue.reduce((x, y) => (y.w > x.w ? y : x)); if (best.w > 0) { TC[m.short_name] = `hsl(${hue.indexOf(best) * 30 + 15} 72% 46%)`; /* the logo's dominant hue, made vivid */ applyTeamColors(); }
+  } catch (e) { } }; img.src = m.logo; });
+  applyTeamColors();
+}
 function route(keepScroll) {
   const OLD = { gamelog: 'schedule', 'gamelog-history': 'schedule', 'standings-history': 'standings', 'playoffs-history': 'playoffs', enter: 'add', admin: 'add', games: 'resources' };
   let id = location.hash.replace(/^#\/?/, '') || 'home'; const old = id.split('?')[0]; id = OLD[old] || old; if (/^gamelog/.test(old) && !UI.schedule) UI.schedule = cur();      // the old Game Log address opens this month on the Schedule
@@ -365,6 +381,7 @@ function route(keepScroll) {
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));
   document.getElementById('nav').classList.remove('open');
   document.title = `${PAGES.find(p => p[0] === page)[1]} · ${D.config.leagueName}`;
+  applyTeamColors();
   if (typeof drawBracketLines === 'function') { drawBracketLines(); requestAnimationFrame(drawBracketLines); setTimeout(drawBracketLines, 400); }
   if (keepScroll !== true) window.scrollTo(0, 0);
 }
@@ -390,5 +407,5 @@ async function startApp() {
     document.documentElement.dataset.theme = next; try { localStorage.setItem('bhl_theme', next); } catch { }
   };
   window.addEventListener('hashchange', () => route());
-  route();
+  route(); loadTeamColors();
 }
