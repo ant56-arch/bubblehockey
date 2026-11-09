@@ -134,6 +134,12 @@ const sgRR = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r); 
 const sgFS = (c, fill, lw = 2) => { c.fillStyle = fill; c.fill(); c.lineWidth = lw; c.strokeStyle = SG_INK; c.lineJoin = 'round'; c.stroke(); };
 const sgLimb = (c, x0, y0, x1, y1, w, col) => { c.lineCap = 'round'; c.strokeStyle = SG_INK; c.lineWidth = w + 3.5; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.strokeStyle = col; c.lineWidth = w; c.stroke(); };
 const SG_LOGOS = {};
+/* The league logo for the canvas scenes (boards and centre ice), once it has loaded. */
+function sgLeagueLogo() {
+  const src = D.config.logo || 'images/league-logo.webp';
+  if (!SG_LOGOS[src]) { const i = new Image(); i.src = src; SG_LOGOS[src] = i; }
+  const i = SG_LOGOS[src]; return i.complete && i.naturalWidth ? i : null;
+}
 function sgLogo(name) {
   const m = member(name); if (!m || !m.logo) return null;
   if (!SG_LOGOS[m.logo]) { const i = new Image(); i.src = m.logo; SG_LOGOS[m.logo] = i; }
@@ -261,7 +267,7 @@ function sgBackdrop(c, T, fast, cheer) {
   const gl = sgGrad(c, 0, 80, 0, 98, 'rgba(147,197,253,.0)', 'rgba(147,197,253,.28)'); c.fillStyle = gl; c.fillRect(-10, 80, 500, 18);                       // glass shine
   c.fillStyle = 'rgba(255,255,255,.07)'; for (let x = 20; x < 480; x += 90) { c.beginPath(); c.moveTo(x, 70); c.lineTo(x + 22, 70); c.lineTo(x + 10, 98); c.lineTo(x - 12, 98); c.fill(); }
   const bd = sgGrad(c, 0, 96, 0, 118, '#13306b', '#0b1f44'); c.fillStyle = bd; c.fillRect(-10, 96, 500, 22); c.fillStyle = '#f5b301'; c.fillRect(-10, 96, 500, 2.5); c.fillStyle = '#050b18'; c.fillRect(-10, 116, 500, 2);
-  c.fillStyle = '#fff'; c.font = '800 10px Inter, system-ui, sans-serif'; c.textBaseline = 'middle'; const sc = (T * 16 * (fast ? 1 : 0.3)) % 170; for (let x = -sc; x < 500; x += 170) { c.fillText('BUBBLE HOCKEY LEAGUE', x + 6, 107); c.fillStyle = '#8cc63f'; c.fillRect(x + 148, 102, 6, 10); c.fillStyle = '#fff'; }
+  c.fillStyle = '#fff'; c.font = '800 10px Inter, system-ui, sans-serif'; c.textBaseline = 'middle'; const sc = (T * 16 * (fast ? 1 : 0.3)) % 170; for (let x = -sc; x < 500; x += 170) { c.fillText('BUBBLE HOCKEY LEAGUE', x + 6, 107); const lg = sgLeagueLogo(); if (lg) c.drawImage(lg, x + 146, 98, 16, 16); else { c.fillStyle = '#8cc63f'; c.fillRect(x + 148, 102, 6, 10); } c.fillStyle = '#fff'; }
   const ice = sgGrad(c, 0, 118, 0, 340, '#cfe3f6', '#f4faff', '#e8f2fc'); c.fillStyle = ice; c.fillRect(-10, 118, 500, 230);
   const sheen = c.createRadialGradient(240, 250, 10, 240, 250, 260); sheen.addColorStop(0, 'rgba(255,255,255,.7)'); sheen.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = sheen; c.fillRect(-10, 118, 500, 230);
 }

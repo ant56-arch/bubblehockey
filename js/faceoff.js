@@ -114,6 +114,8 @@ function foFrame(now) {
   c.setTransform(FOA.k, 0, 0, FOA.k, 0, 0); c.clearRect(0, 0, SGA.W, SGA.H);
   const w = R ? R.winner : -1, cheer = R && R.finished ? Math.sin(T * 12) * 2 : 0;
   sgBackdrop(c, T, false, cheer);
+  // the league logo painted on the ice at centre ice, squashed to match the view like the real thing
+  { const lg = sgLeagueLogo(); if (lg) { c.save(); c.globalAlpha = 0.5; c.translate(FO_DOT.x, FO_DOT.y + 1); c.scale(1, 0.26); c.drawImage(lg, -62, -62, 124, 124); c.restore(); } }
   // face-off circle and dot
   c.strokeStyle = 'rgba(190,40,50,.8)'; c.lineWidth = 2.4; c.beginPath(); c.ellipse(FO_DOT.x, FO_DOT.y, 112, 30, 0, 0, 6.3); c.stroke();
   c.fillStyle = 'rgba(190,40,50,.12)'; c.fill(); c.lineWidth = 2; c.beginPath(); c.moveTo(FO_DOT.x - 112, FO_DOT.y); c.lineTo(FO_DOT.x - 124, FO_DOT.y); c.moveTo(FO_DOT.x + 112, FO_DOT.y); c.lineTo(FO_DOT.x + 124, FO_DOT.y); c.stroke();
