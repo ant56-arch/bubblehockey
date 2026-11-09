@@ -205,6 +205,17 @@ function spareDayCard(v) {
     <p class="muted" style="margin:0">No scheduled games. This day is kept open for any games that were missed or postponed, including playoff games.</p>
     ${v.extra.length ? `<p style="margin:10px 0 0">Played: ${v.extra.map(g => `${esc(g.home)} ${g.hg}–${g.rg} ${esc(g.road)}`).join(', ')}</p>` : ''}</div>`;
 }
+/* Small "14–11 shots" line under a score, when the shots were logged. */
+const shotsLine = (g, H) => (g && !g.dnp && (g.hs || g.rs) ? `<small class="shots">${g.home === H ? `${g.hs}–${g.rs}` : `${g.rs}–${g.hs}`} shots</small>` : '');
+/* A day with results that was not a scheduled game day (a weekend or a day off), or games logged with no date. */
+function extraDayCard(date, month) {
+  const gs = D.games.filter(g => (date ? g.date === date : !g.date && g.month === month) && (isCounted(g) || g.dnp)).sort(cmpOld);
+  const row = (g, i) => g.dnp
+    ? `<div class="mrow dnp"><span class="gno">${i + 1}</span><span class="side">${who(g.home, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(g.road, 26)}</span></div>`
+    : `<div class="mrow"><span class="gno">${i + 1}</span><span class="side ${g.hg > g.rg ? 'win' : ''}">${who(g.home, 26)}</span><span class="vs"><b>${scoreHTML(g.hg, g.rg)}</b>${g.playoff ? ' <span class="tag">Playoff</span>' : ''}${g.ot ? ' <span class="tag">OT</span>' : ''}${shotsLine(g, g.home)}</span><span class="side r ${g.rg > g.hg ? 'win' : ''}">${who(g.road, 26)}</span></div>`;
+  return `<div class="card day"><div class="dayhead"><b>${date ? dayLabel(date) : 'Date not logged'}</b><span class="muted">${gs.length} game${gs.length === 1 ? '' : 's'} · ${date ? 'not a scheduled game day' : 'no date entered'}</span></div>
+    <div class="mhead"><span></span><span>Home</span><span></span><span class="r">Road</span></div>${gs.map(row).join('')}</div>`;
+}
 function dayCard(v) {
   if (v.playoff) return playoffDayCard(v);
   if (v.spare) return spareDayCard(v);
@@ -214,7 +225,7 @@ function dayCard(v) {
     const winner = g && !g.dnp ? (g.hg > g.rg ? g.home : g.road) : '', hw = winner === H, rw = winner === R, mark = (r.edited ? '<sup title="Edited">✎</sup>' : '') + (r.replaced ? `<sup title="Played instead of ${esc(r.home)} vs ${esc(r.road)}">*</sup>` : '');
     if (g && g.dnp) return `<div class="mrow dnp"><span class="gno">${i + 1}${mark}</span><span class="side">${who(H, 26)}</span><span class="vs"><span class="tag dnp">DNP</span></span><span class="side r">${who(R, 26)}</span></div>`;
     return `<div class="mrow"><span class="gno">${i + 1}${mark}</span><span class="side ${hw ? 'win' : ''}">${who(H, 26)}</span>
-      <span class="vs">${g ? `<b>${g.home === H ? scoreHTML(g.hg, g.rg) : scoreHTML(g.rg, g.hg)}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}` : 'vs'}</span>
+      <span class="vs">${g ? `<b>${g.home === H ? scoreHTML(g.hg, g.rg) : scoreHTML(g.rg, g.hg)}</b>${g.ot ? ' <span class="tag">OT</span>' : ''}${shotsLine(g, H)}` : 'vs'}</span>
       <span class="side r ${rw ? 'win' : ''}">${who(R, 26)}</span></div>`;
   };
   const done = v.rows.filter(r => r.result && !r.result.dnp).length, dnpCount = v.rows.filter(r => r.result && r.result.dnp).length;
@@ -243,14 +254,29 @@ function todayCard() {
   return `<h2>${day === todayStr() ? "Today's matchups" : 'Next matchups'}</h2>${dayCard(dayView(day))}<p><a href="#/schedule">See the full schedule →</a></p>`;
 }
 
+/* The Schedule page is also the game log: what is coming up, and every game played, day by day (or as a table). */
 view.schedule = function () {
   if (D.members.length < 2) return '<h1>Schedule</h1><p class="muted">Add at least two members to generate a schedule.</p>';
-  const mode = UI.schedule === 'month' ? 'month' : 'upcoming';
-  const chips = `<div class="chips">${[['upcoming', 'Upcoming'], ['month', monthLabel(cur())]].map(([k, l]) => `<button type="button" class="chip ${mode === k ? 'on' : ''}" data-page="schedule" data-m="${k}">${l}</button>`).join('')}</div>`;
-  // Past days with no games logged (e.g. before the league started) are left out; today and future days always show.
+  const months = [cur(), ...pastMonths().filter(m => monthLog(m).length)], today = todayStr();
+  let sel = UI.schedule === 'month' || !UI.schedule ? 'upcoming' : UI.schedule; if (sel !== 'upcoming' && !months.includes(sel)) sel = 'upcoming';
+  const chips = `<div class="chips">${[['upcoming', 'Upcoming', ''], ...months.map(m => [m, monthLabel(m), m === cur() ? 'current' : `${monthGames(m).length} games`])].map(([k, l, x]) => `<button type="button" class="chip ${sel === k ? 'on' : ''}" data-page="schedule" data-m="${k}">${l}${x ? `<small>${x}</small>` : ''}</button>`).join('')}</div>`;
   const hadGames = d => D.games.some(g => g.date === d && (isCounted(g) || g.dnp));
-  const days = mode === 'month' ? gameDaysIn(cur()).filter(d => d >= todayStr() || hadGames(d)) : upcomingDays(5);
-  return `<h1>Schedule</h1><p class="lead">Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held near the end of each month, and the last game day is kept open as a makeup day.</p>${chips}
-    ${(() => { const off = daysOffIn(cur()); return off.length ? `<p class="muted">No games: ${off.map(o => `${esc(o.name)}, ${dayLabel(o.date)}`).join(' · ')}</p>` : ''; })()}
-    <div class="days">${days.map(d => dayCard(dayView(d))).join('') || '<p class="muted">No game days found.</p>'}</div>${balanceCard(cur())}`;
+  const card = d => { const v = dayView(d); return v ? dayCard(v) : extraDayCard(d); };
+  const off = (() => { const o = daysOffIn(cur()); return o.length ? `<p class="muted">No games: ${o.map(x => `${esc(x.name)}, ${dayLabel(x.date)}`).join(' · ')}</p>` : ''; })();
+  const intro = 'Matchups are generated automatically every game day (Monday to Friday). Everyone plays everyone, and home and road sides alternate each day. Playoffs are held near the end of each month, and the last game day is kept open as a makeup day. Results appear here as soon as they are logged.';
+  if (sel === 'upcoming') {
+    const upcoming = upcomingDays(5), pastDates = [...new Set(D.games.filter(g => g.date && g.date < today && (isCounted(g) || g.dnp)).map(g => g.date))].sort().reverse().slice(0, 2);
+    return `<h1>Schedule</h1><p class="lead">${intro}</p>${chips}${off}
+      <h2>Coming up</h2><div class="days">${upcoming.map(d => dayCard(dayView(d))).join('') || '<p class="muted">No game days found.</p>'}</div>
+      ${pastDates.length ? `<h2>Latest results</h2><div class="days">${pastDates.map(card).join('')}</div><p class="muted" style="margin-top:10px">Every earlier game is under its month above.</p>` : ''}${balanceCard(cur())}`;
+  }
+  const table = UI.schedview === 'table', all = monthLog(sel), played = monthGames(sel).length, dnp = all.filter(g => g.dnp).length;
+  const dates = new Set(gameDaysIn(sel)), coming = sel === cur() ? gameDaysIn(sel).filter(d => d >= today) : [];
+  const logged = [...new Set(D.games.filter(g => g.month === sel && g.date && (isCounted(g) || g.dnp)).map(g => g.date))];
+  const pastList = [...new Set([...gameDaysIn(sel).filter(d => d < today && hadGames(d)), ...logged.filter(d => !dates.has(d) || d < today)])].filter(d => !coming.includes(d)).sort().reverse();
+  const undated = D.games.some(g => g.month === sel && !g.date && (isCounted(g) || g.dnp));
+  const mode = `<div class="chips">${[['days', 'By day'], ['table', 'Table']].map(([k, l]) => `<button type="button" class="chip ${(table ? 'table' : 'days') === k ? 'on' : ''}" data-page="schedview" data-m="${k}">${l}</button>`).join('')}</div>`;
+  const body = table ? gamesTable(all)
+    : `${coming.length ? `<h2>Today and coming up</h2><div class="days">${coming.slice(0, 3).map(card).join('')}</div>${coming.length > 3 ? `<details class="sub"><summary><span>Rest of ${monthLabel(sel)}</span><span class="hint">${coming.length - 3} more game days</span></summary><div class="inner"><div class="days">${coming.slice(3).map(card).join('')}</div></div></details>` : ''}` : ''}${pastList.length || undated ? `<h2>${coming.length ? 'Played' : 'Results'}</h2><div class="days">${pastList.map(card).join('')}${undated ? extraDayCard('', sel) : ''}</div>` : (coming.length ? '' : '<p class="muted">No games yet this month.</p>')}`;
+  return `<h1>Schedule</h1><p class="lead">${monthLabel(sel)} · ${played} game${played === 1 ? '' : 's'} played${dnp ? ` (${dnp} DNP)` : ''}. Playoff games are included and tagged. DNP means a scheduled game that was not played, which does not change the standings.</p>${chips}${sel === cur() ? off : ''}${mode}${body}${sel === cur() && !table ? balanceCard(sel) : ''}`;
 };
