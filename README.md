@@ -143,3 +143,5 @@ On the **Schedule** page, **✉ Email recap** opens a panel: pick two dates (or 
 
 ## No-play days and the league logo
 A past game day (from `autoDnpFrom` on) where **nothing at all was logged** is shown on the Schedule as a single "No games played" card, and no DNPs are made up for it (automatic DNP still fills in the unplayed games on days where at least one game or DNP was logged). Change the league logo in **Add / Edit → Rules & text → League logo**: the image is resized, saved under `images/teams/`, and `data/config.json` gets a `logo` path; the header and tab icon use it.
+
+**No flash while loading:** `index.html` carries a few lines of first-paint CSS, so the page opens as the navy header on the right background (light or dark) with the body hidden, and everything appears together once the styles and scripts have loaded. The styles and scripts download at the same time (they still run in order), which is also faster than loading them one by one. If something fails to load, a message is shown instead of a blank page, and the page is never left hidden for more than 8 seconds.
