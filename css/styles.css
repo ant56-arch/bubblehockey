@@ -458,3 +458,12 @@ tr[style*="--tc"] > td:first-child { box-shadow: inset 3px 0 0 var(--tc, transpa
 :root[data-theme="dark"] .lane-label, :root[data-theme="dark"] .round h3 { color: #b6bccb; }
 :root[data-theme="dark"] .cbadge { background: #3b82f6; }
 @media (prefers-reduced-motion: reduce) { .mcard, .match, .rrow, .btn, .chip { transition: none; } .mcard:hover, .match:hover, .btn:hover { transform: none; } }
+
+/* Commissioner "C": a captain's patch (white ring, soft shadow, serif C) */
+.cbadge { width: 1.5em; height: 1.5em; margin-left: .6em; background: radial-gradient(circle at 30% 25%, #3b82f6, #1d4ed8 70%); box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px #1d4ed8, 0 1px 3px rgba(11, 31, 68, .35); font: 700 .78em/1 Georgia, 'Times New Roman', serif; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); vertical-align: .05em; }
+:root[data-theme="dark"] .cbadge { background: radial-gradient(circle at 30% 25%, #60a5fa, #2563eb 70%); box-shadow: 0 0 0 1.5px #0b1f44, 0 0 0 2.5px #93c5fd, 0 1px 3px rgba(0, 0, 0, .5); }
+.trophy-mark { margin-left: .4em; font-size: .95em; filter: drop-shadow(0 1px 2px rgba(217, 119, 6, .4)); }
+
+/* Commissioner "C": a captain's-jersey patch (heavy slab C, blue with a white and navy outline) */
+.cpatch { display: inline-block; width: 1.45em; height: 1.45em; margin-left: .35em; vertical-align: -.3em; flex: none; filter: drop-shadow(0 1px 1px rgba(11, 31, 68, .3)); }
+:root[data-theme="dark"] .cpatch { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .5)); }
