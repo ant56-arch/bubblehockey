@@ -248,13 +248,6 @@ function balanceCard(month) {
     <p class="muted" style="margin-top:10px">Sides flip every game day, so after any two game days everyone has played the same number of games at home and on the road.</p>`;
 }
 
-/* Small card for the Home page. */
-function todayCard() {
-  if (D.members.length < 2) return '';
-  const day = upcomingDays(1)[0]; if (!day) return '';
-  return `<h2>${day === todayStr() ? "Today's matchups" : 'Next matchups'}</h2>${dayCard(dayView(day))}<p><a href="#/schedule">See the full schedule →</a></p>`;
-}
-
 /* The Schedule page is also the game log: what is coming up, and every game played, day by day (or as a table). */
 view.schedule = function () {
   if (D.members.length < 2) return '<h1>Schedule</h1><p class="muted">Add at least two members to generate a schedule.</p>';
