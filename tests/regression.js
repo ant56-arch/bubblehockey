@@ -41,7 +41,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127'; const fs = require
   ok('a playoff game that does not fit the bracket is reported, with no false "duplicate" warning', /does not fit the October 2026 bracket/.test(banner) && !/identical/.test(banner), banner.replace(/\s+/g, ' ').slice(0, 130));
   // 5. October's real standings and Home still correct
   const po = await (await b.newContext({ viewport: { width: 390, height: 900 } })).newPage(); await po.clock.install({ time: new Date('2026-10-28T13:00:00') }); await po.goto(BASE + '/#/standings'); await po.waitForTimeout(800);
-  ok('October standings unchanged (Connor 33 GP / 72 pts)', (await po.$$eval('.stand tbody tr', r => r.map(x => [...x.cells].slice(1, 8).map(c => c.textContent.trim()).join(' ')).join(' / '))).startsWith('Connor 33 23 8 1 1 72'));
+  ok('October standings unchanged (Connor 33 GP / 72 pts)', (await po.$$eval('.stand tbody tr', r => r.map(x => [...x.cells].filter(c => !c.classList.contains('mrec')).slice(1, 8).map(c => c.textContent.trim()).join(' ')).join(' / '))).startsWith('Connor 33 23 8 1 1 72'));
   await po.goto(BASE + '/#/home'); await po.waitForTimeout(600); ok('Home still shows Connor as the champion card · October 2026', await po.evaluate(() => { const c = [...document.querySelectorAll('.pc')].find(x => /Champion/.test(x.querySelector('h2').textContent)); return !!c && c.textContent.includes('Connor') && c.textContent.includes('October 2026'); }));
   console.log(fails.length ? 'FAILED: ' + fails.join('; ') : 'ALL PASSED'); await b.close();
 })();
