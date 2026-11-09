@@ -106,8 +106,10 @@ function rcHTML(d) {
 }
 
 /* ---------- the panel on the Schedule page ---------- */
+/* The button beside the Schedule heading; it opens and closes the panel. */
+function recapButton() { return `<button class="btn small recap-btn${RC.open ? ' on' : ''}" type="button" data-recap="${RC.open ? 'close' : 'open'}">✉ Email recap</button>`; }
 function recapSection() {
-  if (!RC.open) return `<div class="recap-bar"><button class="btn small" type="button" data-recap="open">✉ Email recap</button></div>`;
+  if (!RC.open) return '';
   if (!RC.from) Object.assign(RC, rcDefaults());
   const d = rcData(RC.from, RC.to), today = todayStr(), first = rcDefaults();
   const quick = [['Last 7 days', rcAdd(today, -6), today], ['Yesterday', rcAdd(today, -1), rcAdd(today, -1)], ['This week', rcAdd(today, -((parseYmd(today).getDay() + 6) % 7)), today], ['This month', today.slice(0, 7) + '-01', today]];
