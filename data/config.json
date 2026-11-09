@@ -15,5 +15,9 @@
     "ptsPercentThrough": "2026-10"
   },
   "repo": "ant56-arch/bubblehockey",
-  "branch": "main"
+  "branch": "main",
+  "commissioner": {
+    "name": "Anthony Trotta",
+    "email": "atrotta@uwm.com"
+  }
 }
