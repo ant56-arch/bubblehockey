@@ -333,9 +333,15 @@ function route(keepScroll) {
   if (keepScroll !== true) window.scrollTo(0, 0);
 }
 
+/* The league logo: images/league-logo.webp unless data/config.json has a "logo" path (set from Add / Edit, Rules & text). */
+function applyLogo() {
+  const lg = D.config.logo || 'images/league-logo.webp', img = document.querySelector('.brand-logo'), ic = document.querySelector('link[rel~=icon]');
+  if (img && img.getAttribute('src') !== lg) img.src = lg; if (ic && ic.getAttribute('href') !== lg) ic.href = lg;
+}
 async function startApp() {
   await load();
   document.getElementById('league-name').textContent = D.config.leagueName;
+  applyLogo();
   document.getElementById('nav').innerHTML = PAGES.filter(p => !p[2]).map(([id, label]) => `<a href="#/${id}" data-id="${id}">${label}</a>`).join('');
   document.querySelector('.menu-toggle').onclick = e => {
     const open = document.getElementById('nav').classList.toggle('open');

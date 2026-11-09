@@ -169,7 +169,7 @@ function dayView(date) {
   });
   // Automatic DNP: on a past day that had any game or DNP logged, scheduled games that never appeared are DNP.
   if (played.length && autoDnpDay(date)) rows.forEach(r => { if (!r.result) r.result = { dnp: true, auto: true, home: r.home, road: r.road, date }; });
-  return { date, rows, extra: played.filter((g, j) => !used.has(j) && !g.dnp) };
+  return { date, rows, extra: played.filter((g, j) => !used.has(j) && !g.dnp), noPlay: !played.length && autoDnpDay(date) };      // a past day with nothing logged: no games were played (not a pile of DNPs)
 }
 
 const todayStr = () => ymd(new Date());
@@ -219,6 +219,7 @@ function extraDayCard(date, month) {
 function dayCard(v) {
   if (v.playoff) return playoffDayCard(v);
   if (v.spare) return spareDayCard(v);
+  if (v.noPlay) return `<div class="card day noplay"><div class="dayhead"><b>${dayLabel(v.date)}</b><span class="tag dnp">No games played</span><span class="muted">${v.rows.length} scheduled, none played · not counted as DNP</span></div></div>`;
   const today = v.date === todayStr(), past = v.date < todayStr();
   const row = (r, i) => {
     const g = r.result, H = r.replaced && g ? g.home : r.home, R = r.replaced && g ? g.road : r.road;      // a game played instead of the scheduled one shows who actually played
@@ -273,7 +274,8 @@ view.schedule = function () {
   const table = UI.schedview === 'table', all = monthLog(sel), played = monthGames(sel).length, dnp = all.filter(g => g.dnp).length;
   const dates = new Set(gameDaysIn(sel)), coming = sel === cur() ? gameDaysIn(sel).filter(d => d >= today) : [];
   const logged = [...new Set(D.games.filter(g => g.month === sel && g.date && (isCounted(g) || g.dnp)).map(g => g.date))];
-  const pastList = [...new Set([...gameDaysIn(sel).filter(d => d < today && hadGames(d)), ...logged.filter(d => !dates.has(d) || d < today)])].filter(d => !coming.includes(d)).sort().reverse();
+  const noPlayDay = d => dayKind(d) === 'regular' && autoDnpDay(d) && !hadGames(d);
+  const pastList = [...new Set([...gameDaysIn(sel).filter(d => d < today && (hadGames(d) || noPlayDay(d))), ...logged.filter(d => !dates.has(d) || d < today)])].filter(d => !coming.includes(d)).sort().reverse();
   const undated = D.games.some(g => g.month === sel && !g.date && (isCounted(g) || g.dnp));
   const mode = `<div class="chips">${[['days', 'By day'], ['table', 'Table']].map(([k, l]) => `<button type="button" class="chip ${(table ? 'table' : 'days') === k ? 'on' : ''}" data-page="schedview" data-m="${k}">${l}</button>`).join('')}</div>`;
   const body = table ? gamesTable(all)
