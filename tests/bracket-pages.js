@@ -49,7 +49,7 @@ let seedrng = 777; const rnd = () => (seedrng = (seedrng * 1664525 + 1013904223)
   p = await open(membersCsv(20), { games: [] }, cfgBase); await go(p, 'playoffs');
   const s20 = await p.evaluate(() => { const B = buildBracket('2026-10'); return { teams: B.seeds.length, games: B.list.length, byes: B.S.P - B.seeds.length, round1: B.S.games.filter(g => g.kind === 'W' && g.round === 1).length }; });
   ok('20 teams (nothing played yet): 20-team bracket, 38 games + reset, 12 first-round byes, 4 first-round games', s20.teams === 20 && s20.games === 39 + 0 && s20.byes === 12 && s20.round1 === 4, JSON.stringify(s20));
-  ok('projected-bracket note is shown and says how many byes', (await txt(p, '#app')).includes('top 12 seeds get a first-round bye') && (await txt(p, '#app')).includes('Seeded from the current standings'));
+  ok('projected-bracket note is shown and says how many byes', (await txt(p, '#app')).includes('top 12 seeds get a bye') && /seeded from the current standings/i.test(await txt(p, '#app')));
   p = await open(membersCsv(20), { games: [] }, { ...cfgBase, playoffs: { teams: 8 } }); await go(p, 'playoffs');
   ok('config "playoffs.teams": 8 keeps only the top 8 (14 games + reset)', await p.evaluate(() => { const B = buildBracket('2026-10'); return B.seeds.length === 8 && B.list.length === 15; }));
   p = await open(membersCsv(25), { games: [] }, cfgBase); await go(p, 'playoffs'); ok('a league bigger than 20 is capped at 20 teams', await p.evaluate(() => buildBracket('2026-10').seeds.length) === 20);

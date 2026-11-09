@@ -371,3 +371,6 @@ html.bx-lock, html.bx-lock body { overflow: hidden; }
 .day.noplay { padding-top: 12px; padding-bottom: 12px; } .day.noplay .dayhead { margin-bottom: 0; }
 footer .foot-logo { display: block; width: 56px; height: 56px; margin: 0 auto 8px; border-radius: 8px; opacity: .95; }
 .mrec { display: none; }
+.how { margin: 6px 0 0; font-size: .86rem; background: none; border: 0; border-radius: 0; } .how summary { padding: 0; font-weight: 400; cursor: pointer; color: var(--muted); display: inline-block; text-decoration: underline; text-underline-offset: 3px; }
+.how > div { margin: 8px 0 4px; color: var(--muted); max-width: 66ch; }
+.lead .how { display: block; }
