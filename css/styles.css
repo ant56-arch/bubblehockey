@@ -385,3 +385,7 @@ footer .foot-logo { display: block; width: 56px; height: 56px; margin: 0 auto 8p
 .connect[open] > summary .btn { display: none; } .connect > .inner { padding: 4px 18px 18px; } .connect .steps { margin: 0 0 14px; }
 .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; } .page-head h1 { margin-bottom: 10px; }
 .page-head .btn { margin-bottom: 14px; } .recap-btn.on { background: var(--navy); }
+.rules-glance { max-width: 820px; margin: 0 0 14px; } .rules-glance > b { display: block; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.rules-glance .tiles { max-width: 460px; margin: 0; } .rules-glance .tile { background: var(--surface); border: 1px solid var(--line); text-align: center; padding: 10px 6px; } .rules-glance .tile b { font-size: 1.5rem; }
+.rule-cards { display: grid; gap: 14px; max-width: 820px; } .rule-card { padding: 18px 22px; scroll-margin-top: 80px; } .rule-card h2 { margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.rule-card ul { margin: 0; padding-left: 20px; } .rule-card li { margin-bottom: 9px; } .rule-card li:last-child { margin-bottom: 0; }

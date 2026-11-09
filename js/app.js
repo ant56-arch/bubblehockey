@@ -327,8 +327,14 @@ const view = {
       ${t.html.includes('<h2>') ? '<div class="more-text">' + '<h2>' + t.html.split('<h2>').slice(1).join('<h2>') + '</div>' : ''}`;
   },
   rules() {
-    const t = textBlocks(D.rules);
-    return `<h1>${esc(t.title || 'Rules')}</h1><div class="card rules">${t.html}</div>`;
+    /* One card per section (## heading), a row of the points at the top, and quick links to each section. */
+    const lines = String(D.rules || '').split('\n'), title = (lines.find(l => l.startsWith('# ')) || '').slice(2) || 'Rules', secs = []; let intro = [], cur_ = null;
+    for (const l of lines) { if (l.startsWith('# ')) continue; if (l.startsWith('## ')) { cur_ = { name: l.slice(3).trim(), body: [] }; secs.push(cur_); } else if (cur_) cur_.body.push(l); else intro.push(l); }
+    const P = D.config.points, tile = (v, l) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`;
+    const glance = `<div class="rules-glance"><b>Points at a glance</b><div class="tiles">${tile(P.win, 'Win')}${tile(P.overtimeWin, 'OT win')}${tile(P.overtimeLoss, 'OT loss')}${tile(P.loss, 'Loss')}</div></div>`;
+    const jump = secs.length > 1 ? `<div class="chips">${secs.map((s, i) => `<button type="button" class="chip" data-jump="rule-${i}">${esc(s.name)}</button>`).join('')}</div>` : '';
+    const cards = secs.length ? secs.map((s, i) => `<section class="card rule-card" id="rule-${i}"><h2>${esc(s.name)}</h2>${textBlocks(s.body.join('\n')).html}</section>`).join('') : `<div class="card rules">${textBlocks(D.rules).html}</div>`;
+    return `<h1>${esc(title)}</h1>${intro.join('').trim() ? `<p class="lead">${esc(intro.join(' ').trim())}</p>` : ''}${glance}${jump}<div class="rule-cards">${cards}</div>`;
   },
   standings() {
     const months = [cur(), ...pastMonths().filter(m => monthGames(m).length)];
@@ -370,7 +376,7 @@ async function startApp() {
     e.currentTarget.setAttribute('aria-expanded', open);
   };
   document.addEventListener('click', e => { const b = e.target.closest('.more-stats'); if (!b) return; const on = b.closest('.stand').classList.toggle('show-all'); b.textContent = on ? 'Show fewer stats' : 'Show all stats'; });
-  document.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; UI[c.dataset.page] = c.dataset.m; route(true); });
+  document.addEventListener('click', e => { const j = e.target.closest('[data-jump]'); if (j) { const el = document.getElementById(j.dataset.jump); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } const c = e.target.closest('.chip'); if (!c) return; UI[c.dataset.page] = c.dataset.m; route(true); });
   document.getElementById('theme-toggle').onclick = () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next; try { localStorage.setItem('bhl_theme', next); } catch { }
