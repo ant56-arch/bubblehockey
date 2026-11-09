@@ -135,7 +135,7 @@ const pastMonths = () => [...new Set(D.games.map(g => g.month))].filter(m => m !
 const member = n => D.members.find(m => m.short_name === n);
 /* Small blue "C" next to the commissioner's name (matched against the commissioner contact in the settings). */
 const isComm = n => { const c = ((D.config.commissioner || {}).name || '').trim().toLowerCase(), m = member(n); return !!c && !!m && [m.short_name, m.name].some(x => x && String(x).trim().toLowerCase() === c) || (!!c && !!m && c.endsWith(' ' + String(m.short_name).toLowerCase())); };
-const cBadge = n => isComm(n) ? '<svg class="cpatch" viewBox="0 0 40 40" role="img" aria-label="Commissioner"><title>Commissioner</title><circle cx="20" cy="20" r="19" fill="#c8102e"/><path d="M15 8H25L29 12V16.5H17V23.5H29V28L25 32H15L11 28V12Z" fill="#fff"/></svg>' : '';
+const cBadge = n => isComm(n) ? '<svg class="cpatch" viewBox="0 0 40 40" role="img" aria-label="Commissioner"><title>Commissioner</title><circle cx="20" cy="20" r="19" fill="#c8102e"/><path d="M12.4 9.7L14.8 7.2L25.1 7.2L27.6 9.6L27.8 15.0L22.8 15.0L22.8 12.0L17.3 12.0L17.1 27.1L22.8 27.1L22.8 23.7L28.2 23.7L28.2 30.0L26.0 32.8L13.9 32.8L11.8 30.1Z" fill="#fff"/></svg>' : '';
 const nm = n => esc(n) + cBadge(n);
 const who = (n, size = 26, extra = '') => { const m = member(n); return `<span class="who" data-tc="${esc(n)}">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}${cBadge(n)}${extra || ''}</span></span>`; };
 const UI = {};
