@@ -137,7 +137,7 @@ const member = n => D.members.find(m => m.short_name === n);
 const isComm = n => { const c = ((D.config.commissioner || {}).name || '').trim().toLowerCase(), m = member(n); return !!c && !!m && [m.short_name, m.name].some(x => x && String(x).trim().toLowerCase() === c) || (!!c && !!m && c.endsWith(' ' + String(m.short_name).toLowerCase())); };
 const cBadge = n => isComm(n) ? '<span class="cbadge" title="Commissioner" aria-label="Commissioner">C</span>' : '';
 const nm = n => esc(n) + cBadge(n);
-const who = (n, size = 26) => { const m = member(n); return `<span class="who" data-tc="${esc(n)}">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}${cBadge(n)}</span></span>`; };
+const who = (n, size = 26, extra = '') => { const m = member(n); return `<span class="who" data-tc="${esc(n)}">${m?.logo ? `<img class="tlogo" style="width:${size}px;height:${size}px" src="${esc(m.logo)}" alt="" loading="lazy">` : ''}<span>${esc(n)}${cBadge(n)}${extra || ''}</span></span>`; };
 const UI = {};
 /* A short line up front and the longer explanation tucked behind "How this works". */
 const howTo = html => `<details class="how"><summary>How this works</summary><div>${html}</div></details>`;
@@ -191,12 +191,17 @@ const statKey = month => `<details><summary>Stat key</summary><div class="inner"
 <li><b>Shot%</b> goals ÷ shots taken · <b>SV%</b> share of opponent shots stopped · <b>SO</b> shutouts</li>
 <li><b>Home / Road</b> win–loss record at each table position · <b>Strk</b> current win or loss streak</li></ul></div></details>`;
 
+/* A trophy next to a month's champion; on the current month it marks the reigning champion (the latest finished month's winner). */
+function champMark(n, month) {
+  const past = month && month !== cur() ? month : (pastMonths().find(x => hasPlayoffs(x) && championOf(x)) || ''), c = past && championOf(past);
+  return c && c === n ? `<span class="trophy-mark" title="${monthLabel(past)} champion" aria-label="${monthLabel(past)} champion">🏆</span>` : '';
+}
 function standingsTable(rows, limit, month) {
   rows = limit ? rows.slice(0, limit) : rows;
   const n = (x, opt) => `<td class="n${opt === 2 ? ' opt2' : opt ? ' opt' : ''}">${x}</td>`;
   const heads = [['Record', 0, 'mrec'], ['GP', 1], ['W', 1], ['L', 1], ['OTW', 2], ['OTL', 2], ['PTS'], ...(showPtsPct(month) ? [['PTS%', 2]] : []), ['GF', 2], ['GA', 2], ['GD'], ['SF', 2], ['SA', 2], ['Shot%', 2], ['SV%', 2], ['SO', 2], ['Home', 2], ['Road', 2], ['Strk', 2]];
   return `<div class="stand"><div class="table-scroll"><table><thead><tr><th>Rank</th><th>Player</th>${heads.map(([h, o, k]) => `<th class="n${o === 2 ? ' opt2' : o ? ' opt' : ''}${k ? ' ' + k : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
-    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name)}</td><td class="n mrec nowrap">${r.w + r.otw}-${r.l}-${r.otl}</td>${n(r.gp, 1)}${n(r.w, 1)}${n(r.l, 1)}${n(r.otw, 2)}${n(r.otl, 2)}<td class="n"><b>${r.pts}</b></td>${showPtsPct(month) ? n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 2) : ''}${n(r.gf, 2)}${n(r.ga, 2)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 2)}${n(r.sa, 2)}${n(r.sf ? pct(r.gf / r.sf) : '–', 2)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 2)}${n(r.so, 2)}${n(r.hw + '-' + r.hl, 2)}${n(r.rw + '-' + r.rl, 2)}${n(r.streak, 2)}</tr>`).join('')
+    rows.map((r, i) => `<tr class="${i === 0 && r.gp ? 'leader' : ''}"><td>${i + 1}</td><td>${who(r.name, 26, champMark(r.name, month))}</td><td class="n mrec nowrap">${r.w + r.otw}-${r.l}-${r.otl}</td>${n(r.gp, 1)}${n(r.w, 1)}${n(r.l, 1)}${n(r.otw, 2)}${n(r.otl, 2)}<td class="n"><b>${r.pts}</b></td>${showPtsPct(month) ? n(r.gp ? pct(r.pts / (r.gp * D.config.points.win)) : '–', 2) : ''}${n(r.gf, 2)}${n(r.ga, 2)}${n((r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga))}${n(r.sf, 2)}${n(r.sa, 2)}${n(r.sf ? pct(r.gf / r.sf) : '–', 2)}${n(r.sa ? pct(1 - r.ga / r.sa) : '–', 2)}${n(r.so, 2)}${n(r.hw + '-' + r.hl, 2)}${n(r.rw + '-' + r.rl, 2)}${n(r.streak, 2)}</tr>`).join('')
   }</tbody></table></div><button class="more-stats" type="button">Show all stats</button></div>`;
 }
 
@@ -311,7 +316,7 @@ const view = {
     const card = (title, link, body) => `<section class="card pc"><h2>${title}${link ? `<a href="${link[1]}">${link[0]}</a>` : ''}</h2>${body}</section>`;
     const sign = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
     const stand = `<div class="table-scroll"><table class="ptable"><thead><tr><th>Rank</th><th>Player</th><th class="n">W</th><th class="n">L</th><th class="n">Diff</th><th class="n">Pts</th></tr></thead><tbody>${
-      board.map((r, i) => `<tr data-tc="${esc(r.name)}"><td>${i + 1}</td><td><div class="pl">${member(r.name)?.logo ? `<img class="tlogo sq" src="${esc(member(r.name).logo)}" alt="" loading="lazy">` : ''}<span><b>${esc(r.name)}</b><small>${esc(team(r.name))}</small></span></div></td><td class="n">${r.w + r.otw}</td><td class="n">${r.l + r.otl}</td><td class="n">${sign(r.gf - r.ga)}</td><td class="n"><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`;
+      board.map((r, i) => `<tr data-tc="${esc(r.name)}"><td>${i + 1}</td><td><div class="pl">${member(r.name)?.logo ? `<img class="tlogo sq" src="${esc(member(r.name).logo)}" alt="" loading="lazy">` : ''}<span><b>${nm(r.name)}${champMark(r.name, useNow ? '' : prev)}</b><small>${esc(team(r.name))}</small></span></div></td><td class="n">${r.w + r.otw}</td><td class="n">${r.l + r.otl}</td><td class="n">${sign(r.gf - r.ga)}</td><td class="n"><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`;
     const recent = counted.sort(cmpNew).slice(0, 3).map(g => `<div class="rrow"><span class="d">${dateShort(g.date)}</span><span class="t ${g.hg > g.rg ? 'wint' : 'lost'}">${nm(g.home)}</span><span class="s">${g.hg > g.rg ? `<b class="win">${g.hg}</b> – ${g.rg}` : `${g.hg} – <b class="win">${g.rg}</b>`}</span><span class="t r ${g.hg > g.rg ? 'lost' : 'wint'}">${nm(g.road)}${g.playoff ? ' <span class="tag">Playoffs</span>' : ''}</span></div>`).join('');
     const days = typeof upcomingDays === 'function' && D.members.length > 1 ? upcomingDays(3).map(d => dayView(d)).filter(Boolean) : [];
     const games = days.flatMap(v => v.playoff ? [] : v.rows.filter(r => !r.result).map(r => ({ ...r, date: v.date })));
