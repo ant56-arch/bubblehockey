@@ -23,6 +23,6 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127'; const fs = require
   ok('schedule page has no sideways scroll', !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
   // October's real playoffs (already played on one day) are unaffected
   const q = await (await b.newContext({ viewport: { width: 390, height: 900 } })).newPage(); await q.clock.install({ time: new Date('2026-10-28T13:00:00') }); await q.goto(BASE + '/#/schedule'); await q.waitForTimeout(800);
-  const heads = await q.$$eval('.day .dayhead', d => d.map(x => x.innerText.replace(/\s+/g, ' '))); ok('October: Oct 28 is still the one 6-game playoff day', heads[0].includes('Oct 28') && heads[0].includes('Playoffs') && heads[0].includes('6 games'), heads[0]);
+  const heads = await q.$$eval('.day .dayhead', d => d.map(x => x.textContent.replace(/\s+/g, ' '))); ok('October: Oct 28 is still the one 6-game playoff day', heads[0].includes('Oct 28') && heads[0].includes('Playoffs') && heads[0].includes('6 games'), heads[0]);
   console.log('page errors:', errs); console.log(fails.length ? 'FAILED: ' + fails.join('; ') : 'ALL PASSED'); await b.close();
 })();

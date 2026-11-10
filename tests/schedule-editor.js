@@ -29,7 +29,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127'; const fs = require
   ok('swap writes one override to data/schedule.json', puts.length === 1 && saved.overrides.length === 1 && saved.overrides[0].home === r0 && saved.overrides[0].road === h0 && saved.overrides[0].date === day, JSON.stringify(saved.overrides));
   ok('the swapped game now has the other player at home', (await ev(() => { const r = dayView('2026-11-09').rows[0]; return r.home + '>' + r.road + ':' + r.edited; })) === `${r0}>${h0}:true`);
   await open('#/schedule'); await p.click('.chip[data-m="2026-11"]').catch(() => { }); await p.waitForTimeout(300);
-  ok('schedule page shows the edit mark', (await p.$$eval('.day', ds => { const d = ds.find(x => /Nov 9/.test(x.innerText)); return d ? d.innerText : ''; })).includes('✎'));
+  ok('schedule page shows the edit mark', (await p.$$eval('.day', ds => { const d = ds.find(x => /Nov 9/.test(x.textContent)); return d ? d.textContent : ''; })).includes('✎'));
   await open('#/add'); await p.click('[data-m=schedule]'); await p.selectOption('#s-day', day); await p.click('[data-ssw="0"]'); await noteHas(/now the home player/);
   ok('swapping back leaves no override behind', JSON.parse(files['data/schedule.json']).overrides.length === 0);
   // 2. move game 2 to another day
