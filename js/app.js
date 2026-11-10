@@ -284,7 +284,7 @@ function bracketHTML(month) {
   const col = r => `<div class="round"><h3>${r.label}</h3><div class="matches">${r.nums.map(n => card(G[n])).join('')}</div></div>`;
   const rounds = k => B.rounds.filter(r => r.kind === k);
   return `${champion ? `<div class="champ-card">${member(champion) && member(champion).logo ? `<img src="${esc(member(champion).logo)}" alt="">` : '<span style="font-size:2rem">🏆</span>'}<div><small>${monthLabel(month)} champion</small><b>${nm(champion, '')}</b>${member(champion) && member(champion).team_name ? `<span>${esc(member(champion).team_name)}</span>` : ''}</div></div>` : ''}<p class="muted">${B.seeds.length} teams · ${B.list.length - 1} games${B.S.P > B.seeds.length ? ` · top ${B.S.P - B.seeds.length} seeds get a bye` : ''}${live ? ' · seeded from the current standings' : ''}.</p>${howTo(`Every month all the teams are seeded by the month's standings into a double-elimination bracket: lose once and you drop to the losers bracket, lose twice and you are out. The winners-bracket champion meets the losers-bracket champion in the grand final; if the losers-bracket champion wins it, there is one more game. ${B.seeds.length} teams make ${B.list.length - 1} games plus that possible extra one${B.S.P > B.seeds.length ? `, and the top ${B.S.P - B.seeds.length} seeds skip the first round` : ''}.${live ? ' The bracket is seeded from the current standings and updates as playoff games are added.' : ''}`)}
-    <div class="bracket dbl"><div class="dbl-main">
+    <p class="swipe-hint">Swipe sideways to follow the bracket →</p><div class="bracket dbl"><div class="dbl-main">
       <div class="lane-wrap"><div class="lane-label">Winners bracket</div><div class="lane wb">${rounds('W').map(col).join('')}</div></div>
       ${rounds('L').length ? `<div class="lane-wrap"><div class="lane-label">Losers bracket</div><div class="lane lb">${rounds('L').map(col).join('')}</div></div>` : ''}
     </div><div class="dbl-gf"><div class="lane-label">Grand final</div>${rounds('GF').map(col).join('')}</div></div>`;
@@ -294,7 +294,7 @@ function bracketHTML(month) {
 function drawBracketLines() {
   document.querySelectorAll('.bracket').forEach(br => {
     let svg = br.querySelector('svg.bracket-lines'); if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'bracket-lines'); br.appendChild(svg); }
-    svg.innerHTML = ''; if (window.matchMedia('(max-width: 640px)').matches) return;            // phones stack the rounds, so no lines there
+    svg.innerHTML = '';
     svg.setAttribute('width', br.scrollWidth); svg.setAttribute('height', br.scrollHeight);
     const byN = {}; br.querySelectorAll('.match[data-n]').forEach(m => { byN[m.dataset.n] = m; });
     br.querySelectorAll('.match[data-src]').forEach(to => { if (to.dataset.kind === 'RESET') return; (to.dataset.src || '').split(',').filter(Boolean).forEach(s => {
