@@ -652,16 +652,6 @@ html[data-page="rules"] #rule-join h2 { color: #fff; } html[data-page="rules"] #
 html[data-page="rules"] #rule-join .btn { background: #fff; color: #0a1326; box-shadow: 4px 4px 0 #0a1326; } html[data-page="rules"] #rule-join .btn.ghost { border-color: #fff; background: transparent; color: #fff; box-shadow: 4px 4px 0 #0a1326; }
 @media (max-width: 640px) { html[data-page="rules"] .rule-card { padding: 78px 18px 18px; } html[data-page="rules"] .rule-card::before { font-size: 3.4rem; left: 16px; top: 10px; } html[data-page="rules"] .rules-glance .tile { width: 96px; height: 96px; } html[data-page="rules"] .rules-glance .tile b { font-size: 2.2rem; } html[data-page="rules"] .rules-glance .tiles { gap: 14px; } }
 
-/* ---------- RESOURCES: the arcade ---------- */
-html[data-page="resources"] body { background: radial-gradient(ellipse at 50% -10%, #2a0f4a, #07030f 60%) fixed; }
-html[data-page="resources"] #app { color: #f3e8ff; }
-html[data-page="resources"] h1 { color: #fff; text-shadow: 0 0 18px #ff2bd6, 0 0 44px #7a2bff; } html[data-page="resources"] h1::after { background: linear-gradient(90deg, #ff2bd6, #22e3ff); box-shadow: 0 0 18px #ff2bd6; }
-html[data-page="resources"] .lead, html[data-page="resources"] .muted { color: #c9b6e8; }
-html[data-page="resources"] .res-list .card { background: #120822; border: 2px solid #22e3ff; border-radius: 18px 18px 6px 6px; box-shadow: 0 0 0 1px #07030f, 0 0 26px rgba(34, 227, 255, .45), inset 0 0 40px rgba(122, 43, 255, .25); color: #f3e8ff; }
-html[data-page="resources"] .res-list .card:nth-child(2) { border-color: #ff2bd6; box-shadow: 0 0 26px rgba(255, 43, 214, .5), inset 0 0 40px rgba(122, 43, 255, .25); } html[data-page="resources"] .res-list .card:nth-child(3) { border-color: #ffe14a; box-shadow: 0 0 26px rgba(255, 225, 74, .45), inset 0 0 40px rgba(122, 43, 255, .25); }
-html[data-page="resources"] .res-list .card h2 { color: #fff; font-family: var(--ledfont); font-weight: 900; letter-spacing: .08em; }
-html[data-page="resources"] .btn { background: #ffe14a; color: #120822; box-shadow: 4px 4px 0 #ff2bd6; }
-
 @media (max-width: 800px) { .hero { grid-template-columns: 1fr; padding: 30px 16px 54px; } .hero-art { max-width: 420px; width: 100%; margin: 0 auto 6px; border-radius: 60px; border-width: 7px; } .hero-stats > div { padding: 8px 14px 10px; } .hero-stats b { font-size: 1.8rem; } }
 @media (prefers-reduced-motion: reduce) { html[data-page="members"] .mcard, html[data-page="members"] .mcard:nth-child(n) { transform: none; } }
 .feat .vs span { all: unset; } .feat .vs > span { font-family: var(--display); font-size: 1.1rem; color: #fff; background: var(--accent); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--accent); }
@@ -726,3 +716,41 @@ html[data-page="standings"] #app > .table-scroll td .who { font-family: var(--co
 html[data-page="standings"] #app > .table-scroll td .muted, html[data-page="standings"] #app > .table-scroll td span:not(.who):not(.who *) { color: #8f9bb0; font-family: var(--cond); font-size: .85rem; letter-spacing: .08em; }
 @media (max-width: 480px) { .brand { font-size: 1.02rem; gap: 8px; } .brand-logo { width: 36px; height: 36px; } .site-header .wrap { gap: 4px 8px; } .brand { flex: 1; } }
 html[data-page="members"] .mcard > .inner .tile b { font-size: .92rem; letter-spacing: -.02em; }
+
+/* ---------- RESOURCES and the mini games: deliberately plain, like any other page. Only the game picture itself has character. ---------- */
+html[data-page="resources"] h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); } html[data-page="resources"] h1::after { height: 5px; width: 120px; }
+html[data-page="resources"] .res-list .card h2 { font-family: var(--cond); font-weight: 800; letter-spacing: .08em; }
+.res-bar { display: none; }
+html[data-page="resources"][data-game]:not([data-game=""]) h1, html[data-page="resources"][data-game]:not([data-game=""]) .res-head .lead { display: none; }
+html[data-page="resources"][data-game]:not([data-game=""]) .res-head { justify-content: flex-end; margin-top: 14px; }
+html[data-page="resources"][data-game]:not([data-game=""]) .res-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 780px; margin: 4px auto 12px; }
+.res-back { font-family: var(--cond); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: .88rem; color: var(--text); background: var(--surface); border: 2px solid var(--text); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+.res-back:hover { background: var(--surface-2); }
+.res-title { font-family: var(--cond); font-weight: 800; letter-spacing: .16em; font-size: 1rem; color: var(--muted); text-transform: uppercase; }
+html[data-game="shootout"] .res-title::after { content: "Shootout"; } html[data-game="faceoff"] .res-title::after { content: "Face-off"; } html[data-game="slapshot"] .res-title::after { content: "Slap Shot"; }
+html[data-page="resources"] #sg > * { max-width: 780px; margin-left: auto; margin-right: auto; }
+html[data-page="resources"] #sg > .res-list { max-width: none; }
+html[data-page="resources"] #sg .btn { transform: none; border-radius: 8px; box-shadow: 0 3px 0 color-mix(in srgb, var(--text) 35%, transparent); background: var(--navy); color: var(--bg); }
+html[data-page="resources"] #sg .btn:hover { transform: translateY(-1px); } html[data-page="resources"] #sg .btn:active { transform: translateY(2px); box-shadow: none; }
+html[data-page="resources"] #sg .btn.ghost { background: var(--surface); color: var(--text); border: 2px solid var(--text); box-shadow: none; }
+/* the scoreboard above the game */
+html[data-page="resources"] .sg-board { gap: 10px; margin-bottom: 10px; }
+html[data-page="resources"] .sg-side { border: 2px solid var(--line); border-radius: 10px; padding: 8px 14px 10px; }
+html[data-page="resources"] .sg-side b { font-family: var(--cond); font-weight: 800; font-size: 1.1rem; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-page="resources"] .sg-side.on { border-color: var(--text); box-shadow: none; }
+html[data-page="resources"] .sg-num { font-family: var(--display); font-weight: 400; font-size: 2rem; }
+/* the game picture: the table under its dome, in a plain rounded frame */
+html[data-page="resources"] .sg-scene, html[data-page="resources"] .sg-scene.wide { max-width: 780px; border: 6px solid #10141b; border-radius: 26px; overflow: hidden; box-shadow: 0 0 0 2px #59616f, 0 18px 30px -16px rgba(10, 23, 48, .5); }
+@media (min-width: 641px) { html[data-page="resources"] #sg > .sg-scene, html[data-page="resources"] #sg > .sg-scene.wide { max-width: min(780px, calc((100vh - 390px) * 1.4)); min-width: 420px; } }
+html[data-page="resources"] .sg-ctl, html[data-page="resources"] .sg-ctl.wide, html[data-page="resources"] .sg-end { max-width: 780px; }
+html[data-page="resources"] .sg-meta { font-family: var(--cond); letter-spacing: .12em; margin-top: 12px; }
+html[data-page="resources"] .sg-result { font-family: var(--display); font-weight: 400; font-size: 1.5rem; letter-spacing: .03em; margin-right: 8px; }
+html[data-page="resources"] #sg .sg-picks { gap: 12px; }
+html[data-page="resources"] #sg .sg-pick { min-height: 64px; font-size: 1.05rem; }
+html[data-page="resources"] #sg .fo-tap { min-height: 88px; font-family: var(--display); font-weight: 400; font-size: 1.8rem; letter-spacing: .06em; border-radius: 12px; background: var(--accent); color: #fff; box-shadow: 0 5px 0 color-mix(in srgb, var(--accent) 55%, #000); }
+html[data-page="resources"] #sg .fo-two .fo-tap { font-size: 1.25rem; }
+html[data-page="resources"] #sg .sg-pick:active, html[data-page="resources"] #sg .fo-tap:active { transform: translateY(4px); box-shadow: none; }
+html[data-page="resources"] .sg-end { text-align: center; } html[data-page="resources"] .sg-end .btnrow { justify-content: center; }
+html[data-page="resources"] .key-hint { font-family: var(--cond); letter-spacing: .1em; text-transform: uppercase; font-size: .78rem; color: var(--muted); margin: 12px 0 0; }
+@media (hover: none) { html[data-page="resources"] .key-hint { display: none; } }
+@media (max-width: 640px) { html[data-page="resources"][data-game]:not([data-game=""]) .res-bar { margin: 2px 0 10px; } html[data-page="resources"] .sg-scene { border-width: 4px; border-radius: 18px; } html[data-page="resources"] .sg-side { padding: 6px 10px 8px; } html[data-page="resources"] .sg-num { font-size: 1.6rem; } html[data-page="resources"] #sg .sg-pick { min-height: 60px; font-size: 1rem; } html[data-page="resources"][data-game]:not([data-game=""]) .res-head { display: none; } }

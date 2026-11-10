@@ -143,59 +143,62 @@ function foFrame(now) {
   // ice spray when the sticks clash
   if (R && u > hit && u < hit + 0.35) { c.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 14; i++) { const a = i * 1.7, r = (u - hit) * 160 * (0.4 + (i % 4) / 4); c.fillRect(FO_DOT.x + Math.cos(a) * r, FO_DOT.y - Math.abs(Math.sin(a)) * r * 0.7 - 2, 2.2, 2.2); } }
   // false start banner
-  if (R && R.fs >= 0 && u < 1.1) { c.save(); c.translate(240, 120); const pop = Math.min(1, (u + 0.9) * 5); c.scale(0.7 + 0.3 * pop, 0.7 + 0.3 * pop); c.font = '900 40px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText('FALSE START!', 0, 0); c.fillStyle = '#c1272d'; c.fillText('FALSE START!', 0, 0); c.restore(); }
+  if (R && R.fs >= 0 && u < 1.1) { c.save(); c.translate(240, 120); const pop = Math.min(1, (u + 0.9) * 5); c.scale(0.7 + 0.3 * pop, 0.7 + 0.3 * pop); c.font = '40px Anton, Impact, "Arial Narrow", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText('FALSE START!', 0, 0); c.fillStyle = '#c1272d'; c.fillText('FALSE START!', 0, 0); c.restore(); }
+  sgDome(c);
   if (R && !R.finished && u >= hit + 1.1) { R.finished = true; foShown(); }
 }
 const name2 = p => String(foName(p)).toUpperCase().slice(0, 8);
 
-/* A player in profile, facing right when face = 1: bent knees, leaning over, both hands on a stick whose blade rests beside the dot. s = swing (0 to 1). */
+/* A face-off player in profile (facing right when face = 1), drawn like the other players: crouched over the dot, both hands on the stick. s = the swing at the puck (0 to 1). */
 function foPlayer(c, x, y, face, pal, s, T, name, happy) {
-  c.save(); c.translate(x, y); c.scale(face, 1);
-  const breathe = Math.sin(T * 2.4) * 1.2, lean = 0.62 + s * 0.08, hip = { x: -6, y: -48 + breathe };
-  c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(4, 3, 46, 8, 0, 0, 6.3); c.fill();
-  const leg = (kx, ky, ax, ay, back) => { sgLimb(c, hip.x, hip.y, kx, ky, 17, pal.dark); sgLimb(c, kx, ky, ax, ay, 12, '#e8edf5'); sgRR(c, ax - 9, ay - 2, 24, 11, 5); sgFS(c, '#111827'); c.fillStyle = '#d5dde8'; c.beginPath(); c.roundRect(ax - 11, ay + 8, 30, 3.4, 2); c.fill(); c.lineWidth = 1.3; c.strokeStyle = SG_INK; c.stroke(); };
-  leg(-20, -26, -28, -8, true); leg(16, -28, 24, -8, false);
-  // torso, leaning forward from the hip
-  c.save(); c.translate(hip.x, hip.y); c.rotate(lean);
-  c.beginPath(); c.moveTo(-14, 4); c.lineTo(-16, -40); c.quadraticCurveTo(0, -52, 17, -40); c.lineTo(15, 4); c.closePath(); sgFS(c, sgGrad(c, -16, -50, 16, 4, pal.light, pal.main, pal.dark));
-  c.fillStyle = pal.trim; c.fillRect(-15, -6, 30, 4); c.fillStyle = pal.dark; c.fillRect(-15.5, -12, 31, 3);
-  c.fillStyle = '#4a2f1a'; c.beginPath(); c.ellipse(-4, -52, 9, 6, -0.3, 0, 6.3); c.fill();                      // hair at the back
-  c.beginPath(); c.arc(5, -60, 12.5, 0, 6.3); sgFS(c, sgGrad(c, -6, -72, 16, -48, '#f8fafc', '#aeb9c9'));           // helmet
-  c.fillStyle = pal.main; c.beginPath(); c.arc(5, -60, 12.5, Math.PI * 1.05, Math.PI * 1.75); c.lineTo(5, -60); c.closePath(); c.fill();
-  c.fillStyle = '#f1c9a5'; c.beginPath(); c.ellipse(13, -56, 5.5, 7.5, 0.2, 0, 6.3); c.fill(); c.lineWidth = 1.6; c.strokeStyle = SG_INK; c.stroke();       // face
-  c.fillStyle = 'rgba(147,197,253,.5)'; c.beginPath(); c.roundRect(11, -66, 11, 17, 4); c.fill(); c.lineWidth = 1.4; c.strokeStyle = 'rgba(30,64,175,.7)'; c.stroke();       // visor
-  c.fillStyle = '#0b1426'; c.beginPath(); c.arc(14, -59, 1.4, 0, 6.3); c.fill();                                   // eye
-  if (happy) { c.strokeStyle = '#0b1426'; c.lineWidth = 1.3; c.beginPath(); c.arc(15, -53, 2.6, 0.1, Math.PI - 0.1); c.stroke(); }
-  c.restore();
-  // arms and stick (the blade slides from beside the dot to the dot when s goes from 0 to 1)
-  const sh = { x: hip.x + 4 * Math.cos(lean) + 38 * Math.sin(lean), y: hip.y + 4 * Math.sin(lean) - 38 * Math.cos(lean) };
-  const e = 1 - (1 - s) ** 3, B = { x: 56 + 36 * e, y: -14 - Math.sin(s * Math.PI) * 7 }, H1 = { x: 42 + 26 * e, y: -58 + 6 * e }, H2 = { x: H1.x + (B.x - H1.x) * 0.5, y: H1.y + (B.y - H1.y) * 0.5 };
-  sgLimb(c, sh.x, sh.y, (sh.x + H1.x) / 2 - 2, (sh.y + H1.y) / 2 + 9, 11, pal.main); sgLimb(c, (sh.x + H1.x) / 2 - 2, (sh.y + H1.y) / 2 + 9, H1.x, H1.y, 10, pal.main);
-  c.lineCap = 'round'; c.strokeStyle = SG_INK; c.lineWidth = 6.5; c.beginPath(); c.moveTo(H1.x - 6, H1.y - 12); c.lineTo(B.x, B.y); c.stroke(); c.strokeStyle = '#2b3445'; c.lineWidth = 4; c.stroke();
-  c.beginPath(); c.moveTo(B.x - 3, B.y - 3); c.lineTo(B.x + 16, B.y - 3); c.lineTo(B.x + 17, B.y + 3); c.lineTo(B.x - 3, B.y + 3); c.closePath(); sgFS(c, '#1f2937', 1.7); c.fillStyle = '#f8fafc'; c.fillRect(B.x + 2, B.y - 1.4, 12, 2.8);
-  sgLimb(c, sh.x + 4, sh.y + 5, (sh.x + H2.x) / 2 + 4, (sh.y + H2.y) / 2 + 5, 9, pal.main); sgLimb(c, (sh.x + H2.x) / 2 + 4, (sh.y + H2.y) / 2 + 5, H2.x, H2.y, 9, pal.main);
-  for (const g of [H1, H2]) { c.beginPath(); c.arc(g.x, g.y, 5.6, 0, 6.3); sgFS(c, '#1f2937', 1.5); }
+  c.save(); c.translate(x, y); c.scale(face * 0.5, 0.5);
+  const J = pal.main, JD = pal.sh, Y = pal.acc, PN = pal.pant, PND = pal.pantd, lean = 0.62 + s * 0.08, hip = [-12, -100 + Math.sin(T * 2.4) * 2], dir = [Math.sin(lean), -Math.cos(lean)];
+  const ik = (a, t, l1, l2, sign) => { const dx = t[0] - a[0], dy = t[1] - a[1], d = Math.max(1, Math.min(Math.hypot(dx, dy), l1 + l2 - .5)), an = Math.acos(Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)))), b = Math.atan2(dy, dx) + sign * an; return [a[0] + l1 * Math.cos(b), a[1] + l1 * Math.sin(b)]; };
+  c.fillStyle = 'rgba(16,26,51,.16)'; c.beginPath(); c.ellipse(8, 8, 100, 15, 0, 0, 6.3); c.fill();
+  const leg = (k, a) => {
+    rgTube(c, [k, a], 22, J, JD); rgLine(c, [rgMix2(k, a, .4), rgMix2(k, a, .58)], 22, RG_W, 'butt'); rgLine(c, [rgMix2(k, a, .64), rgMix2(k, a, .76)], 22, Y, 'butt');
+    rgBand(c, [[a[0] - 14, a[1] + 18], [a[0] + 26, a[1] + 18], [a[0] + 20, a[1] + 28], [a[0] - 10, a[1] + 28]], '#e9edf4', 3, 3); rgLine(c, [[a[0] - 20, a[1] + 30], [a[0] + 34, a[1] + 30]], 6, RG_INK); rgLine(c, [[a[0] - 20, a[1] + 30], [a[0] + 34, a[1] + 30]], 2.6, '#c9d1de');
+    rgShape(c, [[a[0] - 15, a[1] - 10], [a[0] + 13, a[1] - 10], [a[0] + 32, a[1] + 8], [a[0] + 30, a[1] + 19], [a[0] - 17, a[1] + 19]], RG_BOOT, RG_BOOTD, 8); rgLine(c, [[a[0] + 2, a[1] - 2], [a[0] + 14, a[1] + 2]], 2.4, RG_W);
+    rgTube(c, [hip, k], 31, PN, PND); rgPad(c, k, 13, RG_W, RG_WD, 3.2);
+  };
+  leg([-46, -56], [-60, -30]); leg([32, -60], [46, -30]);
+  rgTube(c, [[hip[0] - 8, hip[1] + 2], [hip[0] + 10, hip[1] + 2]], 42, PN, PND);
+  const sh = [hip[0] + dir[0] * 86, hip[1] + dir[1] * 86], w0 = [hip[0] + dir[0] * 16, hip[1] + dir[1] * 16];
+  rgTube(c, [w0, sh], 52, J, JD); rgLine(c, [rgMix2(w0, sh, .0), rgMix2(w0, sh, .1)], 52, RG_W, 'butt'); rgLine(c, [rgMix2(w0, sh, .03), rgMix2(w0, sh, .07)], 52, Y, 'butt');
+  // head: helmet, visor, the face looking down at the dot
+  const hd = [sh[0] + dir[0] * 34 + 4, sh[1] + dir[1] * 34 - 4], r = 22;
+  rgLine(c, [sh, hd], 24, RG_INK); rgLine(c, [sh, hd], 18, '#cf9870');
+  c.beginPath(); c.ellipse(hd[0] + 12, hd[1] + 7, 16, 18, 0, 0, 6.3); c.fillStyle = '#f0c39c'; c.fill(); c.lineWidth = 3.2; c.strokeStyle = RG_INK; c.stroke();
+  c.beginPath(); c.arc(hd[0], hd[1], r * 1.08, 0, 6.3); c.fillStyle = pal.sh; c.fill(); c.lineWidth = 3.8; c.stroke(); c.beginPath(); c.arc(hd[0] - 4, hd[1] - 5, r * .8, 0, 6.3); c.fillStyle = pal.main; c.fill();
+  c.lineWidth = 6.5; c.strokeStyle = RG_W; c.lineCap = 'butt'; c.beginPath(); c.moveTo(hd[0] - r, hd[1] + 6); c.quadraticCurveTo(hd[0], hd[1] + 14, hd[0] + r, hd[1] + 5); c.stroke();
+  rgBand(c, [[hd[0] + 8, hd[1] + 10], [hd[0] + 30, hd[1] + 8], [hd[0] + 28, hd[1] + 24], [hd[0] + 10, hd[1] + 26]], 'rgba(160,210,255,.62)', 2.8, 3);
+  c.fillStyle = RG_INK; c.beginPath(); c.arc(hd[0] + 19, hd[1] + 16, 2.6, 0, 6.3); c.fill();
+  if (happy) { c.lineWidth = 2.6; c.strokeStyle = RG_INK; c.lineCap = 'round'; c.beginPath(); c.arc(hd[0] + 18, hd[1] + 27, 5, 0.2, Math.PI - 0.2); c.stroke(); }
+  // the stick and both arms; the blade slides from beside the dot onto it as s goes from 0 to 1
+  const e = 1 - (1 - s) ** 3, B = [112 + 72 * e, -24 - Math.sin(s * Math.PI) * 14], H1 = [84 + 52 * e, -118 + 12 * e], butt = [H1[0] - 12, H1[1] - 26], H2 = rgMix2(H1, B, .5);
+  const arm = (t, sign) => { const el = ik(sh, t, 46, 44, sign); rgTube(c, [sh, el, t], 22, J, JD); rgLine(c, [rgMix2(el, t, .5), rgMix2(el, t, .72)], 22, RG_W, 'butt'); rgPad(c, el, 12, RG_W, RG_WD, 3);
+    const ang = Math.atan2(t[1] - el[1], t[0] - el[0]) * 180 / Math.PI, g = [[-12, -15], [12, -16], [22, -6], [21, 9], [10, 16], [-12, 15]].map(p => rgRot([t[0] + p[0], t[1] + p[1]], t, ang));
+    rgShape(c, g, PN, PND, 7, 3.4); rgBand(c, [[-12, -15], [-3, -15.4], [-3, 15.4], [-12, 15]].map(p => rgRot([t[0] + p[0], t[1] + p[1]], t, ang)), Y, 2.6, 2); };
+  arm(H1, 1);
+  rgLine(c, [butt, B], 10, RG_INK); rgLine(c, [butt, B], 5.5, RG_WOOD); rgLine(c, [B, [B[0] + 34, B[1] + 1]], 17, RG_INK); rgLine(c, [B, [B[0] + 34, B[1] + 1]], 11, RG_BOOT); rgLine(c, [[B[0] + 10, B[1]], [B[0] + 28, B[1] + 1]], 4.5, RG_W);
+  arm(H2, 1); rgPad(c, sh, 17, Y, Y, 3.4);
   c.restore();
 }
-/* The referee, facing us: black and white stripes, white helmet, orange armbands, whistle, one arm out holding the puck. */
+/* The referee, facing us: striped jersey, white helmet, orange armbands, one arm out holding the puck over the dot (the other goes up for a false start). */
 function foRef(c, x, y, s, raiseOther, T, dip = 0) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(0, 3, 32, 6, 0, 0, 6.3); c.fill();
-  for (const sx of [-1, 1]) { sgRR(c, sx * 9 - 8, -56, 16, 52, 7); sgFS(c, '#0b1426'); sgRR(c, sx * 9 - 10, -6, 20, 10, 4); sgFS(c, '#111827', 1.6); c.fillStyle = '#cbd5e1'; c.fillRect(sx * 9 - 12, 5, 24, 3); }
-  c.beginPath(); c.moveTo(-20, -52); c.lineTo(-24, -98); c.quadraticCurveTo(0, -108, 24, -98); c.lineTo(20, -52); c.closePath(); sgFS(c, '#f8fafc');
-  c.save(); c.clip(); c.fillStyle = '#0b1426'; for (let i = -24; i < 24; i += 9) c.fillRect(i, -110, 4.5, 60); c.restore();
-  c.beginPath(); c.moveTo(-20, -52); c.lineTo(-24, -98); c.quadraticCurveTo(0, -108, 24, -98); c.lineTo(20, -52); c.closePath(); c.lineWidth = 2; c.strokeStyle = SG_INK; c.stroke();
-  const wave = raiseOther ? Math.sin(T * 14) * 3 : 0;
-  sgLimb(c, -22, -92, -34, -70 - (raiseOther ? 36 : 0), 11, '#f8fafc'); sgLimb(c, -34, -70 - (raiseOther ? 36 : 0), -36 + wave, -52 - (raiseOther ? 48 : 0), 10, '#f8fafc');      // free arm (up for a false start)
-  sgLimb(c, 22, -92, 30, -66 + dip * 0.5, 11, '#f8fafc'); sgLimb(c, 30, -66 + dip * 0.5, 8, -48 + dip, 10, '#f8fafc');                                                                                          // arm holding the puck out
-  c.fillStyle = '#f97316'; c.fillRect(-37, -78, 6, 7); c.fillRect(27, -76, 6, 7);
-  c.beginPath(); c.arc(8, -48 + dip, 5.5, 0, 6.3); sgFS(c, '#1f2937', 1.5);
-  sgRR(c, -6, -108, 12, 11, 4); sgFS(c, '#e2c9a8', 1.6);
-  c.beginPath(); c.arc(0, -118, 13.5, 0, 6.3); sgFS(c, '#f1c9a5');
-  c.beginPath(); c.arc(0, -121, 14.5, Math.PI, 0); c.closePath(); sgFS(c, sgGrad(c, -14, -136, 14, -118, '#ffffff', '#c3ccda'));      // white helmet
-  c.fillStyle = '#0b1426'; for (const ex of [-4.5, 4.5]) { c.beginPath(); c.arc(ex, -118, 1.5, 0, 6.3); c.fill(); }
-  c.strokeStyle = '#0b1426'; c.lineWidth = 1.4; c.beginPath(); c.arc(0, -112, 4, 0.2, Math.PI - 0.2); c.stroke();
-  c.fillStyle = '#e5e7eb'; c.beginPath(); c.roundRect(-3, -106, 6, 4, 2); c.fill(); c.lineWidth = 1; c.strokeStyle = SG_INK; c.stroke();     // whistle
+  c.save(); c.translate(x, y); c.scale(s * 0.5, s * 0.5);
+  c.fillStyle = 'rgba(16,26,51,.16)'; c.beginPath(); c.ellipse(0, 8, 70, 12, 0, 0, 6.3); c.fill();
+  for (const sx of [-1, 1]) { rgTube(c, [[sx * 20, -104], [sx * 20, -24]], 28, '#27324f', '#141c33'); rgShape(c, [[sx * 20 - 19, -22], [sx * 20 + 19, -22], [sx * 20 + 21, 2], [sx * 20 - 21, 2]], RG_BOOT, RG_BOOTD, 8); rgLine(c, [[sx * 20 - 24, 8], [sx * 20 + 24, 8]], 6, RG_INK); rgLine(c, [[sx * 20 - 24, 8], [sx * 20 + 24, 8]], 2.6, '#c9d1de'); }
+  const body = [[-42, -100], [-50, -194], [-22, -216], [22, -216], [50, -194], [42, -100]];
+  rgShape(c, body, RG_W, RG_WD, 18); c.save(); rgPath(c, body, 18); c.clip(); c.fillStyle = '#1b2233'; for (let i = -50; i < 50; i += 19) c.fillRect(i, -220, 9.5, 124); c.restore(); rgPath(c, body, 18); c.lineWidth = 4; c.strokeStyle = RG_INK; c.stroke();
+  const wave = raiseOther ? Math.sin(T * 14) * 6 : 0, up = raiseOther ? 1 : 0, d2 = dip * 2;
+  const armF = [[-46, -188], [-70, -142 - up * 72], [-74 + wave, -104 - up * 96]], armP = [[46, -188], [62, -134 + d2 * .5], [16, -96 + d2]];
+  for (const a of [armF, armP]) { rgTube(c, a, 21, RG_W, RG_WD); rgLine(c, [rgMix2(a[0], a[1], .55), rgMix2(a[0], a[1], .85)], 21, '#f97316', 'butt'); rgPad(c, a[2], 11.5, '#27324f', '#141c33', 3.2); }
+  rgLine(c, [[0, -214], [0, -232]], 24, RG_INK); rgLine(c, [[0, -214], [0, -232]], 18, '#cf9870');
+  c.beginPath(); c.arc(0, -242, 27, 0, 6.3); c.fillStyle = '#f0c39c'; c.fill(); c.lineWidth = 3.6; c.strokeStyle = RG_INK; c.stroke();
+  c.beginPath(); c.arc(0, -248, 29, Math.PI, 0); c.closePath(); c.fillStyle = RG_W; c.fill(); c.stroke(); rgLine(c, [[-29, -248], [29, -248]], 4, RG_INK);
+  c.fillStyle = RG_INK; for (const ex of [-9, 9]) { c.beginPath(); c.arc(ex, -238, 3, 0, 6.3); c.fill(); } c.lineWidth = 2.8; c.lineCap = 'round'; c.beginPath(); c.arc(0, -228, 8, 0.25, Math.PI - 0.25); c.stroke();
+  rgBand(c, [[-7, -216], [7, -216], [7, -206], [-7, -206]], '#e5e7eb', 2.4, 3);
   c.restore();
 }
 
@@ -209,11 +212,11 @@ const foTapBtns = () => FO.mode === 'bot'
   : `<div class="fo-two"><button type="button" class="btn fo-tap" data-fo-tap="0" style="background:${SG_TEAM[0].main}">${esc(foName(0))}<small>key A</small></button><button type="button" class="btn fo-tap" data-fo-tap="1" style="background:${SG_TEAM[1].main}">${esc(foName(1))}<small>key L</small></button></div>`;
 
 function foRender() {
-  const root = document.getElementById('sg'); if (!root) return;
+  const root = document.getElementById('sg'); if (typeof resChrome === 'function') resChrome(); if (!root) return;
   const rec = foRec.get(), nameBox = (id, label, val) => `<label class="f">${label}<input id="${id}" list="sg-names" value="${esc(val)}" maxlength="20" autocomplete="off"></label>`;
   const dl = `<datalist id="sg-names">${D.members.map(m => `<option value="${esc(m.short_name)}">`).join('')}</datalist>`;
   if (FO.screen === 'menu') {
-    root.innerHTML = `<section class="card"><button class="link" data-res="list" type="button">← All games</button><h2 style="margin-top:8px">Face-off</h2><p class="muted">The referee holds the puck over the dot and drops it when he feels like it. <b>Tap the moment it drops.</b> Fastest hand wins the draw, but tap early and it is a false start. First to ${FO_WIN} draws wins.</p>
+    root.innerHTML = `<section class="card sg-menu"><h2 style="margin-top:4px">Face-off</h2><p class="muted">The referee holds the puck over the dot and drops it when he feels like it. <b>Tap the moment it drops.</b> Fastest hand wins the draw, but tap early and it is a false start. First to ${FO_WIN} draws wins.</p>
       <div class="btnrow"><button class="btn" data-fo="start" data-mode="bot">Play the computer</button><button class="btn ghost" data-fo="start" data-mode="two">Two players, one screen</button></div>
       ${rec.w + rec.l ? `<p class="muted" style="margin:12px 0 0">Your record against the computer: <b>${rec.w}–${rec.l}</b>${rec.best ? ` · fastest reaction <b>${rec.best} ms</b>` : ''}</p>` : ''}</section>`;
     return;
