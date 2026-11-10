@@ -29,7 +29,7 @@ let seedrng = 777; const rnd = () => (seedrng = (seedrng * 1664525 + 1013904223)
   await go(p, 'members'); await p.click('.mcard summary'); await p.waitForTimeout(200); await p.click('.mcard[open] .sub:nth-of-type(2) > summary').catch(() => {});
   const rec = await p.evaluate(() => ['Connor', 'Tommy', 'Trotta', 'Boban'].map(n => n + ' ' + (r => `${r.w}-${r.l} t${r.titles.length} f${r.finals} ru${r.runnerUps}`)(playoffRecord(n))).join(' | '));
   ok('OCTOBER: member playoff records unchanged', rec === 'Connor 3-0 t1 f1 ru0 | Tommy 2-2 t0 f1 ru1 | Trotta 1-2 t0 f0 ru0 | Boban 0-2 t0 f0 ru0', rec);
-  await go(p, 'schedule'); const days = await p.$$eval('.day .dayhead', d => d.map(x => x.innerText.replace(/\s+/g, ' '))); ok('OCTOBER: schedule still shows Oct 28 as the 6-game playoff day', days[0].includes('Oct 28') && days[0].includes('Playoffs') && days[0].includes('6 games'), days[0]);
+  await go(p, 'schedule'); const days = await p.$$eval('.day .dayhead', d => d.map(x => x.textContent.replace(/\s+/g, ' '))); ok('OCTOBER: schedule still shows Oct 28 as the 6-game playoff day', days[0].includes('Oct 28') && days[0].includes('Playoffs') && days[0].includes('6 games'), days[0]);
 
   // ---- 2. leagues of many sizes with a fully simulated playoff
   const base = JSON.parse(fs.readFileSync('data/games.json', 'utf8')), cfgBase = JSON.parse(fs.readFileSync('data/config.json', 'utf8'));
@@ -55,7 +55,7 @@ let seedrng = 777; const rnd = () => (seedrng = (seedrng * 1664525 + 1013904223)
   p = await open(membersCsv(25), { games: [] }, cfgBase); await go(p, 'playoffs'); ok('a league bigger than 20 is capped at 20 teams', await p.evaluate(() => buildBracket('2026-10').seeds.length) === 20);
   // ---- 4. the schedule splits a big bracket over the playoff days
   p = await open(membersCsv(20), { games: [] }, { ...cfgBase, schedule: { playoffDays: 2 } }, '2026-11-02T10:00:00'); await go(p, 'schedule'); await p.click('.chip[data-m="2026-11"]').catch(() => {}); await p.waitForTimeout(400);
-  const po = await p.$$eval('.day', d => d.filter(x => x.querySelector('.tag')?.textContent === 'Playoffs').map(x => ({ h: x.querySelector('.dayhead').innerText.replace(/\s+/g, ' '), rows: x.querySelectorAll('.mrow').length, labels: [...x.querySelectorAll('.mrow .muted')].slice(0, 3).map(e => e.textContent).join(',') })));
+  const po = await p.$$eval('.day', d => d.filter(x => x.querySelector('.tag')?.textContent === 'Playoffs').map(x => ({ h: x.querySelector('.dayhead').textContent.replace(/\s+/g, ' '), rows: x.querySelectorAll('.mrow').length, labels: [...x.querySelectorAll('.mrow .muted')].slice(0, 3).map(e => e.textContent).join(',') })));
   ok('20 teams: two playoff days, 20 + 19 games between them (the reset game only if needed)', po.length === 2 && po[0].rows + po[1].rows === 39 && Math.abs(po[0].rows - po[1].rows) <= 1, JSON.stringify(po.map(x => x.rows)));
   ok('later games are labelled by where their teams come from (Winner G3, Loser G7...)', /Winner G\d+|Loser G\d+/.test(po[0].labels + po[1].labels), po[1].labels);
   ok('schedule page: no sideways scroll with a 20-team playoff day', !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));

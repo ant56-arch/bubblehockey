@@ -135,7 +135,6 @@ html, body { overflow-x: clip; }
 .big { font-size: 1.25rem; color: var(--navy); }
 .more-text { margin-top: 12px; }
 :root[data-theme="dark"] .hero-stats b, :root[data-theme="dark"] .feat .vs div, :root[data-theme="dark"] .big { color: var(--text); }
-:root[data-theme="dark"] .hero-art { background: #e5e7eb; }
 @media (max-width: 800px) { .hero { grid-template-columns: 1fr; padding: 20px 16px; gap: 16px; } .pgrid { grid-template-columns: 1fr; } .hero-art { order: -1; max-width: 200px; margin: 0 auto; width: 100%; } }
 
 /* Members */
@@ -453,3 +452,221 @@ tr[style*="--tc"] > td:first-child { box-shadow: inset 3px 0 0 var(--tc, transpa
 :root[data-theme="dark"] .cpatch { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .5)); }
 
 .last-mark { margin-left: .4em; font-size: .95em; }
+
+/* =====================================================================================
+   ARENA THEME — "under the dome". Fresh ice by day (light), arena lights-out by night (dark).
+   Every page has its own stage: Home = the rink, Standings = the jumbotron, Schedule = ticket stubs,
+   Members = trading cards, Playoffs = the ice sheet and a banner in the rafters, Rules = the referee's book,
+   Resources = the arcade.
+   ===================================================================================== */
+:root {
+  --bg: #e9f1f7; --surface: #ffffff; --surface-2: #f0f5f9; --line: #cddbe6; --navy: #0a1730; --accent: #d81f2f; --blue: #1746c9;
+  --text: #0a1326; --muted: #56657a; --ink: #0a1730; --on-ink: #fff; --brand: #1746c9; --win: #0f7a3a; --radius: 14px; --radius-sm: 8px;
+  --led: #ffb000; --board: #0b0d10; --board-2: #15181d; --gold: #f2b01e;
+  --font: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --display: "Anton", Impact, "Arial Narrow Bold", sans-serif; --cond: "Barlow Condensed", "Arial Narrow", sans-serif; --ledfont: "Doto", ui-monospace, Menlo, monospace;
+  --shadow: 0 1px 0 #fff inset, 0 10px 30px -12px rgba(10, 23, 48, .25);
+}
+:root[data-theme="dark"] {
+  --bg: #060a13; --surface: #0e1524; --surface-2: #141d30; --line: #22304a; --navy: #eaf2ff; --accent: #ff3b4d; --blue: #5b8cff;
+  --text: #eaf2ff; --muted: #8ea0bb; --ink: #eaf2ff; --on-ink: #060a13; --brand: #7aa2ff; --win: #5fe08a; --shadow: 0 10px 34px -14px rgba(0, 0, 0, .8);
+}
+body { font-size: 1.02rem; letter-spacing: 0; }
+/* the ice: faint skate marks, a red line and a face-off circle behind everything */
+body { background-attachment: fixed; background:
+  radial-gradient(circle at 88% 62%, transparent 0 238px, color-mix(in srgb, var(--accent) 16%, transparent) 239px 244px, transparent 245px),
+  radial-gradient(circle at 88% 62%, color-mix(in srgb, var(--accent) 16%, transparent) 0 9px, transparent 10px),
+  linear-gradient(90deg, transparent calc(12% - 4px), color-mix(in srgb, var(--blue) 13%, transparent) calc(12% - 4px) calc(12% + 4px), transparent calc(12% + 4px)),
+  repeating-linear-gradient(112deg, color-mix(in srgb, var(--text) 3%, transparent) 0 1px, transparent 1px 46px),
+  repeating-linear-gradient(64deg, color-mix(in srgb, var(--text) 2%, transparent) 0 1px, transparent 1px 71px), var(--bg); }
+
+/* header = the scoreboard housing */
+.site-header { background: var(--board); border-bottom: 0; box-shadow: 0 3px 0 var(--accent), 0 6px 0 #fff, 0 9px 0 var(--blue), 0 18px 30px -12px rgba(0, 0, 0, .45); }
+:root[data-theme="dark"] .site-header { box-shadow: 0 3px 0 var(--accent), 0 6px 0 #0e1524, 0 9px 0 var(--blue), 0 18px 30px -12px #000; }
+.brand { font-family: var(--display); font-weight: 400; font-size: 1.28rem; letter-spacing: .04em; text-transform: uppercase; }
+.brand-logo { border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); width: 42px; height: 42px; }
+nav a { font-family: var(--cond); font-weight: 700; font-size: 1.02rem; letter-spacing: .09em; text-transform: uppercase; color: #9aa6b8; border-bottom: 0; position: relative; }
+nav a.active { color: var(--led); text-shadow: 0 0 12px rgba(255, 176, 0, .65); }
+nav a.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 2px; height: 3px; border-radius: 2px; background: var(--led); box-shadow: 0 0 10px var(--led); }
+.icon-btn { border-radius: 50%; border-color: #333a46; }
+.icon-btn:hover { background: #1c2129; }
+
+/* type */
+h1 { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: clamp(2.6rem, 7vw, 5rem); line-height: .95; margin: 44px 0 18px; color: var(--navy); position: relative; width: fit-content; max-width: 100%; }
+h1::after { content: ""; display: block; height: 9px; margin-top: 10px; width: min(100%, 220px); background: linear-gradient(90deg, var(--accent) 0 62%, transparent 62% 66%, var(--blue) 66%); transform: skewX(-24deg); transform-origin: left; }
+h2 { font-family: var(--cond); font-weight: 800; font-size: 1.35rem; letter-spacing: .1em; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+h2::before { content: ""; width: 15px; height: 9px; border-radius: 50%; background: var(--text); box-shadow: 0 3px 0 color-mix(in srgb, var(--text) 55%, transparent); flex: none; margin-bottom: 3px; }
+.card h2::before, .pc h2::before { display: none; }
+.lead { font-size: 1.1rem; }
+a { color: var(--blue); }
+
+/* surfaces */
+.card, .match, .champ-card { border-radius: var(--radius); box-shadow: var(--shadow); border-color: var(--line); }
+.btn { font-family: var(--cond); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; font-size: 1rem; background: var(--accent); color: #fff; border: 0; border-radius: 4px; transform: skewX(-9deg); padding: 11px 22px; box-shadow: 4px 4px 0 var(--navy); }
+:root[data-theme="dark"] .btn { box-shadow: 4px 4px 0 #000; }
+.btn:hover { transform: skewX(-9deg) translate(-1px, -2px); box-shadow: 6px 7px 0 var(--navy); filter: none; }
+.btn:active { transform: skewX(-9deg) translate(2px, 2px); box-shadow: 1px 1px 0 var(--navy); }
+.btn.ghost { background: var(--surface); color: var(--text); box-shadow: 4px 4px 0 var(--blue); border: 2px solid var(--text); }
+.btn.small { padding: 7px 14px; font-size: .88rem; }
+.chip { font-family: var(--cond); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border-radius: 4px; transform: skewX(-9deg); border: 2px solid var(--text); background: var(--surface); color: var(--text); }
+.chip.on { background: var(--text); color: var(--bg); }
+.chip small { opacity: .7; }
+.tag { font-family: var(--cond); letter-spacing: .08em; border-radius: 3px; }
+footer.wrap { max-width: none; margin-top: 80px; padding: 34px 24px 40px; border-top: 0; background: var(--board); color: #9aa6b8; box-shadow: 0 -3px 0 var(--blue), 0 -6px 0 #fff, 0 -9px 0 var(--accent); font-family: var(--cond); letter-spacing: .12em; text-transform: uppercase; }
+:root[data-theme="dark"] footer.wrap { box-shadow: 0 -3px 0 var(--blue), 0 -6px 0 #0e1524, 0 -9px 0 var(--accent); }
+footer.wrap a { color: var(--led); }
+footer .foot-logo { border-radius: 50%; width: 54px; height: 54px; box-shadow: 0 0 0 2px #fff; }
+
+/* ---------- HOME: the rink under the lights ---------- */
+.hero-band { background: radial-gradient(ellipse 60% 90% at 22% -10%, rgba(255, 255, 255, .22), transparent 60%), radial-gradient(ellipse 50% 80% at 82% -20%, rgba(120, 170, 255, .28), transparent 62%), linear-gradient(180deg, #070b14, #0c1a36 70%, #102347); border-bottom: 0; color: #fff; margin-bottom: 0; position: relative; overflow: hidden; }
+.hero-band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: linear-gradient(180deg, #f6c21a 0 5px, #fff 5px); }
+.hero { grid-template-columns: 1.1fr .9fr; padding: 54px 24px 70px; gap: 48px; }
+.hero .eyebrow { font-family: var(--ledfont); font-weight: 900; color: var(--led); font-size: 1rem; letter-spacing: .14em; text-shadow: 0 0 12px rgba(255, 176, 0, .7); background: #000; padding: 4px 12px; border-radius: 4px; border: 1px solid #2a2f38; display: inline-block; }
+.hero h1 { color: #fff; font-size: clamp(3rem, 7.4vw, 5.6rem); line-height: .92; margin: 20px 0 18px; width: auto; text-shadow: 0 6px 0 rgba(0, 0, 0, .35); }
+.hero h1::after { display: none; }
+.hero p { color: #c3d0e6; font-size: 1.15rem; }
+.hero .btn { font-size: 1.15rem; padding: 14px 30px; box-shadow: 5px 5px 0 #fff; }
+.hero .btn:hover { box-shadow: 7px 8px 0 #fff; }
+.hero-stats { margin-top: 34px; gap: 0; background: #000; border: 2px solid #2a2f38; border-radius: 10px; width: fit-content; box-shadow: inset 0 0 0 4px #0b0d10, 0 14px 30px -10px #000; overflow: hidden; }
+.hero-stats > div { padding: 10px 22px 12px; border-right: 2px solid #1b1f26; text-align: center; }
+.hero-stats > div:last-child { border-right: 0; }
+.hero-stats b { font-family: var(--ledfont); font-weight: 900; color: var(--led); font-size: 2.4rem; line-height: 1; text-shadow: 0 0 14px rgba(255, 176, 0, .75); }
+:root[data-theme="dark"] .hero-stats b { color: var(--led); }
+.hero-stats span { font-family: var(--cond); color: #8f9bb0; letter-spacing: .14em; font-size: .78rem; margin-top: 4px; }
+/* the rink itself: boards, blue lines, red line, centre circle, the logo at centre ice under the dome */
+.hero-art { position: relative; aspect-ratio: 1.55; padding: 0; border: 10px solid #fff; border-radius: 90px; overflow: hidden; transform: perspective(900px) rotateX(22deg) rotateZ(-4deg); box-shadow: 0 0 0 3px #f6c21a, 0 40px 60px -20px #000, 0 0 90px rgba(140, 190, 255, .35); background:
+  radial-gradient(circle at 50% 50%, transparent 0 21%, #d81f2f 21% 22.2%, transparent 22.2%),
+  linear-gradient(90deg, transparent 0 7%, #d81f2f 7% 7.6%, transparent 7.6% 31%, #1746c9 31% 32.8%, transparent 32.8% 49.3%, #d81f2f 49.3% 50.7%, transparent 50.7% 67.2%, #1746c9 67.2% 69%, transparent 69% 92.4%, #d81f2f 92.4% 93%, transparent 93%),
+  radial-gradient(circle at 19% 26%, transparent 0 8.6%, #d81f2f 8.6% 9.4%, transparent 9.4%), radial-gradient(circle at 19% 74%, transparent 0 8.6%, #d81f2f 8.6% 9.4%, transparent 9.4%),
+  radial-gradient(circle at 81% 26%, transparent 0 8.6%, #d81f2f 8.6% 9.4%, transparent 9.4%), radial-gradient(circle at 81% 74%, transparent 0 8.6%, #d81f2f 8.6% 9.4%, transparent 9.4%),
+  linear-gradient(135deg, #fdfeff, #dcebf7); }
+.hero-art img { position: absolute; left: 50%; top: 50%; width: 34%; max-width: none; transform: translate(-50%, -50%); border-radius: 50%; margin: 0; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35)); }
+.hero-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, .75) 0 8%, transparent 8% 14%, rgba(255, 255, 255, .35) 14% 17%, transparent 17% 100%); mix-blend-mode: screen; pointer-events: none; }
+.pgrid { margin-top: 46px; gap: 28px; }
+.pc { padding: 0; overflow: hidden; }
+.pc h2 { margin: 0; padding: 14px 20px; background: var(--board); color: #fff; font-size: 1.15rem; justify-content: space-between; border-bottom: 3px solid var(--accent); }
+.pc h2 a { font-family: var(--cond); color: var(--led); font-size: .85rem; letter-spacing: .1em; text-decoration: none; }
+.ptable th { font-family: var(--cond); letter-spacing: .12em; font-size: .8rem; }
+.ptable td b { font-size: 1.05rem; } .ptable td:last-child b { font-family: var(--ledfont); font-weight: 900; font-size: 1.5rem; color: var(--accent); }
+.ptable tbody td:first-child { font-family: var(--display); font-size: 1.5rem; color: color-mix(in srgb, var(--text) 35%, transparent); }
+.rrow .s { font-family: var(--ledfont); font-weight: 900; font-size: 1.35rem; background: var(--board); color: #7c8798; padding: 2px 12px; border-radius: 6px; } .rrow .s .win { color: var(--led); text-shadow: 0 0 10px rgba(255, 176, 0, .6); }
+.rrow .t { font-family: var(--cond); font-weight: 800; font-size: 1.15rem; letter-spacing: .04em; text-transform: uppercase; }
+.feat .vs div { font-family: var(--display); font-weight: 400; font-size: 1.7rem; text-transform: uppercase; letter-spacing: .02em; }
+.feat .vs span { font-family: var(--display); font-size: 1.1rem; color: #fff; background: var(--accent); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--accent); }
+/* champion: a banner hanging in the rafters */
+.pc:has(.champ-feat) { border: 0; background: transparent; box-shadow: none; overflow: visible; }
+.pc:has(.champ-feat) h2 { display: none; }
+.champ-feat { flex-direction: column; text-align: center; gap: 6px; padding: 34px 20px 64px; color: #fff; background: linear-gradient(180deg, #0f2b6b, #1746c9); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); border-top: 8px solid var(--gold); position: relative; filter: drop-shadow(0 18px 18px rgba(10, 23, 48, .35)); }
+.champ-feat::before { content: "CHAMPION"; font-family: var(--cond); font-weight: 800; letter-spacing: .34em; font-size: .85rem; color: var(--gold); }
+.champ-feat .trophy { font-size: 3rem; order: -1; }
+.champ-feat .big { font-family: var(--display); font-weight: 400; font-size: 2.6rem; text-transform: uppercase; color: #fff; line-height: 1; }
+.champ-feat .muted { color: #c9d6f5; font-family: var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+
+/* ---------- STANDINGS: the jumbotron ---------- */
+html[data-page="standings"] .stand { background: var(--board); border-radius: 22px; padding: 18px; border: 3px solid #2a2f38; box-shadow: inset 0 0 0 6px #000, 0 30px 50px -22px rgba(0, 0, 0, .7); position: relative; }
+html[data-page="standings"] .stand::before { content: "● LIVE ● STANDINGS ● LIVE ● STANDINGS ● LIVE ● STANDINGS ●"; display: block; font-family: var(--ledfont); font-weight: 900; color: #ff3b4d; letter-spacing: .3em; font-size: .85rem; text-align: center; white-space: nowrap; overflow: hidden; padding: 4px 0 12px; text-shadow: 0 0 10px rgba(255, 59, 77, .8); }
+html[data-page="standings"] .stand .table-scroll { border: 0; border-radius: 10px; background: #000; }
+html[data-page="standings"] .stand table { background: #000; color: #fff; }
+html[data-page="standings"] .stand th { background: #000; color: #6f7b8e; font-family: var(--cond); letter-spacing: .16em; border-bottom: 2px solid #1b1f26; }
+html[data-page="standings"] .stand td { border-color: #14171c; font-family: var(--ledfont); font-weight: 900; font-size: 1.45rem; color: var(--led); text-shadow: 0 0 10px rgba(255, 176, 0, .55); padding-top: 14px; padding-bottom: 14px; }
+html[data-page="standings"] .stand tbody tr, html[data-page="standings"] .stand tbody tr:nth-child(even) { background: #000; }
+html[data-page="standings"] .stand tbody tr:hover { background: #0c0f14; }
+html[data-page="standings"] .stand td .who { font-family: var(--display); font-size: 1.5rem; letter-spacing: .04em; text-transform: uppercase; color: #fff; text-shadow: none; }
+html[data-page="standings"] .stand td:first-child { color: #fff; text-shadow: none; font-family: var(--display); font-weight: 400; font-size: 1.9rem; }
+html[data-page="standings"] .stand tr.leader td:first-child { color: var(--gold); }
+html[data-page="standings"] .stand td b { color: #ff3b4d; text-shadow: 0 0 12px rgba(255, 59, 77, .7); font-size: 1.8rem; }
+html[data-page="standings"] .stand .more-stats { background: #15181d; color: var(--led); font-family: var(--cond); letter-spacing: .14em; text-transform: uppercase; border: 1px solid #2a2f38; border-radius: 6px; }
+
+/* ---------- SCHEDULE: ticket stubs ---------- */
+html[data-page="schedule"] .day { display: grid; grid-template-columns: 172px 1fr; column-gap: 26px; padding: 0 22px 12px 0; position: relative; overflow: hidden; border: 0; border-radius: 16px; background: var(--surface); }
+html[data-page="schedule"] .day > * { grid-column: 2; }
+html[data-page="schedule"] .day .dayhead { grid-column: 1; grid-row: 1 / span 60; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; margin: 0; padding: 22px 18px; background: var(--navy); color: var(--bg); border-right: 3px dashed var(--bg); position: relative; }
+html[data-page="schedule"] .day.today .dayhead { background: var(--accent); color: #fff; }
+html[data-page="schedule"] .day .dayhead b { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-height: 1; text-transform: uppercase; }
+html[data-page="schedule"] .day .dayhead .muted { color: inherit; opacity: .75; font-family: var(--cond); letter-spacing: .14em; text-transform: uppercase; font-size: .82rem; }
+html[data-page="schedule"] .day .dayhead::before, html[data-page="schedule"] .day .dayhead::after { content: ""; position: absolute; right: -14px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); }
+html[data-page="schedule"] .day .dayhead::before { top: -12px; } html[data-page="schedule"] .day .dayhead::after { bottom: -12px; }
+html[data-page="schedule"] .day .mhead { margin-top: 14px; font-family: var(--cond); letter-spacing: .16em; }
+html[data-page="schedule"] .day .mrow .who { font-family: var(--cond); font-weight: 700; font-size: 1.15rem; letter-spacing: .04em; text-transform: uppercase; }
+html[data-page="schedule"] .day .mrow .vs b { font-family: var(--ledfont); font-weight: 900; font-size: 1.25rem; }
+@media (max-width: 640px) { html[data-page="schedule"] .day { grid-template-columns: 1fr; padding: 0 14px 10px; } html[data-page="schedule"] .day > *, html[data-page="schedule"] .day .dayhead { grid-column: 1; grid-row: auto; } html[data-page="schedule"] .day .dayhead { flex-direction: row; align-items: center; margin: 0 -14px; padding: 12px 14px; border-right: 0; border-bottom: 3px dashed var(--bg); } html[data-page="schedule"] .day .dayhead::before, html[data-page="schedule"] .day .dayhead::after { top: auto; bottom: -13px; right: auto; left: -12px; } html[data-page="schedule"] .day .dayhead::after { left: auto; right: -12px; } html[data-page="schedule"] .day .dayhead b { font-size: 1.4rem; } }
+
+/* ---------- MEMBERS: trading cards ---------- */
+html[data-page="members"] .grid.members { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 30px 26px; }
+html[data-page="members"] .mcard { padding: 0; border: 6px solid var(--tc, var(--navy)); border-radius: 20px; overflow: hidden; background: var(--surface); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text), 10px 14px 0 -2px color-mix(in srgb, var(--text) 18%, transparent); transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s; }
+html[data-page="members"] .mcard:nth-child(odd) { transform: rotate(-1.2deg); } html[data-page="members"] .mcard:nth-child(even) { transform: rotate(1deg); } html[data-page="members"] .mcard:nth-child(3n) { transform: rotate(.4deg); }
+html[data-page="members"] .mcard:hover, html[data-page="members"] .mcard[open] { transform: rotate(0) translateY(-6px); }
+html[data-page="members"] .mcard summary { padding: 0 0 16px; }
+html[data-page="members"] .mtop { flex-direction: column; gap: 0; position: relative; padding: 26px 16px 0; background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--tc, #1746c9) 70%, #fff) 0, color-mix(in srgb, var(--tc, #1746c9) 80%, #000) 46%, #05070c 100%); }
+html[data-page="members"] .mtop::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(120deg, rgba(255, 255, 255, .09) 0 2px, transparent 2px 14px); pointer-events: none; }
+html[data-page="members"] .mlogo { width: 168px; height: 168px; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 12px 24px rgba(0, 0, 0, .5); position: relative; }
+html[data-page="members"] .minfo { width: calc(100% + 32px); margin: -22px -16px 0; text-align: center; position: relative; padding: 34px 14px 14px; background: var(--surface); clip-path: polygon(0 26px, 50% 0, 100% 26px, 100% 100%, 0 100%); }
+html[data-page="members"] .mname { font-family: var(--display); font-weight: 400; font-size: 1.75rem; line-height: 1.05; text-transform: uppercase; letter-spacing: .02em; display: block; }
+html[data-page="members"] .member .team, html[data-page="members"] .minfo .team { font-family: var(--cond); font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--tc, var(--blue)); font-size: .95rem; margin-top: 4px; }
+html[data-page="members"] .mcard .form, html[data-page="members"] .mcard .mmonth, html[data-page="members"] .mcard summary > .tiles, html[data-page="members"] .mcard summary > .more, html[data-page="members"] .mcard > .inner { margin-left: 18px; margin-right: 18px; }
+html[data-page="members"] .mcard .form { justify-content: center; }
+html[data-page="members"] .mcard .mmonth { text-align: center; font-family: var(--cond); letter-spacing: .16em; }
+html[data-page="members"] .mcard .tile b { font-family: var(--ledfont); font-weight: 900; font-size: 1.25rem; }
+html[data-page="members"] .mcard .tile { background: var(--board); color: #8f9bb0; border-radius: 8px; } html[data-page="members"] .mcard .tile b { color: var(--led); }
+html[data-page="members"] .mcard .more { display: block; text-align: center; font-family: var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.fchip { border-radius: 50%; font-family: var(--cond); }
+
+/* ---------- PLAYOFFS: the sheet of ice, and a banner in the rafters ---------- */
+html[data-page="playoffs"] .bracket.dbl { padding: 34px 36px 40px; border: 10px solid #fff; border-radius: 70px; box-shadow: 0 0 0 3px #f6c21a, 0 0 0 5px var(--navy), 0 30px 50px -24px rgba(10, 23, 48, .5); background:
+  linear-gradient(90deg, transparent calc(33.3% - 4px), rgba(23, 70, 201, .22) calc(33.3% - 4px) calc(33.3% + 4px), transparent calc(33.3% + 4px), transparent calc(66.6% - 4px), rgba(23, 70, 201, .22) calc(66.6% - 4px) calc(66.6% + 4px), transparent calc(66.6% + 4px)),
+  linear-gradient(90deg, transparent calc(50% - 3px), rgba(216, 31, 47, .22) calc(50% - 3px) calc(50% + 3px), transparent calc(50% + 3px)),
+  radial-gradient(circle at 50% 50%, transparent 0 118px, rgba(216, 31, 47, .2) 119px 123px, transparent 124px), linear-gradient(135deg, #fdfeff, #dcebf7); color: #0a1326; }
+html[data-page="playoffs"] .bracket.dbl .lane-label { font-family: var(--cond); font-size: 1rem; letter-spacing: .2em; color: #0a1730; border-color: rgba(10, 23, 48, .25); }
+html[data-page="playoffs"] .bracket.dbl .round h3 { font-family: var(--cond); font-weight: 700; letter-spacing: .14em; color: #56657a; }
+html[data-page="playoffs"] .match { background: rgba(255, 255, 255, .86); backdrop-filter: blur(3px); border: 2px solid #0a1730; border-radius: 12px; box-shadow: 5px 5px 0 rgba(10, 23, 48, .18); color: #0a1326; }
+html[data-page="playoffs"] .match .gname { font-family: var(--cond); font-weight: 700; letter-spacing: .14em; color: #56657a; }
+html[data-page="playoffs"] .match .side { font-family: var(--cond); font-weight: 700; font-size: 1.12rem; letter-spacing: .03em; text-transform: uppercase; }
+html[data-page="playoffs"] .match .side + .side { border-top: 2px dashed rgba(10, 23, 48, .2); }
+html[data-page="playoffs"] .match .side.won { background: #0a1730; color: #fff; }
+html[data-page="playoffs"] .match .side > span:last-child:not(:first-child) { font-family: var(--ledfont); font-weight: 900; font-size: 1.3rem; }
+html[data-page="playoffs"] .match.next { border-color: var(--accent); box-shadow: 5px 5px 0 var(--accent); }
+html[data-page="playoffs"] .match:not(:has(.who)) { background: rgba(255, 255, 255, .4); border: 2px dashed rgba(10, 23, 48, .35); box-shadow: none; }
+html[data-page="playoffs"] .match .side .muted { color: #56657a; }
+html[data-page="playoffs"] .bl { stroke: #0a1730; opacity: .45; } html[data-page="playoffs"] .bl.done { stroke: var(--accent); opacity: 1; }
+html[data-page="playoffs"] .champ-card { flex-direction: column; text-align: center; width: min(320px, 100%); margin: 6px auto 30px; padding: 30px 22px 74px; gap: 8px; border: 0; border-top: 10px solid var(--gold); border-radius: 0; color: #fff; background: linear-gradient(180deg, #0f2b6b, #1746c9); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%); box-shadow: none; filter: drop-shadow(0 20px 20px rgba(10, 23, 48, .4)); }
+html[data-page="playoffs"] .champ-card img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; }
+html[data-page="playoffs"] .champ-card small { font-family: var(--cond); font-weight: 800; letter-spacing: .26em; text-transform: uppercase; color: var(--gold); display: block; }
+html[data-page="playoffs"] .champ-card b { font-family: var(--display); font-weight: 400; font-size: 2.6rem; text-transform: uppercase; line-height: 1; display: block; }
+@media (max-width: 640px) { html[data-page="playoffs"] .bracket.dbl { padding: 20px 14px 24px; border-radius: 34px; border-width: 6px; background: linear-gradient(135deg, #fdfeff, #dcebf7); } }
+
+/* ---------- RULES: the referee's book ---------- */
+html[data-page="rules"] h1::after { height: 16px; width: 100%; transform: none; border-radius: 3px; border: 2px solid var(--text); background: repeating-linear-gradient(90deg, #0b0d10 0 18px, #fff 18px 36px); }
+html[data-page="rules"] .rules-glance > b { font-family: var(--cond); letter-spacing: .2em; }
+html[data-page="rules"] .rules-glance .tiles { display: grid; grid-template-columns: repeat(4, max-content); gap: 24px; margin: 16px 0 30px; }
+html[data-page="rules"] .rules-glance .tile { width: 128px; height: 128px; border-radius: 50%; background: radial-gradient(circle at 35% 28%, #3a3f48, #0b0d10 62%); color: #cfd6e2; display: grid; place-content: center; text-align: center; border: 0; box-shadow: 0 10px 0 #000, 0 22px 24px -8px rgba(0, 0, 0, .55), inset 0 0 0 5px #1b1f26; }
+html[data-page="rules"] .rules-glance .tile b { font-family: var(--display); font-weight: 400; font-size: 3rem; line-height: 1; color: #fff; }
+html[data-page="rules"] .rules-glance .tile span { font-family: var(--cond); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: .78rem; color: var(--led); }
+html[data-page="rules"] .rule-cards { counter-reset: rule; display: grid; gap: 30px; }
+html[data-page="rules"] .rule-card { counter-increment: rule; position: relative; padding: 28px 30px 24px 118px; border: 2px solid var(--text); border-radius: 4px 18px 18px 4px; border-left: 14px solid var(--text); box-shadow: 8px 8px 0 color-mix(in srgb, var(--text) 16%, transparent); background: var(--surface); }
+html[data-page="rules"] .rule-card::before { content: counter(rule, decimal-leading-zero); position: absolute; left: 22px; top: 14px; font-family: var(--display); font-size: 4.6rem; line-height: 1; color: transparent; -webkit-text-stroke: 2px var(--accent); }
+html[data-page="rules"] .rule-card:nth-child(even)::before { -webkit-text-stroke-color: var(--blue); }
+html[data-page="rules"] .rule-card h2 { font-family: var(--display); font-weight: 400; font-size: 1.9rem; letter-spacing: .03em; border: 0; margin-top: 0; }
+html[data-page="rules"] .rule-card li::marker { color: var(--accent); }
+html[data-page="rules"] #rule-join { background: var(--accent); color: #fff; border-color: var(--text); }
+html[data-page="rules"] #rule-join h2 { color: #fff; } html[data-page="rules"] #rule-join::before { content: "GO"; -webkit-text-stroke-color: #fff; }
+html[data-page="rules"] #rule-join .btn { background: #fff; color: #0a1326; box-shadow: 4px 4px 0 #0a1326; } html[data-page="rules"] #rule-join .btn.ghost { border-color: #fff; background: transparent; color: #fff; box-shadow: 4px 4px 0 #0a1326; }
+@media (max-width: 640px) { html[data-page="rules"] .rule-card { padding: 78px 18px 18px; } html[data-page="rules"] .rule-card::before { font-size: 3.4rem; left: 16px; top: 10px; } html[data-page="rules"] .rules-glance .tile { width: 96px; height: 96px; } html[data-page="rules"] .rules-glance .tile b { font-size: 2.2rem; } html[data-page="rules"] .rules-glance .tiles { gap: 14px; } }
+
+/* ---------- RESOURCES: the arcade ---------- */
+html[data-page="resources"] body { background: radial-gradient(ellipse at 50% -10%, #2a0f4a, #07030f 60%) fixed; }
+html[data-page="resources"] #app { color: #f3e8ff; }
+html[data-page="resources"] h1 { color: #fff; text-shadow: 0 0 18px #ff2bd6, 0 0 44px #7a2bff; } html[data-page="resources"] h1::after { background: linear-gradient(90deg, #ff2bd6, #22e3ff); box-shadow: 0 0 18px #ff2bd6; }
+html[data-page="resources"] .lead, html[data-page="resources"] .muted { color: #c9b6e8; }
+html[data-page="resources"] .res-list .card { background: #120822; border: 2px solid #22e3ff; border-radius: 18px 18px 6px 6px; box-shadow: 0 0 0 1px #07030f, 0 0 26px rgba(34, 227, 255, .45), inset 0 0 40px rgba(122, 43, 255, .25); color: #f3e8ff; }
+html[data-page="resources"] .res-list .card:nth-child(2) { border-color: #ff2bd6; box-shadow: 0 0 26px rgba(255, 43, 214, .5), inset 0 0 40px rgba(122, 43, 255, .25); } html[data-page="resources"] .res-list .card:nth-child(3) { border-color: #ffe14a; box-shadow: 0 0 26px rgba(255, 225, 74, .45), inset 0 0 40px rgba(122, 43, 255, .25); }
+html[data-page="resources"] .res-list .card h2 { color: #fff; font-family: var(--ledfont); font-weight: 900; letter-spacing: .08em; }
+html[data-page="resources"] .btn { background: #ffe14a; color: #120822; box-shadow: 4px 4px 0 #ff2bd6; }
+
+@media (max-width: 800px) { .hero { grid-template-columns: 1fr; padding: 30px 16px 54px; } .hero-art { max-width: 420px; width: 100%; margin: 0 auto 6px; border-radius: 60px; border-width: 7px; } .hero-stats > div { padding: 8px 14px 10px; } .hero-stats b { font-size: 1.8rem; } }
+@media (prefers-reduced-motion: reduce) { html[data-page="members"] .mcard, html[data-page="members"] .mcard:nth-child(n) { transform: none; } }
+.feat .vs span { all: unset; } .feat .vs > span { font-family: var(--display); font-size: 1.1rem; color: #fff; background: var(--accent); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--accent); }
+.feat .vs .trophy-mark, .feat .vs .last-mark { margin-left: .3em; font-size: .7em; }
+.rrow.s3 .t { font-size: 1rem; }
+html[data-page="home"] #app > .res-head { position: relative; z-index: 2; margin: 0 0 -30px; padding-top: 6px; } html[data-page="home"] #app > .res-head .link { color: #8f9bb0; }
+html[data-page="playoffs"] .bracket.dbl { padding: 30px 26px 36px; gap: 28px; } html[data-page="playoffs"] .dbl .round { min-width: 186px; } html[data-page="playoffs"] .lane { gap: 26px; }
+html[data-page="members"] .mcard .tile b { font-size: 1.05rem; white-space: nowrap; } html[data-page="members"] .mcard .tile { padding-left: 8px; padding-right: 6px; }
+html[data-page="playoffs"] .champ-card .muted, html[data-page="playoffs"] .champ-card span, html[data-page="playoffs"] .champ-card div { color: #c9d6f5; } html[data-page="playoffs"] .champ-card b { color: #fff; }

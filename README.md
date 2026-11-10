@@ -170,3 +170,7 @@ A past game day (from `autoDnpFrom` on) where **nothing at all was logged** is s
 ## Editing team colors
 
 In **Add / Edit → Members & teams**, choose a member and click **Edit**. Untick **Pick it from the logo automatically**, choose a color, and save. The color is stored in a `color` column of `data/members.csv` (added the first time you set one). Tick the box again to go back to the logo's color.
+
+## The arena design
+
+The site's look is an arena, and each page is a different part of it: Home is the rink under the lights, Standings is the jumbotron, Schedule is ticket stubs, Members are trading cards, Playoffs is the sheet of ice with a champion banner, Rules is the referee's book, and Resources is the arcade. The colors and fonts are set at the top of the "ARENA THEME" section in `css/styles.css`; page-specific rules start with `html[data-page="..."]`.

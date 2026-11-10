@@ -388,6 +388,7 @@ function route(keepScroll) {
   const page = view[id] ? id : 'home';
   document.getElementById('app').innerHTML = (D.problems.length ? `<div class="alert"><b>Heads up, the data file needs attention:</b><ul>${D.problems.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : '') + view[page]();
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === page));
+  document.documentElement.dataset.page = page;      // lets each page have its own look
   document.getElementById('nav').classList.remove('open');
   document.title = `${PAGES.find(p => p[0] === page)[1]} · ${D.config.leagueName}`;
   applyTeamColors();

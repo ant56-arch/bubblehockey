@@ -18,7 +18,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127';
   p = await open([...exact4, ...extra2], '2026-11-11');
   let v = await p.evaluate(d => { const v = dayView(d); return { rows: v.rows.length, results: v.rows.filter(r => r.result && !r.result.dnp).length, replaced: v.rows.filter(r => r.replaced).length, dnp: v.rows.filter(r => r.result && r.result.dnp).length, extra: v.extra.length }; }, date);
   ok('2 games played instead of scheduled ones fill the unplayed rows: still 6 rows, 6 played, no extra, no DNP', v.rows === 6 && v.results === 6 && v.replaced === 2 && v.dnp === 0 && v.extra === 0, JSON.stringify(v));
-  ok('the Schedule card says 6 games · 6 played and shows no "Also played"', await (async () => { await p.click('.chip[data-m="2026-11"]'); await p.waitForTimeout(300); const t = await p.$$eval('.day', ds => ds.map(d => d.innerText)); const d10 = t.find(x => /Nov 10/.test(x)) || ''; return /6 games/.test(d10) && /6 played/.test(d10) && !/Also played/.test(d10); })());
+  ok('the Schedule card says 6 games · 6 played and shows no "Also played"', await (async () => { await p.click('.chip[data-m="2026-11"]'); await p.waitForTimeout(300); const t = await p.$$eval('.day', ds => ds.map(d => d.textContent)); const d10 = t.find(x => /Nov 10/.test(x)) || ''; return /6 games/.test(d10) && /6 played/.test(d10) && !/Also played/.test(d10); })());
   // only 5 played: the leftover scheduled game becomes DNP after the day
   p = await open([...exact4, extra2[0]], '2026-11-11');
   v = await p.evaluate(d => { const v = dayView(d); return { results: v.rows.filter(r => r.result && !r.result.dnp).length, dnp: v.rows.filter(r => r.result && r.result.dnp).length, extra: v.extra.length }; }, date);
@@ -30,7 +30,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8127';
   // standings and game log count every played game regardless
   ok('every played game still counts in the standings/log', (await p.evaluate(() => D.games.filter(isCounted).length)) === 8);
   // a replaced row shows who actually played, with the score
-  p = await open([...exact4, ...extra2], date); const txt = await p.$$eval('.day', ds => (ds.find(d => /Nov 10/.test(d.innerText)) || {}).innerText || '');
+  p = await open([...exact4, ...extra2], date); const txt = await p.$$eval('.day', ds => (ds.find(d => /Nov 10/.test(d.textContent)) || {}).textContent || '');
   ok('replaced rows show the real players with an asterisk', txt.includes('*') && txt.includes(extra2[0].home) );
   // matching prefers a scheduled game that shares a player
   p = await open([game(slate[0][0], slate[1][1])], date);
