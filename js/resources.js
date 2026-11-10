@@ -388,7 +388,7 @@ function sgBoard() {
   const s = sgShooter(), live = SG.screen === 'play';
   return `<div class="sg-board">${[0, 1].map(i => `<div class="sg-side ${live && s === i ? 'on' : ''}"><b>${esc(sgName(i))}${sgMe() === i ? ' <span class="muted">(you)</span>' : ''}</b><span class="sg-num">${SG.score[i] - (sgHide() && i === s && SG.res && SG.res.goal ? 1 : 0)}</span><div class="sg-dots" aria-label="shots">${sgDots(i)}</div></div>`).join('')}</div>`;
 }
-const sgPicker = label => `<p class="sg-say">${label}</p><div class="sg-picks">${Object.entries(SG_DIRS).map(([k, v]) => `<button type="button" class="btn sg-pick" data-sg="pick" data-dir="${k}">${k === 'L' ? '◀ ' : ''}${v}${k === 'R' ? ' ▶' : ''}</button>`).join('')}</div>`;
+const sgPicker = label => `<p class="sg-say">${label}</p><div class="sg-picks">${Object.entries(SG_DIRS).map(([k, v]) => `<button type="button" class="btn sg-pick" data-sg="pick" data-dir="${k}">${k === 'L' ? '◀ ' : ''}${v}${k === 'R' ? ' ▶' : ''}</button>`).join('')}</div><p class="key-hint">Keyboard: ← ↓ → or A S D to pick · Enter for the next shot</p>`;
 const sgInviteLink = () => location.href.split('#')[0] + '#/resources?join=' + (SG.net ? SG.net.code : '');
 
 function resList() {
@@ -400,15 +400,16 @@ function resList() {
     <section class="card"><h2 style="margin-top:4px">Slap Shot</h2><p class="muted">A timing game with two taps per shot, like a kicking meter: stop the aim line, then stop the power meter. Corners score 5, but the goalie reads your shot. Play solo for a high score, or take turns with a friend on this screen.</p>
     <div class="btnrow"><button class="btn" data-res="slapshot" type="button">Play</button></div>${sp.games ? `<p class="muted" style="margin:10px 0 0">Best score ${sp.best}</p>` : ''}</section></div>`;
 }
+function resChrome() { document.documentElement.dataset.game = document.getElementById('sg') ? (RES.game || '') : ''; }
 function sgRender() {
-  const root = document.getElementById('sg'); if (!root) return;
+  const root = document.getElementById('sg'); resChrome(); if (!root) return;
   if (!RES.game) { root.innerHTML = resList(); return; }
   if (RES.game === 'faceoff') return foRender();
   if (RES.game === 'slapshot') return spRender();
   const rec = sgRecord.get(), nameBox = (id, label, val) => `<label class="f">${label}<input id="${id}" list="sg-names" value="${esc(val)}" maxlength="20" autocomplete="off"></label>`;
   const dl = `<datalist id="sg-names">${D.members.map(m => `<option value="${esc(m.short_name)}">`).join('')}</datalist>`;
   if (SG.screen === 'menu') {
-    root.innerHTML = `<section class="card sg-menu"><button class="link" data-res="list" type="button">← All games</button><h2 style="margin-top:8px">Shootout</h2><p class="muted">A penalty shot duel. The shooter picks <b>left</b>, <b>middle</b> or <b>right</b>. The goalie picks too. Same pick is a save, anything else is a goal. Five shots each, then sudden death.</p>
+    root.innerHTML = `<section class="card sg-menu"><h2 style="margin-top:4px">Shootout</h2><p class="muted">A penalty shot duel. The shooter picks <b>left</b>, <b>middle</b> or <b>right</b>. The goalie picks too. Same pick is a save, anything else is a goal. Five shots each, then sudden death.</p>
       <div class="btnrow"><button class="btn" data-sg="start" data-mode="bot">Play the computer</button><button class="btn ghost" data-sg="start" data-mode="two">Two players, one screen</button><button class="btn ghost" data-sg="start" data-mode="online">Play a friend online</button></div>
       ${rec.w + rec.l ? `<p class="muted" style="margin:12px 0 0">Your record against the computer: <b>${rec.w}–${rec.l}</b></p>` : ''}</section>`;
     return;
@@ -473,9 +474,9 @@ view.resources = function () {
   if (!document.getElementById('sg') && SG.screen !== 'menu' && SG.screen !== 'end') { sgNetEnd(); Object.assign(SG, { screen: 'menu' }); }      // leaving mid-game and coming back starts fresh
   if (!document.getElementById('sg')) RES.game = '';
   if (q && SG.screen === 'menu') { RES.game = 'shootout'; SG.join = q[1].toUpperCase(); setTimeout(() => sgStart('online'), 0); } else setTimeout(sgRender, 0);
-  return `<h1>Resources</h1><div class="res-head"><p class="lead">Extras for the league.</p><button class="link res-hide" data-boss type="button" title="Shortcut: Esc">Hide screen (Esc)</button></div><div id="sg" class="sg"></div>`;
+  return `<h1>Resources</h1><div class="res-head"><p class="lead">Extras for the league.</p><button class="link res-hide" data-boss type="button" title="Shortcut: Esc">Hide screen (Esc)</button></div><div class="res-bar"><button class="res-back" data-res="list" type="button">◀ All games</button><b class="res-title" aria-hidden="true"></b></div><div id="sg" class="sg"></div>`;
 };
-window.addEventListener('hashchange', () => { if (!/^#\/(resources|games)/.test(location.hash)) { RES.game = ''; if (SG.net || SG.screen !== 'menu') { sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); } } });
+window.addEventListener('hashchange', () => { if (!/^#\/(resources|games)/.test(location.hash)) { RES.game = ''; document.documentElement.dataset.game = ''; if (SG.net || SG.screen !== 'menu') { sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); } } });
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-sg]'); if (!b || !document.getElementById('sg')) return;
   const a = b.dataset.sg, flash = t => { const el = document.querySelector('.sg-copied'); if (el) el.textContent = t; };
@@ -500,5 +501,13 @@ document.addEventListener('click', async e => {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-res]'); if (!b || !document.getElementById('sg')) return;
   const g = b.dataset.res; if (g === 'list') { if (typeof foReset === 'function') foReset(); if (typeof spReset === 'function') spReset(); sgNetEnd(); Object.assign(SG, { screen: 'menu', msg: '' }); RES.game = ''; } else { RES.game = g; if (g === 'shootout') SG.screen = 'menu'; else { if (g === 'faceoff' && typeof foReset === 'function') foReset(); if (g === 'slapshot' && typeof spReset === 'function') spReset(); } }
-  sgRender();
+  sgRender(); window.scrollTo(0, 0);
 });
+/* Shootout on a keyboard: arrows or A / S / D pick left, middle, right; Enter or Space moves on. */
+document.addEventListener('keydown', e => {
+  if (RES.game !== 'shootout' || SG.screen !== 'play' || e.repeat || (typeof BOSS !== 'undefined' && BOSS.on) || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
+  const k = e.key.toLowerCase(), dir = { arrowleft: 'L', a: 'L', arrowdown: 'M', arrowup: 'M', s: 'M', w: 'M', arrowright: 'R', d: 'R' }[k];
+  if (dir && document.querySelector('[data-sg=pick]')) { e.preventDefault(); sgPick(dir); }
+  else if (k === ' ' || k === 'enter') { const b = document.querySelector('.sg-after:not([hidden]) [data-sg=next], [data-sg=ready]'); if (b) { e.preventDefault(); b.click(); } else if (SG.phase === 'reveal') { e.preventDefault(); sgSkip(); } }
+});
+

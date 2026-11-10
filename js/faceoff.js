@@ -209,11 +209,11 @@ const foTapBtns = () => FO.mode === 'bot'
   : `<div class="fo-two"><button type="button" class="btn fo-tap" data-fo-tap="0" style="background:${SG_TEAM[0].main}">${esc(foName(0))}<small>key A</small></button><button type="button" class="btn fo-tap" data-fo-tap="1" style="background:${SG_TEAM[1].main}">${esc(foName(1))}<small>key L</small></button></div>`;
 
 function foRender() {
-  const root = document.getElementById('sg'); if (!root) return;
+  const root = document.getElementById('sg'); if (typeof resChrome === 'function') resChrome(); if (!root) return;
   const rec = foRec.get(), nameBox = (id, label, val) => `<label class="f">${label}<input id="${id}" list="sg-names" value="${esc(val)}" maxlength="20" autocomplete="off"></label>`;
   const dl = `<datalist id="sg-names">${D.members.map(m => `<option value="${esc(m.short_name)}">`).join('')}</datalist>`;
   if (FO.screen === 'menu') {
-    root.innerHTML = `<section class="card"><button class="link" data-res="list" type="button">← All games</button><h2 style="margin-top:8px">Face-off</h2><p class="muted">The referee holds the puck over the dot and drops it when he feels like it. <b>Tap the moment it drops.</b> Fastest hand wins the draw, but tap early and it is a false start. First to ${FO_WIN} draws wins.</p>
+    root.innerHTML = `<section class="card sg-menu"><h2 style="margin-top:4px">Face-off</h2><p class="muted">The referee holds the puck over the dot and drops it when he feels like it. <b>Tap the moment it drops.</b> Fastest hand wins the draw, but tap early and it is a false start. First to ${FO_WIN} draws wins.</p>
       <div class="btnrow"><button class="btn" data-fo="start" data-mode="bot">Play the computer</button><button class="btn ghost" data-fo="start" data-mode="two">Two players, one screen</button></div>
       ${rec.w + rec.l ? `<p class="muted" style="margin:12px 0 0">Your record against the computer: <b>${rec.w}–${rec.l}</b>${rec.best ? ` · fastest reaction <b>${rec.best} ms</b>` : ''}</p>` : ''}</section>`;
     return;

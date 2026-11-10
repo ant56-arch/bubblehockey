@@ -147,11 +147,11 @@ function spBoard() {
   return `<div class="sg-board" ${SP.mode === 'solo' ? 'style="grid-template-columns:1fr"' : ''}>${sides.map(i => `<div class="sg-side ${SP.screen === 'play' && SP.turn === i ? 'on' : ''}"><b>${esc(spName(i))}</b><span class="sg-num">${SP.score[i]}</span><div class="sg-dots" aria-label="shots">${Array.from({ length: SP_SHOTS }, (_, k) => { const r = SP.log[i][k]; return `<span class="sg-dot ${typeof r === 'number' ? 'g' : r === 's' ? 's' : ''}">${typeof r === 'number' ? r : r === 's' ? '✕' : r === 'x' ? '–' : '○'}</span>`; }).join('')}</div></div>`).join('')}</div>`;
 }
 function spRender() {
-  const root = document.getElementById('sg'); if (!root) return;
+  const root = document.getElementById('sg'); if (typeof resChrome === 'function') resChrome(); if (!root) return;
   const rec = spRec.get(), nameBox = (id, label, val) => `<label class="f">${label}<input id="${id}" list="sg-names" value="${esc(val)}" maxlength="20" autocomplete="off"></label>`;
   const dl = `<datalist id="sg-names">${D.members.map(m => `<option value="${esc(m.short_name)}">`).join('')}</datalist>`;
   if (SP.screen === 'menu') {
-    root.innerHTML = `<section class="card"><button class="link" data-res="list" type="button">← All games</button><h2 style="margin-top:8px">Slap Shot</h2><p class="muted"><b>Two taps per shot.</b> First a line sweeps across the net: tap to lock your aim. Then a power meter rises and falls: tap to shoot. More power lifts the puck toward the top corners, too much sails over the bar, and a weak shot is an easy save. Corners are worth 5, the middle 2, anywhere else in the net 1. Everything speeds up as you go, and the goalie gets sharper. ${SP_SHOTS} shots.</p>
+    root.innerHTML = `<section class="card sg-menu"><h2 style="margin-top:4px">Slap Shot</h2><p class="muted"><b>Two taps per shot.</b> First a line sweeps across the net: tap to lock your aim. Then a power meter rises and falls: tap to shoot. More power lifts the puck toward the top corners, too much sails over the bar, and a weak shot is an easy save. Corners are worth 5, the middle 2, anywhere else in the net 1. Everything speeds up as you go, and the goalie gets sharper. ${SP_SHOTS} shots.</p>
       <div class="btnrow"><button class="btn" data-sp="start" data-mode="solo">Play solo</button><button class="btn ghost" data-sp="start" data-mode="two">Two players, one screen</button></div>
       ${rec.games ? `<p class="muted" style="margin:12px 0 0">Your best score: <b>${rec.best}</b> · games played ${rec.games}</p>` : ''}</section>`;
     return;
@@ -181,12 +181,15 @@ document.addEventListener('keydown', e => {
   if (RES.game !== 'slapshot' || SP.screen !== 'play' || e.repeat || (typeof BOSS !== 'undefined' && BOSS.on) || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
   if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); spTap(); }
 });
+/* Timing game: count the tap the moment the finger or mouse goes down, not when it lifts. */
+let SP_PTR = 0;
+document.addEventListener('pointerdown', e => { const b = e.target.closest('[data-sp=tap]'); if (!b || b.disabled || RES.game !== 'slapshot' || SP.screen !== 'play') return; SP_PTR = Date.now(); spTap(); });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-sp]'); if (!b || !document.getElementById('sg') || RES.game !== 'slapshot') return;
   const a = b.dataset.sp;
   if (a === 'start') spStart(b.dataset.mode);
   else if (a === 'menu') { spReset(); spRender(); }
   else if (a === 'go') { if (SP.screen === 'setup') { const clean = v => String(v || '').replace(/[<>]/g, '').trim().slice(0, 20), n0 = clean(document.getElementById('sp-n0').value), n1 = document.getElementById('sp-n1'); SP.names = [n0 || 'Player 1', SP.mode === 'solo' ? '' : (clean(n1 && n1.value) || 'Player 2')]; if (SP.mode === 'two' && SP.names[0] === SP.names[1]) SP.names[1] += ' 2'; } spBegin(); }
-  else if (a === 'tap') spTap();
+  else if (a === 'tap') { if (Date.now() - SP_PTR > 700) spTap(); }      // the press itself already counted (see pointerdown); this covers clicks that had no press
   else if (a === 'sound') { SGA.sound = !SGA.sound; try { localStorage.setItem('bhl_sg_sound', SGA.sound ? '1' : '0'); } catch { } b.textContent = SGA.sound ? 'Sound: on' : 'Sound: off'; if (SGA.sound) sgSound('save'); }
 });
