@@ -107,6 +107,7 @@
     { "date": "2026-11-06", "home": "Connor", "road": "Tommy", "dnp": true },
     { "date": "2026-11-06", "home": "Tommy", "road": "Logan", "dnp": true },
     { "date": "2026-11-06", "home": "Boban", "road": "Trotta", "dnp": true },
-    { "date": "2026-11-06", "home": "Logan", "road": "Trotta", "dnp": true }
+    { "date": "2026-11-06", "home": "Logan", "road": "Trotta", "dnp": true },
+    { "date": "2026-11-09", "home": "Connor", "road": "Logan", "dnp": true }
   ]
 }
