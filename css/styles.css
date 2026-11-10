@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=Doto:wght@700;900&display=swap");
 /* Design: flat league-portal look: navy header, white bordered cards with 6px corners, tabular data with alternating rows, one sans-serif font. Light first, with a dark theme.
    Change the variables in :root to restyle everything. */
 :root {
@@ -288,7 +289,7 @@ code { background: var(--surface-2); border-radius: 6px; padding: 1px 6px; font-
   .more-stats { display: block; }
   .stand .table-scroll td:nth-child(2), .stand .table-scroll th:nth-child(2) { position: sticky; left: 0; background: var(--surface); }
   .stand tbody tr:nth-child(even) td:nth-child(2) { background: var(--surface-2); }
-  .bracket { flex-direction: column; gap: 14px; overflow: visible; } .bracket-lines { display: none; } .round { min-width: 0; } .round .matches { gap: 10px; }
+  .round .matches { gap: 10px; }
   .mlogo { width: 80px; height: 80px; }
   .row2 { gap: 10px; }
 }
@@ -396,7 +397,7 @@ footer .foot-logo { display: block; width: 44px; height: 44px; margin: 0 auto 8p
 .lane-label { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--navy); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
 .lane { display: flex; gap: 44px; }
 .lane-wrap + .lane-wrap { padding-top: 22px; border-top: 1px dashed var(--line); }
-@media (max-width: 640px) { .dbl, .dbl-main, .lane { flex-direction: column; gap: 14px; } .dbl-gf { justify-content: flex-start; } .lane-wrap + .lane-wrap { padding-top: 14px; } }
+
 .dbl { gap: 40px; margin-top: 18px; } .dbl .round { min-width: 210px; } .lane { gap: 32px; } .dbl-gf .round h3 { display: none; } .dbl .gname { white-space: normal; }
 
 
@@ -631,7 +632,7 @@ html[data-page="playoffs"] .champ-card { flex-direction: column; text-align: cen
 html[data-page="playoffs"] .champ-card img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; }
 html[data-page="playoffs"] .champ-card small { font-family: var(--cond); font-weight: 800; letter-spacing: .26em; text-transform: uppercase; color: var(--gold); display: block; }
 html[data-page="playoffs"] .champ-card b { font-family: var(--display); font-weight: 400; font-size: 2.6rem; text-transform: uppercase; line-height: 1; display: block; }
-@media (max-width: 640px) { html[data-page="playoffs"] .bracket.dbl { padding: 20px 14px 24px; border-radius: 34px; border-width: 6px; background: linear-gradient(135deg, #fdfeff, #dcebf7); } }
+@media (max-width: 640px) { html[data-page="playoffs"] .bracket.dbl { padding: 18px 16px 22px; border-radius: 30px; border-width: 6px; gap: 18px; overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; } html[data-page="playoffs"] .dbl .round { min-width: 152px; scroll-snap-align: start; } html[data-page="playoffs"] .lane { gap: 18px; } html[data-page="playoffs"] .match .side { font-size: .95rem; padding: 7px 8px; } html[data-page="playoffs"] .match .gname { font-size: .62rem; padding: 7px 8px 0; } html[data-page="playoffs"] .match .tlogo { width: 18px !important; height: 18px !important; } html[data-page="playoffs"] .swipe-hint { display: block; } }
 
 /* ---------- RULES: the referee's book ---------- */
 html[data-page="rules"] h1::after { height: 16px; width: 100%; transform: none; border-radius: 3px; border: 2px solid var(--text); background: repeating-linear-gradient(90deg, #0b0d10 0 18px, #fff 18px 36px); }
@@ -698,3 +699,30 @@ html[data-theme="dark"][data-page="rules"] .rule-card { border-color: #3a4a66; b
 html[data-theme="dark"][data-page="rules"] h1::after { border-color: #eaf2ff; }
 :root[data-theme="dark"] .chip { border-color: #5a6c8c; } :root[data-theme="dark"] .chip.on { border-color: var(--text); }
 :root[data-theme="dark"] .btn.ghost { border-color: #8ea0bb; }
+
+.swipe-hint { display: none; font-family: var(--cond); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: .8rem; color: var(--muted); margin: 0 0 8px; }
+
+/* ---------- leftovers from the old look ---------- */
+/* member card, opened: logo showcase and career stats */
+html[data-page="members"] .showcase { background: radial-gradient(circle at 50% 0, color-mix(in srgb, var(--tc, #1746c9) 45%, #05070c), #05070c 75%); border-radius: 12px; border: 2px solid color-mix(in srgb, var(--tc, #1746c9) 60%, #000); margin-top: 14px; }
+html[data-page="members"] .showcase img { border-radius: 50%; border: 3px solid #fff; }
+html[data-page="members"] .showcase figcaption { color: #fff; font-family: var(--cond); font-weight: 700; letter-spacing: .2em; font-size: .78rem; opacity: .85; }
+html[data-page="members"] .mcareer { border-top: 3px solid var(--tc, var(--line)); margin-top: 18px; padding-top: 14px; }
+html[data-page="members"] .mcareer b { font-family: var(--display); font-weight: 400; font-size: 1.5rem; text-transform: uppercase; letter-spacing: .03em; }
+html[data-page="members"] .mcareer .muted { font-family: var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+html[data-page="members"] .mcard > .inner .tile span { font-family: var(--cond); letter-spacing: .06em; text-transform: uppercase; font-size: .72rem; line-height: 1.25; display: block; }
+html[data-page="members"] .mcard > .inner { padding-bottom: 16px; }
+html[data-page="members"] details.sub { background: var(--board); border-radius: 8px; color: #cfd6e2; } html[data-page="members"] details.sub summary { font-family: var(--cond); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #fff; } html[data-page="members"] details.sub .hint { color: var(--led); }
+/* standings: the stat key and the record-by-month board */
+html[data-page="standings"] #app > details { background: var(--board); color: #cfd6e2; border: 2px solid #2a2f38; border-radius: 12px; margin-top: 14px; box-shadow: none; }
+html[data-page="standings"] #app > details summary { font-family: var(--cond); font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--led); }
+html[data-page="standings"] #app > details b { color: #fff; }
+html[data-page="standings"] #app > .table-scroll { background: var(--board); border: 3px solid #2a2f38; border-radius: 16px; padding: 10px; box-shadow: inset 0 0 0 4px #000; }
+html[data-page="standings"] #app > .table-scroll table { background: #000; color: #fff; }
+html[data-page="standings"] #app > .table-scroll th { background: #000; color: #6f7b8e; font-family: var(--cond); letter-spacing: .14em; border-bottom: 2px solid #1b1f26; }
+html[data-page="standings"] #app > .table-scroll td { border-color: #14171c; font-family: var(--ledfont); font-weight: 900; font-size: 1.15rem; color: var(--led); }
+html[data-page="standings"] #app > .table-scroll tbody tr, html[data-page="standings"] #app > .table-scroll tbody tr:nth-child(even) { background: #000; }
+html[data-page="standings"] #app > .table-scroll td .who { font-family: var(--cond); font-weight: 800; font-size: 1.2rem; letter-spacing: .05em; text-transform: uppercase; color: #fff; }
+html[data-page="standings"] #app > .table-scroll td .muted, html[data-page="standings"] #app > .table-scroll td span:not(.who):not(.who *) { color: #8f9bb0; font-family: var(--cond); font-size: .85rem; letter-spacing: .08em; }
+@media (max-width: 480px) { .brand { font-size: 1.02rem; gap: 8px; } .brand-logo { width: 36px; height: 36px; } .site-header .wrap { gap: 4px 8px; } .brand { flex: 1; } }
+html[data-page="members"] .mcard > .inner .tile b { font-size: .92rem; letter-spacing: -.02em; }
