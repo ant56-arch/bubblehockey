@@ -91,15 +91,15 @@ function spFrame(now) {
   for (let i = 0; i <= 8; i++) { const y = gy - Hn + i * Hn / 8; c.beginPath(); c.moveTo(gx - W / 2, y); for (let x = 0; x <= W; x += 8) { const d = Math.max(0, 1 - Math.abs(gx - W / 2 + x - bx) / (W * 0.35)) * bulge; c.lineTo(gx - W / 2 + x, y + d * 0.6); } c.stroke(); }
   // goalie: waits, then lunges at where he read the aim
   const dv = S ? sgEase(sgClamp(u, 0.1, 0.62)) : 0, tgx = S ? Math.max(gx - 80, Math.min(gx + 80, S.tx)) : gx, dirX = !S ? 0 : Math.abs(tgx - gx) < 24 ? 0 : tgx > gx ? 1 : -1;
-  sgDrawGoalie(c, gx + (tgx - gx) * dv + (S ? 0 : Math.sin(T * 1.8) * 5), gy - 2, 0.78, dirX * 0.8 * dv, dv, dirX, SG_TEAM[1 - SP.turn], null, T);
+  sgDrawGoalie(c, gx + (tgx - gx) * dv + (S ? 0 : Math.sin(T * 1.6) * 9), gy - 2, 0.78, dirX * 0.8 * dv, dv, dirX, SG_TEAM[1 - SP.turn], null, T);
   // targets
-  const top = gy - Hn; for (const [dx, dy, pts, r] of SP_TARGETS) { const hit = S && S.goal && after > 0 && Math.hypot(S.x - (gx + dx), S.y - (top + dy)) <= r; c.fillStyle = hit ? 'rgba(19,122,53,.55)' : pts === 5 ? 'rgba(245,179,1,.35)' : 'rgba(37,99,235,.2)'; c.beginPath(); c.arc(gx + dx, top + dy, r, 0, 6.3); c.fill(); c.lineWidth = 2; c.strokeStyle = pts === 5 ? '#d99a00' : '#2563eb'; c.stroke(); c.fillStyle = '#0b1f44'; c.font = '800 12px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(pts), gx + dx, top + dy + 0.5); c.textAlign = 'start'; }
-  c.lineCap = 'round'; c.lineJoin = 'round'; for (const [lw, col] of [[11, SG_INK], [8, '#d62828']]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(gx - W / 2, gy); c.lineTo(gx - W / 2, gy - Hn); c.lineTo(gx + W / 2, gy - Hn); c.lineTo(gx + W / 2, gy); c.stroke(); }
+  const top = gy - Hn; for (const [dx, dy, pts, r] of SP_TARGETS) { const hit = S && S.goal && after > 0 && Math.hypot(S.x - (gx + dx), S.y - (top + dy)) <= r; c.fillStyle = hit ? 'rgba(19,122,53,.55)' : pts === 5 ? 'rgba(245,179,1,.35)' : 'rgba(37,99,235,.2)'; c.beginPath(); c.arc(gx + dx, top + dy, r, 0, 6.3); c.fill(); c.lineWidth = 2; c.strokeStyle = pts === 5 ? '#d99a00' : '#2563eb'; c.stroke(); c.fillStyle = '#0b1f44'; c.font = '700 13px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(pts), gx + dx, top + dy + 0.5); c.textAlign = 'start'; }
+  c.lineCap = 'round'; c.lineJoin = 'round'; for (const [lw, col] of [[10, 'rgba(8,14,30,.5)'], [8, '#d62828'], [2.2, 'rgba(255,255,255,.45)']]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(gx - W / 2, gy); c.lineTo(gx - W / 2, gy - Hn); c.lineTo(gx + W / 2, gy - Hn); c.lineTo(gx + W / 2, gy); c.stroke(); }
   const lit = goal && after > 0 && Math.floor(after * 6) % 2 === 0; if (lit) { c.fillStyle = '#ff2d2d'; c.beginPath(); c.arc(gx, gy - Hn - 14, 6, 0, 6.3); c.fill(); c.lineWidth = 1.5; c.strokeStyle = SG_INK; c.stroke(); c.fillStyle = 'rgba(255,45,45,.25)'; c.beginPath(); c.arc(gx, gy - Hn - 14, 18, 0, 6.3); c.fill(); }
   // shooter
   const wind = S ? sgClamp(u, 0, 0.18) : 0, swing = S ? sgClamp(u, 0.18, 0.42) : 0, bl = { x: 50 + (S ? 0 : Math.sin(T * 1.5) * 3) - swing * 6, y: -3 + wind * 8 - swing * 22 };
   const pal = SG_TEAM[SP.turn], skx = 240, bladeX = skx + (bl.x + 12) * 0.84, bladeY = SG_FEET + bl.y * 0.84;
-  sgDrawSkater(c, skx, SG_FEET - Math.sin(T * 2) * 0.8, 0.84, wind, 0, swing, pal, String(spName(SP.turn)).toUpperCase().slice(0, 8), 0, bl, false, T);
+  sgDrawSkater(c, skx, SG_FEET, 0.84, wind, 0, swing, pal, String(spName(SP.turn)).toUpperCase().slice(0, 8), 0, bl, false, T);
   // puck
   let px = bladeX, py = bladeY, pr = 7, vis = true;
   if (S && u > 0.3) {
@@ -114,7 +114,7 @@ function spFrame(now) {
     const a = spAim(now), top = gy - Hn; c.lineCap = 'round';
     if (!a.locked) {
       c.setLineDash([7, 5]); c.strokeStyle = '#c1272d'; c.lineWidth = 3; c.beginPath(); c.moveTo(a.x, top - 22); c.lineTo(a.x, gy); c.stroke(); c.setLineDash([]);
-      c.fillStyle = '#c1272d'; c.beginPath(); c.moveTo(a.x - 9, top - 36); c.lineTo(a.x + 9, top - 36); c.lineTo(a.x, top - 22); c.closePath(); c.fill(); c.font = '800 10px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.fillStyle = '#fff'; c.fillText('AIM', a.x, top - 44); c.textAlign = 'start';
+      c.fillStyle = '#c1272d'; c.beginPath(); c.moveTo(a.x - 9, top - 36); c.lineTo(a.x + 9, top - 36); c.lineTo(a.x, top - 22); c.closePath(); c.fill(); c.font = '700 11px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; c.textAlign = 'center'; c.fillStyle = '#fff'; c.fillText('AIM', a.x, top - 44); c.textAlign = 'start';
     } else {
       c.setLineDash([5, 5]); c.strokeStyle = 'rgba(193,39,45,.7)'; c.lineWidth = 2; c.beginPath(); c.moveTo(a.x, top - 22); c.lineTo(a.x, gy); c.stroke(); c.setLineDash([]);
       c.strokeStyle = '#c1272d'; c.lineWidth = 2.6; c.beginPath(); c.arc(a.x, a.y, 11, 0, 6.3); c.moveTo(a.x - 18, a.y); c.lineTo(a.x - 5, a.y); c.moveTo(a.x + 5, a.y); c.lineTo(a.x + 18, a.y); c.moveTo(a.x, a.y - 18); c.lineTo(a.x, a.y - 5); c.moveTo(a.x, a.y + 5); c.lineTo(a.x, a.y + 18); c.stroke(); c.fillStyle = 'rgba(193,39,45,.22)'; c.beginPath(); c.arc(a.x, a.y, 11, 0, 6.3); c.fill();
@@ -125,7 +125,7 @@ function spFrame(now) {
       const fy = gy - 4 - lvl * (mh - 8); c.fillStyle = zone(lvl); c.fillRect(mx, fy, mw, gy - 4 - fy);
       c.strokeStyle = SG_INK; c.lineWidth = 1.2; for (const [pp, t] of [[(Hn - 28) / (1.15 * Hn), 'top'], [(Hn - 56) / (1.15 * Hn), ''], [(Hn - 84) / (1.15 * Hn), 'low']]) { const ty2 = gy - 4 - pp * (mh - 8); c.beginPath(); c.moveTo(mx - 5, ty2); c.lineTo(mx + 3, ty2); c.stroke(); }
       c.fillStyle = SG_INK; c.beginPath(); c.moveTo(mx - 9, fy); c.lineTo(mx - 1, fy - 5); c.lineTo(mx - 1, fy + 5); c.closePath(); c.fill();
-      c.font = '800 9px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.fillStyle = SG_INK; c.fillText('POWER', mx + mw / 2, my - 8); c.textAlign = 'start';
+      c.font = '700 10px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; c.textAlign = 'center'; c.fillStyle = SG_INK; c.fillText('POWER', mx + mw / 2, my - 8); c.textAlign = 'start';
     }
   }
   // ice spray and confetti
@@ -134,11 +134,11 @@ function spFrame(now) {
   // result banner
   if (S && after > 0) {
     const a = sgOut(after * 3), fade = after < 1.0 ? 1 : Math.max(0, 1 - (after - 1.0) * 3), good = S.goal;
-    c.save(); c.globalAlpha = fade; c.translate(240, 150); c.scale(.6 + .5 * a, .6 + .5 * a); c.rotate(-0.05); c.font = '900 46px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText(S.out, 0, 0); c.fillStyle = good ? '#137a35' : '#c1272d'; c.fillText(S.out, 0, 0); c.restore(); c.textAlign = 'start';
+    c.save(); c.globalAlpha = fade; c.translate(240, 150); c.scale(.6 + .5 * a, .6 + .5 * a); c.rotate(-0.05); c.font = '46px Anton, Impact, "Arial Narrow", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText(S.out, 0, 0); c.fillStyle = good ? '#137a35' : '#c1272d'; c.fillText(S.out, 0, 0); c.restore(); c.textAlign = 'start';
     if (!S.sounded) { S.sounded = true; sgSound(S.kind === 'save' ? 'save' : S.kind === 'goal' ? 'goal' : 'post'); }
     if (!S.done && after > 0.75) spDone();
   }
-  c.restore();
+  c.restore(); sgDome(c);
 }
 
 /* ---------- screens ---------- */

@@ -131,8 +131,14 @@ function sgNetMsg(m) {
 const SG_INK = '#0b1426', SG_TEAM = [{ main: '#2563eb', dark: '#0b1f44', light: '#7aa7ff', trim: '#ffffff' }, { main: '#dc2626', dark: '#6b1111', light: '#ff8a80', trim: '#ffffff' }];
 const sgGrad = (c, x0, y0, x1, y1, ...stops) => { const g = c.createLinearGradient(x0, y0, x1, y1); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); return g; };
 const sgRR = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r); };
-const sgFS = (c, fill, lw = 2) => { c.fillStyle = fill; c.fill(); c.lineWidth = lw; c.strokeStyle = SG_INK; c.lineJoin = 'round'; c.stroke(); };
-const sgLimb = (c, x0, y0, x1, y1, w, col) => { c.lineCap = 'round'; c.strokeStyle = SG_INK; c.lineWidth = w + 3.5; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.strokeStyle = col; c.lineWidth = w; c.stroke(); };
+const SG_EDGE = 'rgba(8,14,30,.55)';
+/* Fill a shape like molded, painted plastic: the color, a glossy highlight from the upper left, a soft shadow lower right, and a thin dark edge. */
+const sgFS = (c, fill, lw = 2) => {
+  c.fillStyle = fill; c.fill();
+  c.save(); c.clip(); const g = c.createLinearGradient(-40, -150, 40, 20); g.addColorStop(0, 'rgba(255,255,255,.34)'); g.addColorStop(.45, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,20,.22)'); c.fillStyle = g; c.fillRect(-400, -400, 900, 900); c.restore();
+  c.lineWidth = lw * 0.7; c.strokeStyle = SG_EDGE; c.lineJoin = 'round'; c.stroke();
+};
+const sgLimb = (c, x0, y0, x1, y1, w, col) => { c.lineCap = 'round'; c.strokeStyle = SG_EDGE; c.lineWidth = w + 2; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.strokeStyle = col; c.lineWidth = w; c.stroke(); c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = Math.max(1.2, w * 0.22); c.beginPath(); c.moveTo(x0 - w * 0.22, y0 - w * 0.1); c.lineTo(x1 - w * 0.22, y1 - w * 0.1); c.stroke(); };
 const SG_LOGOS = {};
 /* The league logo for the canvas scenes (boards and centre ice), once it has loaded. */
 function sgLeagueLogo() {
@@ -204,13 +210,13 @@ function sgFrame(now) {
   for (let i = 0; i <= 16; i++) { const x = gx - W / 2 + i * W / 16, d = Math.max(0, 1 - Math.abs(x - (gx + bx)) / (W * 0.35)) * bulge; c.beginPath(); c.moveTo(x, gy - Hn); c.lineTo(x + d * 0.4, gy); c.stroke(); }
   for (let i = 0; i <= 8; i++) { const y = gy - Hn + i * Hn / 8; c.beginPath(); c.moveTo(gx - W / 2, y); for (let x = 0; x <= W; x += 8) { const d = Math.max(0, 1 - Math.abs(gx - W / 2 + x - (gx + bx)) / (W * 0.35)) * bulge; c.lineTo(gx - W / 2 + x, y + d * 0.6); } c.stroke(); }
   // goalie
-  const dv = P ? sgEase(sgClamp(pt, 1.25, 1.7)) : 0, sway = P ? 0 : Math.sin(T * 1.8) * 5 * gs, gxp = gx + diveX * 46 * gs * dv + sway;
+  const dv = P ? sgEase(sgClamp(pt, 1.25, 1.7)) : 0, sway = P ? 0 : Math.sin(T * 1.6) * 9 * gs, gxp = gx + diveX * 46 * gs * dv + sway;
   sgDrawGoalie(c, gxp, gy - 2 * gs, gs * 0.64, diveX * 0.8 * dv, dv, diveX, goaliePal, sgLogo(sgName(1 - sh)), T);
   // posts and goal light
-  c.lineCap = 'round'; c.lineJoin = 'round'; for (const [lw, col] of [[8 * gs + 3, SG_INK], [8 * gs, '#d62828']]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(gx - W / 2, gy); c.lineTo(gx - W / 2, gy - Hn); c.lineTo(gx + W / 2, gy - Hn); c.lineTo(gx + W / 2, gy); c.stroke(); }
+  c.lineCap = 'round'; c.lineJoin = 'round'; for (const [lw, col] of [[8 * gs + 2, 'rgba(8,14,30,.5)'], [8 * gs, '#d62828'], [2.2 * gs, 'rgba(255,255,255,.45)']]) { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(gx - W / 2, gy); c.lineTo(gx - W / 2, gy - Hn); c.lineTo(gx + W / 2, gy - Hn); c.lineTo(gx + W / 2, gy); c.stroke(); }
   const lit = P && P.goal && after > 0 && Math.floor(after * 6) % 2 === 0; if (lit) { c.fillStyle = '#ff2d2d'; c.beginPath(); c.arc(gx, gy - Hn - 14 * gs, 6 * gs, 0, 6.3); c.fill(); c.lineWidth = 1.5; c.strokeStyle = SG_INK; c.stroke(); c.fillStyle = 'rgba(255,45,45,.25)'; c.beginPath(); c.arc(gx, gy - Hn - 14 * gs, 18 * gs, 0, 6.3); c.fill(); }
   // skater, then puck on top
-  const strideT = P ? (pt < 1.0 ? pt : 0) : 0, bob = P && pt < 1.0 ? Math.abs(Math.sin(pt * 10)) * 2 : Math.sin(T * 2) * 0.8;
+  const strideT = P ? (pt < 1.0 ? pt : 0) : 0, bob = P && pt < 1.0 ? Math.sin(pt * 40) * 0.5 : 0;
   const skx = 240 + shootX * 24 * wind, SKS = 0.84, bl = { x: 50 + (P && pt < 1.0 ? Math.sin(pt * 14) * 9 : P ? 0 : Math.sin(T * 1.5) * 3) + shootX * 6 * wind - shot * 6, y: -3 + wind * 8 - shot * 22 };       // blade tip, in the skater's own coordinates
   const bladeX = skx + (bl.x + 12) * SKS, bladeY = SG_FEET + bl.y * SKS;
   sgDrawSkater(c, skx, SG_FEET - bob, SKS, wind, shootX, shot, shotPal, sgName(sh), P ? strideT : 0, bl, P ? pt < 1.0 : false, T);
@@ -225,7 +231,7 @@ function sgFrame(now) {
   else { const u = after; px = tx + (diveX === 0 ? (shootX || 1) : -diveX) * u * 90 * (shootX === 0 ? 0.7 : 1); py = ty + 120 * u * u - u * 60; pr = 4 * gs + u * 3; vis = u < 1.1; }
   if (vis) { c.fillStyle = '#0b1426'; c.beginPath(); c.ellipse(px, py, pr, pr * .6, 0, 0, 6.3); c.fill(); c.fillStyle = '#334155'; c.beginPath(); c.ellipse(px, py - pr * .25, pr, pr * .45, 0, 0, 6.3); c.fill(); }
   // ice spray and confetti
-  if (P && pt < 1.25 && Math.random() < .7) SGA.parts.push({ x: skx + (Math.random() - .5) * 30, y: SG_FEET + 2, vx: (Math.random() - .5) * 70, vy: -20 - Math.random() * 45, life: .5, spray: 1 });
+  if (false) SGA.parts.push({ x: skx + (Math.random() - .5) * 30, y: SG_FEET + 2, vx: (Math.random() - .5) * 70, vy: -20 - Math.random() * 45, life: .5, spray: 1 });
   for (let i = SGA.parts.length - 1; i >= 0; i--) {
     const q = SGA.parts[i]; q.life -= 1 / 60; if (q.life <= 0) { SGA.parts.splice(i, 1); continue; }
     q.x += q.vx / 60; q.y += q.vy / 60; q.vy += (q.spray ? 120 : 160) / 60; c.globalAlpha = Math.min(1, q.life * 2); c.fillStyle = q.c || '#fff';
@@ -235,10 +241,10 @@ function sgFrame(now) {
   if (P && after > 0) {
     const u = sgOut(after * 3), a = after < 1.4 ? 1 : Math.max(0, 1 - (after - 1.4) * 2), txt = P.goal ? 'GOAL!' : 'SAVED!';
     c.save(); c.globalAlpha = a; c.translate(240, 160); c.scale(.6 + .5 * u, .6 + .5 * u); c.rotate(-0.06);
-    c.font = '900 58px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 9; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText(txt, 0, 0);
+    c.font = '58px Anton, Impact, "Arial Narrow", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 9; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText(txt, 0, 0);
     c.fillStyle = P.goal ? '#137a35' : '#c1272d'; c.fillText(txt, 0, 0); c.restore(); c.textAlign = 'start';
   }
-  c.restore();
+  c.restore(); sgDome(c);
 }
 function sgBurst(P, shootX) {
   const gy = 212, tx = 240 + shootX * 57;
@@ -246,30 +252,70 @@ function sgBurst(P, shootX) {
   else for (let i = 0; i < 30; i++) SGA.parts.push({ x: tx, y: gy - 30, vx: (Math.random() - .5) * 240, vy: -Math.random() * 150, life: .5 + Math.random() * .3, spray: 1, c: '#fde68a' });
 }
 
-/* The arena: lit ceiling, crowd behind glass, boards with team ads, and shiny ice with the goal line, crease and face-off dots. */
+/* The table, seen through the dome from behind the shooter: the goal line, crease and face-off dots painted on the playfield, and the slots the players ride in. */
 function sgArena(c, T, P, after, gs, gy, pt) {
   const cheer = P && P.goal && after > 0 ? Math.sin(after * 14) * 3 * Math.max(0, 1 - after / 1.2) : 0;
   sgBackdrop(c, T, !!P, cheer);
-  c.strokeStyle = 'rgba(190,40,50,.75)'; c.lineWidth = 3 * gs; c.beginPath(); c.moveTo(-10, gy + 5 * gs); c.lineTo(490, gy + 5 * gs); c.stroke();                       // goal line
-  c.beginPath(); c.ellipse(240, gy + 5 * gs, 82 * gs, 50 * gs, 0, 0, Math.PI); c.fillStyle = 'rgba(96,165,250,.28)'; c.fill(); c.strokeStyle = 'rgba(190,40,50,.8)'; c.lineWidth = 2.2; c.stroke();   // crease
-  c.strokeStyle = 'rgba(80,110,150,.16)'; c.lineWidth = 1; for (let i = 0; i < 16; i++) { const x = (i * 97) % 480, y = 140 + i * 13; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 60, y + 7, x + 150, y + 1); c.stroke(); }          // skate marks
-  c.fillStyle = 'rgba(190,40,50,.85)'; c.beginPath(); c.arc(240 - 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.arc(240 + 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.fill();      // face-off dots
+  c.strokeStyle = 'rgba(200,35,48,.8)'; c.lineWidth = 3 * gs; c.beginPath(); c.moveTo(-10, gy + 5 * gs); c.lineTo(490, gy + 5 * gs); c.stroke();                       // goal line
+  c.beginPath(); c.ellipse(240, gy + 5 * gs, 82 * gs, 50 * gs, 0, 0, Math.PI); c.fillStyle = 'rgba(70,140,235,.26)'; c.fill(); c.strokeStyle = 'rgba(200,35,48,.85)'; c.lineWidth = 2.2; c.stroke();   // crease
+  c.fillStyle = 'rgba(200,35,48,.9)'; c.beginPath(); c.arc(240 - 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.arc(240 + 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.fill();      // face-off dots
+  sgSlot(c, 240 - 128 * gs, gy - 1 * gs, 240 + 128 * gs, gy - 1 * gs, 1.6 * gs, 1.6 * gs);                 // the goalie's slot, side to side
+  sgSlot(c, 240, gy + 26 * gs, 240, 352, 1.2 * gs, 3.2);                                                   // the shooter's slot, running up the ice
 }
-/* The arena shared by the games: lit ceiling, crowd behind glass, boards with ads, and shiny ice. */
+/* A slot cut in the playfield (a player's rod slides along it): dark inside, a lit lower lip. Width goes from w0 at the first point to w1 at the second. */
+function sgSlot(c, x0, y0, x1, y1, w0, w1) {
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+  c.beginPath(); c.moveTo(x0 + nx * w0, y0 + ny * w0); c.lineTo(x1 + nx * w1, y1 + ny * w1); c.arc(x1, y1, w1, Math.atan2(ny, nx), Math.atan2(-ny, -nx), true); c.lineTo(x0 - nx * w0, y0 - ny * w0); c.arc(x0, y0, w0, Math.atan2(-ny, -nx), Math.atan2(ny, nx), true); c.closePath();
+  c.fillStyle = '#2a3342'; c.fill(); c.lineWidth = .8; c.strokeStyle = 'rgba(255,255,255,.8)'; c.stroke();
+  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x0 + nx * (w0 + 1.2), y0 + ny * (w0 + 1.2)); c.lineTo(x1 + nx * (w1 + 1.2), y1 + ny * (w1 + 1.2)); c.stroke();
+}
+/* The steel peg a figure stands on: a chrome foot plate over the slot and the figure's shadow on the plastic ice. Drawn in the figure's own coordinates (feet at 0, 0). */
+function sgPeg(c, rx = 20) {
+  c.fillStyle = 'rgba(10,20,40,.22)'; c.beginPath(); c.ellipse(4, 5, rx * 1.9, 7, 0, 0, 6.3); c.fill();
+  const g = c.createLinearGradient(-rx, 0, rx, 0); g.addColorStop(0, '#7b8798'); g.addColorStop(.3, '#f4f7fb'); g.addColorStop(.55, '#aab4c3'); g.addColorStop(1, '#5d6878');
+  c.fillStyle = '#3d4654'; c.beginPath(); c.ellipse(0, 4.5, rx, 5.2, 0, 0, 6.3); c.fill();
+  c.fillStyle = g; c.beginPath(); c.ellipse(0, 2, rx, 5.2, 0, 0, 6.3); c.fill(); c.lineWidth = 1; c.strokeStyle = 'rgba(8,14,30,.5)'; c.stroke();
+}
+/* Everything behind the play: the game room beyond the glass, the far boards of the table with their printed crowd, and the glossy plastic ice. Shared by the three games. */
 function sgBackdrop(c, T, fast, cheer) {
-  const bg = sgGrad(c, 0, 0, 0, 100, '#060b18', '#16233d'); c.fillStyle = bg; c.fillRect(-10, 0, 500, 100);
-  for (let i = 0; i < 6; i++) { const x = 40 + i * 80, g = c.createRadialGradient(x, 0, 0, x, 0, 60); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(x - 60, 0, 120, 70); c.fillStyle = '#e2e8f0'; c.fillRect(x - 18, 0, 36, 3); }
-  for (const p of SGA.crowd) {
-    const y = 26 + p.r * 17 + Math.sin(T * 2 + p.ph) * 1 - Math.abs(cheer) * (p.r + 1) * .45, r = 4.6;
-    c.fillStyle = p.c; c.beginPath(); c.roundRect(p.x - 5, y + 2, 10, 9, 3); c.fill();                       // shoulders
-    c.fillStyle = ['#f1c9a5', '#d9a273', '#8d5a3b', '#f6d7b8'][p.h]; c.beginPath(); c.arc(p.x, y - 1, r * .85, 0, 6.3); c.fill();      // head
-  }
-  const gl = sgGrad(c, 0, 80, 0, 98, 'rgba(147,197,253,.0)', 'rgba(147,197,253,.28)'); c.fillStyle = gl; c.fillRect(-10, 80, 500, 18);                       // glass shine
-  c.fillStyle = 'rgba(255,255,255,.07)'; for (let x = 20; x < 480; x += 90) { c.beginPath(); c.moveTo(x, 70); c.lineTo(x + 22, 70); c.lineTo(x + 10, 98); c.lineTo(x - 12, 98); c.fill(); }
-  const bd = sgGrad(c, 0, 96, 0, 118, '#13306b', '#0b1f44'); c.fillStyle = bd; c.fillRect(-10, 96, 500, 22); c.fillStyle = '#f5b301'; c.fillRect(-10, 96, 500, 2.5); c.fillStyle = '#050b18'; c.fillRect(-10, 116, 500, 2);
-  c.fillStyle = '#fff'; c.font = '800 10px Inter, system-ui, sans-serif'; c.textBaseline = 'middle'; const sc = (T * 16 * (fast ? 1 : 0.3)) % 170; for (let x = -sc; x < 500; x += 170) { c.fillText('BUBBLE HOCKEY LEAGUE', x + 6, 107); const lg = sgLeagueLogo(); if (lg) c.drawImage(lg, x + 146, 98, 16, 16); else { c.fillStyle = '#8cc63f'; c.fillRect(x + 148, 102, 6, 10); } c.fillStyle = '#fff'; }
-  const ice = sgGrad(c, 0, 118, 0, 340, '#cfe3f6', '#f4faff', '#e8f2fc'); c.fillStyle = ice; c.fillRect(-10, 118, 500, 230);
-  const sheen = c.createRadialGradient(240, 250, 10, 240, 250, 260); sheen.addColorStop(0, 'rgba(255,255,255,.7)'); sheen.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = sheen; c.fillRect(-10, 118, 500, 230);
+  // the room beyond the dome: dim, warm, out of focus
+  c.fillStyle = sgGrad(c, 0, 0, 0, 70, '#120d0a', '#2a1d14'); c.fillRect(-10, 0, 500, 70);
+  for (const [x, y, r, col] of [[70, 14, 46, 'rgba(255,190,110,.30)'], [236, 6, 60, 'rgba(255,214,150,.26)'], [400, 18, 44, 'rgba(255,170,90,.26)'], [150, 40, 22, 'rgba(120,180,255,.14)'], [330, 44, 26, 'rgba(255,90,90,.12)']]) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+  { const nums = [...document.querySelectorAll('#sg .sg-num')].map(e => e.textContent.trim()).slice(0, 2), two = nums.length === 2, bw = two ? 132 : 92, bx = 240 - bw / 2;
+    c.fillStyle = '#05070b'; c.beginPath(); c.roundRect(bx, -4, bw, 44, 6); c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#59616f'; c.stroke(); c.fillStyle = '#8f1820'; c.fillRect(bx + 4, 36, bw - 8, 2);
+    c.textBaseline = 'middle'; c.textAlign = 'center'; c.font = '700 6.5px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; c.fillStyle = '#c9d2df';
+    if (two) { c.fillText('HOME', bx + 28, 6); c.fillText('VISITOR', bx + bw - 28, 6); } else c.fillText('SCORE', 240, 6);
+    c.font = '20px Anton, Impact, "Arial Narrow", sans-serif'; c.fillStyle = '#ff4a3d'; c.shadowColor = 'rgba(255,60,40,.9)'; c.shadowBlur = 8;
+    if (two) { c.fillText(nums[0], bx + 28, 23); c.fillText(nums[1], bx + bw - 28, 23); c.fillStyle = '#ffb000'; c.shadowColor = 'rgba(255,176,0,.9)'; c.fillText(':', 240, 21); } else c.fillText(nums[0] || '0', 240, 23);
+    c.shadowBlur = 0; c.textAlign = 'start'; }
+  // the far end of the cabinet: a printed crowd above the boards (flat ink, like the real artwork)
+  c.fillStyle = sgGrad(c, 0, 52, 0, 98, '#101c38', '#1b2c55'); c.fillRect(-10, 52, 500, 46);
+  for (const p of SGA.crowd) { if (p.r > 2) continue; const y = 62 + p.r * 12, tone = ['#33466f', '#3c5283', '#2a3a60', '#465d92'][p.h]; c.fillStyle = tone; c.beginPath(); c.roundRect(p.x - 4.4, y + 1.5, 8.8, 9, 2.5); c.fill(); c.fillStyle = ['#5a6f9f', '#6880b2', '#4d6292', '#7389bb'][p.h]; c.beginPath(); c.arc(p.x, y - 1, 3.4, 0, 6.3); c.fill(); }
+  c.fillStyle = 'rgba(8,14,30,.35)'; c.fillRect(-10, 52, 500, 3);
+  // the boards: white plastic, a red cap rail, a blue stripe with the league's name, the yellow kick plate
+  c.fillStyle = sgGrad(c, 0, 96, 0, 118, '#ffffff', '#dfe7f0'); c.fillRect(-10, 96, 500, 22);
+  c.fillStyle = '#c8202f'; c.fillRect(-10, 94, 500, 4); c.fillStyle = 'rgba(255,255,255,.45)'; c.fillRect(-10, 94, 500, 1.2);
+  c.fillStyle = '#1746c9'; c.fillRect(-10, 101.5, 500, 10.5);
+  c.fillStyle = '#fff'; c.font = '700 8.5px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'start';
+  for (let x = 8; x < 500; x += 158) { c.fillText('BUBBLE  HOCKEY  LEAGUE', x + 6, 107); const lg = sgLeagueLogo(); if (lg) c.drawImage(lg, x + 104, 99, 15, 15); }
+  c.fillStyle = '#f2c21b'; c.fillRect(-10, 114.5, 500, 3.5); c.fillStyle = 'rgba(8,14,30,.4)'; c.fillRect(-10, 117.6, 500, 1.2);
+  c.fillStyle = 'rgba(8,14,30,.28)'; for (let x = 30; x < 480; x += 105) { c.beginPath(); c.arc(x, 99.4, 1.1, 0, 6.3); c.fill(); }                              // screws
+  // the playfield: glossy white plastic, with the boards mirrored faintly in it
+  c.fillStyle = sgGrad(c, 0, 118, 0, 340, '#dbe9f6', '#f7fbff', '#e6f0fa'); c.fillRect(-10, 118, 500, 230);
+  c.fillStyle = sgGrad(c, 0, 118, 0, 150, 'rgba(23,70,201,.16)', 'rgba(23,70,201,0)'); c.fillRect(-10, 118, 500, 32);
+  c.fillStyle = sgGrad(c, 0, 118, 0, 128, 'rgba(242,194,27,.28)', 'rgba(242,194,27,0)'); c.fillRect(-10, 118, 500, 10);
+  const sheen = c.createRadialGradient(240, 236, 10, 240, 236, 250); sheen.addColorStop(0, 'rgba(255,255,255,.8)'); sheen.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = sheen; c.fillRect(-10, 118, 500, 230);
+  c.strokeStyle = 'rgba(70,100,140,.07)'; c.lineWidth = 1; for (let i = 0; i < 9; i++) { const x = (i * 131) % 480, y = 150 + i * 21; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 46, y + 3); c.stroke(); }      // light scuffs
+  if (cheer) { c.fillStyle = `rgba(255,60,60,${Math.min(.16, Math.abs(cheer) * .05)})`; c.fillRect(-10, 0, 500, 340); }                            // the goal lamp washes the table red
+}
+/* The dome: drawn last, over everything. Soft reflections on the curved glass and darker corners where it bends away. */
+function sgDome(c) {
+  c.save(); const k = c.canvas.width / SGA.W; c.setTransform(k, 0, 0, k, 0, 0);
+  const v = c.createRadialGradient(240, 190, 150, 240, 190, 340); v.addColorStop(0, 'rgba(6,12,28,0)'); v.addColorStop(1, 'rgba(6,12,28,.42)'); c.fillStyle = v; c.fillRect(0, 0, 480, 340);
+  c.lineCap = 'round';
+  for (const [cx, cy, rx, ry, a0, a1, lw, al] of [[250, 560, 430, 540, 3.62, 4.30, 16, .10], [250, 560, 400, 505, 3.70, 4.12, 5, .16], [230, 600, 470, 560, 5.02, 5.42, 10, .07]]) { c.strokeStyle = `rgba(255,255,255,${al})`; c.lineWidth = lw; c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, a0, a1); c.stroke(); }
+  const g = c.createLinearGradient(0, 0, 150, 120); g.addColorStop(0, 'rgba(255,255,255,.16)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.beginPath(); c.moveTo(0, 0); c.lineTo(170, 0); c.quadraticCurveTo(40, 30, 0, 150); c.closePath(); c.fill();
+  c.restore();
 }
 
 /* The goalie, facing the shooter, drawn like real gear: big curved leg pads with knee rolls, bulky pants, a baggy jersey over a puffy chest protector,
@@ -277,8 +323,8 @@ function sgBackdrop(c, T, fast, cheer) {
    a shot down the middle gets a butterfly (drop to the knees, pads flared out), a shot to either side gets a sideways push with the lead pad stretched out. */
 function sgDrawGoalie(c, x, y, s, lean, dv, dir, pal, logo, T) {
   c.save(); c.translate(x, y); c.scale(s, s);
-  const fly = dir === 0, drop = (fly ? 44 : 38) * dv, breathe = Math.sin(T * 2.2) * 1.3 * (1 - dv);
-  c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(0, 3, 54 + dv * 24, 9, 0, 0, 6.3); c.fill();
+  const fly = dir === 0, drop = 0, breathe = 0;
+  sgPeg(c, 26);
   c.rotate(lean * 0.45); c.translate(0, drop - breathe);
   const iceY = 2 - drop + breathe;
   sgRR(c, -29, -88, 58, 40, 16); sgFS(c, sgGrad(c, -29, 0, 29, 0, pal.dark, pal.main, pal.dark));                          // pants
@@ -292,8 +338,7 @@ function sgDrawGoalie(c, x, y, s, lean, dv, dir, pal, logo, T) {
     c.beginPath(); c.ellipse(0, 61, 11, 5.5, 0, 0, 6.3); sgFS(c, '#111827', 1.6);                    // skate toe
     c.restore();
   };
-  pad(-1, fly ? dv * 1.2 : (dir === -1 ? 1.45 * dv : 0.45 * dv * (dir === 1 ? -1 : 1)));
-  pad(1, fly ? -dv * 1.2 : (dir === 1 ? -1.45 * dv : -0.45 * dv * (dir === -1 ? -1 : 1)));
+  pad(-1, 0.1); pad(1, -0.1);                              // molded in one stance, like the real figures
   // jersey: baggy, wider at the hem
   c.beginPath(); c.moveTo(-24, -116); c.bezierCurveTo(-33, -104, -36, -86, -33, -66); c.lineTo(-31, -57); c.quadraticCurveTo(0, -50, 31, -57); c.lineTo(33, -66); c.bezierCurveTo(36, -86, 33, -104, 24, -116); c.quadraticCurveTo(0, -125, -24, -116); c.closePath();
   sgFS(c, sgGrad(c, -34, -120, 34, -56, pal.light, pal.main, pal.dark));
@@ -302,8 +347,7 @@ function sgDrawGoalie(c, x, y, s, lean, dv, dir, pal, logo, T) {
   if (logo) { c.save(); c.beginPath(); c.arc(0, -94, 11, 0, 6.3); c.clip(); c.drawImage(logo, -11, -105, 22, 22); c.restore(); c.beginPath(); c.arc(0, -94, 11, 0, 6.3); c.lineWidth = 1.6; c.strokeStyle = SG_INK; c.stroke(); }
   // arms and hands
   const hand = sx => {
-    let hx = sx * (58 + dv * 4), hy = -86 - dv * (fly ? 14 : 4);
-    if (!fly && sx === dir) { hx = dir * (60 + dv * 46); hy = -92 - dv * 30; }
+    const hx = sx * 58, hy = -86;
     return { x: hx, y: hy };
   };
   for (const sx of [-1, 1]) {
@@ -346,9 +390,9 @@ function sgDrawGoalie(c, x, y, s, lean, dv, dir, pal, logo, T) {
 
 /* The shooter, seen from behind: skate stride on the way in, wind-up, then the swing. */
 function sgDrawSkater(c, x, y, s, wind, dir, shot, pal, name, stride, bl, skating, T) {
-  c.save(); c.translate(x, y); c.scale(s, s); c.rotate(dir * wind * 0.05 - dir * shot * 0.06 + (skating ? Math.sin(stride * 11) * 0.03 : 0));
-  c.fillStyle = 'rgba(15,23,42,.22)'; c.beginPath(); c.ellipse(0, 3, 38, 8, 0, 0, 6.3); c.fill();
-  const ph = skating ? stride * 11 : 0;
+  c.save(); c.translate(x, y); c.scale(s, s); sgPeg(c, 22);
+  c.rotate(dir * wind * 0.05 - dir * shot * 0.06); c.scale(1 - 0.7 * Math.sin(Math.min(1, Math.max(0, shot)) * Math.PI), 1);      // the spin on the rod, seen from behind: the figure narrows and comes back
+  const ph = 0; skating = false;
   for (const sx of [-1, 1]) {                                                                   // legs: knees bent, feet apart, skates with blades
     const sw = skating ? Math.sin(ph + (sx > 0 ? 0 : Math.PI)) : 0, lift = Math.max(0, sw) * 6, ax = sx * 17 + sw * 4, ay = -9 - lift;
     sgLimb(c, sx * 9, -58, sx * 22 + sw * 2, -34 - lift * .4, 17, pal.dark);          // thigh
@@ -358,8 +402,8 @@ function sgDrawSkater(c, x, y, s, wind, dir, shot, pal, name, stride, bl, skatin
   }
   c.beginPath(); c.moveTo(-21, -52); c.lineTo(-27, -96); c.quadraticCurveTo(0, -108, 27, -96); c.lineTo(21, -52); c.closePath(); sgFS(c, sgGrad(c, -27, -100, 27, -52, pal.light, pal.main, pal.dark));       // jersey back
   c.fillStyle = pal.trim; c.fillRect(-21, -58, 42, 4); c.fillStyle = pal.dark; c.fillRect(-22, -64, 44, 3);
-  c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 9px Inter, system-ui, sans-serif'; c.fillText(String(name || '').toUpperCase().slice(0, 9), 0, -90);
-  c.font = '900 28px Inter, system-ui, sans-serif'; c.lineWidth = 3; c.strokeStyle = pal.dark; c.strokeText('7', 0, -73); c.fillText('7', 0, -73); c.textAlign = 'start';
+  c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '700 10px "Barlow Condensed", "Arial Narrow", Arial, sans-serif'; c.fillText(String(name || '').toUpperCase().slice(0, 9), 0, -90);
+  c.font = '22px Anton, Impact, "Arial Narrow", sans-serif'; c.lineWidth = 2.5; c.strokeStyle = pal.dark; c.strokeText('7', 0, -72); c.fillText('7', 0, -72); c.textAlign = 'start';
   const H = { x: 12, y: -62 }, B = bl, L = { x: H.x + (B.x - H.x) * 0.45, y: H.y + (B.y - H.y) * 0.45 }, ex = H.x + (H.x - B.x) * 0.1, ey = H.y + (H.y - B.y) * 0.1;
   sgLimb(c, -25, -94, -32, -72, 11, pal.main); sgLimb(c, -32, -72, H.x, H.y, 10, pal.main);       // top hand arm
   c.lineCap = 'round'; c.strokeStyle = SG_INK; c.lineWidth = 7; c.beginPath(); c.moveTo(ex, ey); c.lineTo(B.x, B.y); c.stroke(); c.strokeStyle = '#2b3445'; c.lineWidth = 4.2; c.stroke(); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(ex - 1, ey); c.lineTo(B.x - 1, B.y); c.stroke();      // shaft

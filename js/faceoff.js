@@ -120,6 +120,7 @@ function foFrame(now) {
   c.strokeStyle = 'rgba(190,40,50,.8)'; c.lineWidth = 2.4; c.beginPath(); c.ellipse(FO_DOT.x, FO_DOT.y, 112, 30, 0, 0, 6.3); c.stroke();
   c.fillStyle = 'rgba(190,40,50,.12)'; c.fill(); c.lineWidth = 2; c.beginPath(); c.moveTo(FO_DOT.x - 112, FO_DOT.y); c.lineTo(FO_DOT.x - 124, FO_DOT.y); c.moveTo(FO_DOT.x + 112, FO_DOT.y); c.lineTo(FO_DOT.x + 124, FO_DOT.y); c.stroke();
   c.fillStyle = '#1d4ed8'; c.beginPath(); c.ellipse(FO_DOT.x, FO_DOT.y, 7, 3.2, 0, 0, 6.3); c.fill();
+  sgSlot(c, 30, FO_FEET + 2, FO_DOT.x - 60, FO_FEET + 2, 1.7, 1.7); sgSlot(c, FO_DOT.x + 60, FO_FEET + 2, 450, FO_FEET + 2, 1.7, 1.7);
   // referee: holds the puck out over the dot
   let dip = 0; if (FO.phase === 'wait' && FO.feints) for (const f of FO.feints) { const q = (now - FO.waitStart - f.at) / f.dur; if (q > 0 && q < 1) dip += Math.sin(q * Math.PI) * f.amp; }
   foRef(c, 240, 246, 0.86, R && R.fs >= 0 && u < 0.6 ? 1 : 0, T, dip);
@@ -143,7 +144,8 @@ function foFrame(now) {
   // ice spray when the sticks clash
   if (R && u > hit && u < hit + 0.35) { c.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 14; i++) { const a = i * 1.7, r = (u - hit) * 160 * (0.4 + (i % 4) / 4); c.fillRect(FO_DOT.x + Math.cos(a) * r, FO_DOT.y - Math.abs(Math.sin(a)) * r * 0.7 - 2, 2.2, 2.2); } }
   // false start banner
-  if (R && R.fs >= 0 && u < 1.1) { c.save(); c.translate(240, 120); const pop = Math.min(1, (u + 0.9) * 5); c.scale(0.7 + 0.3 * pop, 0.7 + 0.3 * pop); c.font = '900 40px Inter, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText('FALSE START!', 0, 0); c.fillStyle = '#c1272d'; c.fillText('FALSE START!', 0, 0); c.restore(); }
+  if (R && R.fs >= 0 && u < 1.1) { c.save(); c.translate(240, 120); const pop = Math.min(1, (u + 0.9) * 5); c.scale(0.7 + 0.3 * pop, 0.7 + 0.3 * pop); c.font = '40px Anton, Impact, "Arial Narrow", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#fff'; c.strokeText('FALSE START!', 0, 0); c.fillStyle = '#c1272d'; c.fillText('FALSE START!', 0, 0); c.restore(); }
+  sgDome(c);
   if (R && !R.finished && u >= hit + 1.1) { R.finished = true; foShown(); }
 }
 const name2 = p => String(foName(p)).toUpperCase().slice(0, 8);
@@ -151,8 +153,8 @@ const name2 = p => String(foName(p)).toUpperCase().slice(0, 8);
 /* A player in profile, facing right when face = 1: bent knees, leaning over, both hands on a stick whose blade rests beside the dot. s = swing (0 to 1). */
 function foPlayer(c, x, y, face, pal, s, T, name, happy) {
   c.save(); c.translate(x, y); c.scale(face, 1);
-  const breathe = Math.sin(T * 2.4) * 1.2, lean = 0.62 + s * 0.08, hip = { x: -6, y: -48 + breathe };
-  c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(4, 3, 46, 8, 0, 0, 6.3); c.fill();
+  const breathe = 0, lean = 0.62 + s * 0.08, hip = { x: -6, y: -48 };
+  sgPeg(c, 24);
   const leg = (kx, ky, ax, ay, back) => { sgLimb(c, hip.x, hip.y, kx, ky, 17, pal.dark); sgLimb(c, kx, ky, ax, ay, 12, '#e8edf5'); sgRR(c, ax - 9, ay - 2, 24, 11, 5); sgFS(c, '#111827'); c.fillStyle = '#d5dde8'; c.beginPath(); c.roundRect(ax - 11, ay + 8, 30, 3.4, 2); c.fill(); c.lineWidth = 1.3; c.strokeStyle = SG_INK; c.stroke(); };
   leg(-20, -26, -28, -8, true); leg(16, -28, 24, -8, false);
   // torso, leaning forward from the hip
@@ -180,7 +182,7 @@ function foPlayer(c, x, y, face, pal, s, T, name, happy) {
 /* The referee, facing us: black and white stripes, white helmet, orange armbands, whistle, one arm out holding the puck. */
 function foRef(c, x, y, s, raiseOther, T, dip = 0) {
   c.save(); c.translate(x, y); c.scale(s, s);
-  c.fillStyle = 'rgba(15,23,42,.2)'; c.beginPath(); c.ellipse(0, 3, 32, 6, 0, 0, 6.3); c.fill();
+  sgPeg(c, 18);
   for (const sx of [-1, 1]) { sgRR(c, sx * 9 - 8, -56, 16, 52, 7); sgFS(c, '#0b1426'); sgRR(c, sx * 9 - 10, -6, 20, 10, 4); sgFS(c, '#111827', 1.6); c.fillStyle = '#cbd5e1'; c.fillRect(sx * 9 - 12, 5, 24, 3); }
   c.beginPath(); c.moveTo(-20, -52); c.lineTo(-24, -98); c.quadraticCurveTo(0, -108, 24, -98); c.lineTo(20, -52); c.closePath(); sgFS(c, '#f8fafc');
   c.save(); c.clip(); c.fillStyle = '#0b1426'; for (let i = -24; i < 24; i += 9) c.fillRect(i, -110, 4.5, 60); c.restore();
