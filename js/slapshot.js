@@ -98,12 +98,13 @@ function spFrame(now) {
   const lit = goal && after > 0 && Math.floor(after * 6) % 2 === 0; if (lit) { c.fillStyle = '#ff2d2d'; c.beginPath(); c.arc(gx, gy - Hn - 14, 6, 0, 6.3); c.fill(); c.lineWidth = 1.5; c.strokeStyle = SG_INK; c.stroke(); c.fillStyle = 'rgba(255,45,45,.25)'; c.beginPath(); c.arc(gx, gy - Hn - 14, 18, 0, 6.3); c.fill(); }
   // shooter
   const wind = S ? sgClamp(u, 0, 0.18) : 0, swing = S ? sgClamp(u, 0.18, 0.42) : 0, bl = { x: 50 + (S ? 0 : Math.sin(T * 1.5) * 3) - swing * 6, y: -3 + wind * 8 - swing * 22 };
-  const pal = SG_TEAM[SP.turn], skx = 240, bladeX = skx + (bl.x + 12) * 0.84, bladeY = SG_FEET + bl.y * 0.84;
+  SGA.rigT = !S ? 0.2 : u < 0.3 ? 0.22 + (u / 0.3) * 0.34 : Math.min(1, 0.56 + (u - 0.3) * 0.6);      // set and waiting, then backswing and downswing; the blade meets the puck as it leaves
+  const pal = SG_TEAM[SP.turn], skx = 204, pk0 = sgRigPuck(skx, SG_FEET, 0.84), bladeX = pk0[0], bladeY = pk0[1];
   sgDrawSkater(c, skx, SG_FEET, 0.84, wind, 0, swing, pal, String(spName(SP.turn)).toUpperCase().slice(0, 8), 0, bl, false, T);
   // puck
   let px = bladeX, py = bladeY, pr = 7, vis = true;
   if (S && u > 0.3) {
-    const q = sgOut(sgClamp(u, 0.3, arrive)), sx = bladeX, sy = SG_FEET - 6; px = sx + (S.x - sx) * q; py = sy + (S.y - sy) * q - Math.sin(q * Math.PI) * 14; pr = 7 - 3 * q;
+    const q = sgOut(sgClamp(u, 0.3, arrive)), sx = bladeX, sy = bladeY; px = sx + (S.x - sx) * q; py = sy + (S.y - sy) * q - Math.sin(q * Math.PI) * 14; pr = 7 - 3 * q;
     if (q > .1 && u < arrive + 0.05) { c.strokeStyle = 'rgba(15,23,42,.25)'; c.lineWidth = pr * 1.4; c.lineCap = 'round'; const q2 = Math.max(0, q - .25); c.beginPath(); c.moveTo(sx + (S.x - sx) * q2, sy + (S.y - sy) * q2 - Math.sin(q2 * Math.PI) * 14); c.lineTo(px, py); c.stroke(); }
     if (u > arrive) { if (S.kind === 'goal') { px = S.x; py = S.y + Math.min(0.5, after) * 22; pr = 4; } else if (S.kind === 'save') { const d = (S.x >= gx ? 1 : -1); px = S.x + d * after * 90; py = S.y + 120 * after * after - after * 50; pr = 4 + after * 3; vis = after < 0.9; } else if (S.kind === 'post') { const d = (S.x >= gx ? 1 : -1); px = S.x + d * after * 70; py = S.y + 140 * after * after - after * 70; vis = after < 0.8; } else { px = S.x + (S.x >= gx ? 1 : -1) * after * 50; py = S.y - after * 30; pr = 4 - Math.min(2, after * 3); vis = after < 0.7; } }
   } else if (S) { px = bladeX; py = bladeY; }
