@@ -261,20 +261,6 @@ function sgArena(c, T, P, after, gs, gy, pt) {
   c.beginPath(); c.ellipse(240, gy + 5 * gs, 82 * gs, 50 * gs, 0, 0, Math.PI); c.fillStyle = 'rgba(70,140,235,.26)'; c.fill(); c.strokeStyle = 'rgba(200,35,48,.85)'; c.lineWidth = 2.2; c.stroke();   // crease
   c.fillStyle = 'rgba(200,35,48,.9)'; c.beginPath(); c.arc(240 - 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.arc(240 + 115 * gs, gy + 58 * gs, 6 * gs, 0, 6.3); c.fill();      // face-off dots
 }
-/* A slot cut in the playfield (a player's rod slides along it): dark inside, a lit lower lip. Width goes from w0 at the first point to w1 at the second. */
-function sgSlot(c, x0, y0, x1, y1, w0, w1) {
-  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-  c.beginPath(); c.moveTo(x0 + nx * w0, y0 + ny * w0); c.lineTo(x1 + nx * w1, y1 + ny * w1); c.arc(x1, y1, w1, Math.atan2(ny, nx), Math.atan2(-ny, -nx), true); c.lineTo(x0 - nx * w0, y0 - ny * w0); c.arc(x0, y0, w0, Math.atan2(-ny, -nx), Math.atan2(ny, nx), true); c.closePath();
-  c.fillStyle = '#2a3342'; c.fill(); c.lineWidth = .8; c.strokeStyle = 'rgba(255,255,255,.8)'; c.stroke();
-  c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x0 + nx * (w0 + 1.2), y0 + ny * (w0 + 1.2)); c.lineTo(x1 + nx * (w1 + 1.2), y1 + ny * (w1 + 1.2)); c.stroke();
-}
-/* The steel peg a figure stands on: a chrome foot plate over the slot and the figure's shadow on the plastic ice. Drawn in the figure's own coordinates (feet at 0, 0). */
-function sgPeg(c, rx = 20) {
-  c.fillStyle = 'rgba(10,20,40,.22)'; c.beginPath(); c.ellipse(4, 5, rx * 1.9, 7, 0, 0, 6.3); c.fill();
-  const g = c.createLinearGradient(-rx, 0, rx, 0); g.addColorStop(0, '#7b8798'); g.addColorStop(.3, '#f4f7fb'); g.addColorStop(.55, '#aab4c3'); g.addColorStop(1, '#5d6878');
-  c.fillStyle = '#3d4654'; c.beginPath(); c.ellipse(0, 4.5, rx, 5.2, 0, 0, 6.3); c.fill();
-  c.fillStyle = g; c.beginPath(); c.ellipse(0, 2, rx, 5.2, 0, 0, 6.3); c.fill(); c.lineWidth = 1; c.strokeStyle = 'rgba(8,14,30,.5)'; c.stroke();
-}
 /* Everything behind the play: the game room beyond the glass, the far boards of the table with their printed crowd, and the glossy plastic ice. Shared by the three games. */
 function sgBackdrop(c, T, fast, cheer) {
   // the room beyond the dome: dim, warm, out of focus
