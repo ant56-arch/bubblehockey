@@ -22,6 +22,12 @@
       "toDate": "2026-11-10",
       "home": "Connor",
       "road": "Logan"
+    },
+    {
+      "date": "2026-11-12",
+      "a": "Logan",
+      "b": "Boban",
+      "removed": true
     }
   ]
 }
