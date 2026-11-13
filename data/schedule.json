@@ -40,6 +40,12 @@
       "a": "Connor",
       "b": "Logan",
       "removed": true
+    },
+    {
+      "date": "2026-11-13",
+      "a": "Logan",
+      "b": "Tommy",
+      "removed": true
     }
   ]
 }
